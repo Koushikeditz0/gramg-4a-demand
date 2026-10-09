@@ -1,20 +1,9 @@
-# G RAM-G 4A/Demand List Builder — PWA v1.2
+G RAM-G 4A/Demand List Builder — PWA v1.3.1 API Fix
 
-## Files to upload to GitHub Pages (repository root)
-- `index.html`
-- `manifest.json`
-- `service-worker.js`
-- `icon-192.png`
-- `icon-512.png`
+1) Apps Script Code.gs-এর backup নিন।
+2) G_RAMG_4A_Demand_List_Builder_API_Code_v1.3.1.gs-এর সম্পূর্ণ code বর্তমান Code.gs-এ বসিয়ে Save করুন।
+3) Deploy > Manage deployments > Edit > New version > Deploy করুন। Web App access Anyone থাকা চাই।
+4) GitHub repository-তে index.html, manifest.json, service-worker.js, icon-192.png, icon-512.png আপডেট করুন। ZIP upload করবেন না।
+5) GitHub Pages খুলে Ctrl+Shift+R দিয়ে refresh করুন।
 
-Do not upload the ZIP itself as a substitute for these files.
-
-## Apps Script backend update
-1. Open the existing Apps Script project attached to the same Google Sheet.
-2. Back up the current `Code.gs` first.
-3. Replace `Code.gs` with `Code.gs` included in this package (it preserves the existing business functions and adds the PWA API bridge).
-4. Save, then Deploy → Manage deployments → Edit the existing Web App deployment → select **New version** → Deploy. Keep access settings consistent with the existing app.
-5. The frontend is configured to call the existing Web App URL. If the deployment URL changes, update `GRAMG_API_URL` in `index.html` to the new `/exec` URL and upload the changed file.
-
-## Important
-Test login, worker search, saved selection, account lookup, Excel and PDF after deploying. Do not remove or change the Google Sheets tab names/headers. This is a development version; keep your stable files backed up.
+Note: API এখন JSONP GET request-এ সরাসরি action চালায়; আগের doPost/cache-poll flow সরানো হয়েছে। বড় saveSelection URL 7000 character-এর বেশি হলে frontend request length error দেখাতে পারে; সে ক্ষেত্রে আলাদা secure transport design লাগবে।

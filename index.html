@@ -1418,7 +1418,7 @@
 
 <script>
 
-  // PWA v1.3 bridge: direct JSONP calls avoid cross-origin POST/poll response failures.
+  // PWA v1.3.1 bridge: direct JSONP calls invoke the Apps Script action and return its result in one request.
   const GRAMG_API_URL = 'https://script.google.com/macros/s/AKfycbyBBbK_qt3zywpw-bipuhsH-0ut3aRr4j4G_6o4zV5BedOl6lFju3v85WrjlvH8uHGd/exec';
   function gramgApiCall(action, args, onSuccess, onFailure) {
     const callbackName = '__gramg_cb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
@@ -1431,7 +1431,7 @@
     const url = GRAMG_API_URL + '?api=1&action=' + encodeURIComponent(action) + '&args=' + encodeURIComponent(JSON.stringify(args || [])) + '&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
     if (url.length > 7000) { fail('Request বড় হয়ে গেছে। বড় Selection-এর জন্য আলাদা POST API প্রয়োজন।'); return; }
     script = document.createElement('script');
-    script.onerror = function() { fail('Apps Script API load হয়নি। Deployment URL/access পরীক্ষা করুন।'); };
+    script.onerror = function() { fail('Apps Script API load হয়নি। URL, deployment access (Anyone) এবং নতুন version deploy হয়েছে কি না পরীক্ষা করুন।'); };
     script.src = url; document.head.appendChild(script);
   }
   // Keep existing UI calls unchanged by providing a google.script.run-compatible shim.

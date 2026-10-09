@@ -1418,35 +1418,21 @@
 
 <script>
 
-  // PWA bridge: emulate google.script.run over the Apps Script Web App API.
-  // Requests are POSTed; results are retrieved using a one-time random request ID.
+  // PWA v1.3 bridge: direct JSONP calls avoid cross-origin POST/poll response failures.
   const GRAMG_API_URL = 'https://script.google.com/macros/s/AKfycbyBBbK_qt3zywpw-bipuhsH-0ut3aRr4j4G_6o4zV5BedOl6lFju3v85WrjlvH8uHGd/exec';
   function gramgApiCall(action, args, onSuccess, onFailure) {
-    const requestId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('r'+Date.now().toString(36)+Math.random().toString(36).slice(2));
-    const payload = JSON.stringify({requestId:requestId, action:action, args:args || []});
-    let finished = false;
-    const fail = (message) => { if (finished) return; finished=true; if (typeof onFailure==='function') onFailure({message:String(message || 'API request failed')}); };
-    const succeed = (value) => { if (finished) return; finished=true; if (typeof onSuccess==='function') onSuccess(value); };
-    fetch(GRAMG_API_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:payload, cache:'no-store'})
-      .catch(err => { fail(err && err.message ? err.message : err); });
-    const started = Date.now();
-    (function poll(){
-      if (finished) return;
-      if (Date.now()-started > 30000) { fail('Backend response পাওয়া যায়নি। Apps Script API update/deploy হয়েছে কি না দেখুন।'); return; }
-      const callbackName = '__gramg_cb_' + requestId.replace(/[^a-zA-Z0-9_]/g,'');
-      const script = document.createElement('script');
-      let settled = false;
-      const cleanup = () => { try { delete window[callbackName]; } catch(e) { window[callbackName]=undefined; } script.remove(); };
-      window[callbackName] = function(result){
-        settled=true; cleanup();
-        if (!result || result.pending) { setTimeout(poll, 450); return; }
-        if (result.ok) succeed(result.data);
-        else fail(result.error || 'Backend error');
-      };
-      script.onerror = function(){ if(settled)return; settled=true; cleanup(); setTimeout(poll,700); };
-      script.src = GRAMG_API_URL + '?api=1&action=poll&requestId=' + encodeURIComponent(requestId) + '&callback=' + callbackName + '&_=' + Date.now();
-      document.head.appendChild(script);
-    })();
+    const callbackName = '__gramg_cb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
+    let finished = false, script = null, timer;
+    const cleanup = () => { if (script) script.remove(); try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; } };
+    const fail = (message) => { if (finished) return; finished = true; clearTimeout(timer); cleanup(); if (typeof onFailure === 'function') onFailure({message:String(message || 'API request failed')}); };
+    const succeed = (value) => { if (finished) return; finished = true; clearTimeout(timer); cleanup(); if (typeof onSuccess === 'function') onSuccess(value); };
+    timer = setTimeout(() => fail('Apps Script API থেকে উত্তর আসেনি। Web App deployment ও access permission পরীক্ষা করুন।'), 20000);
+    window[callbackName] = function(result) { if (!result) { fail('Apps Script থেকে খালি response এসেছে।'); return; } if (result.ok) succeed(result.data); else fail(result.error || 'Backend error'); };
+    const url = GRAMG_API_URL + '?api=1&action=' + encodeURIComponent(action) + '&args=' + encodeURIComponent(JSON.stringify(args || [])) + '&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
+    if (url.length > 7000) { fail('Request বড় হয়ে গেছে। বড় Selection-এর জন্য আলাদা POST API প্রয়োজন।'); return; }
+    script = document.createElement('script');
+    script.onerror = function() { fail('Apps Script API load হয়নি। Deployment URL/access পরীক্ষা করুন।'); };
+    script.src = url; document.head.appendChild(script);
   }
   // Keep existing UI calls unchanged by providing a google.script.run-compatible shim.
   window.google = window.google || {};

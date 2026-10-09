@@ -1,0 +1,3082 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <base target="_top">
+
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="?pwa=manifest">
+
+  <meta
+    name="viewport"
+    content="width=device-width,
+             initial-scale=1,
+             maximum-scale=1,
+             user-scalable=no">
+
+  <title>G RAM-G 4A/Demand List Builder</title>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    html,
+    body{
+
+      margin:0;
+      padding:0;
+
+      width:100%;
+      min-height:100%;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      background:#f1f5f9;
+      color:#172033;
+    }
+
+    .app{
+
+      width:100%;
+      max-width:1100px;
+
+      margin:auto;
+
+      padding:8px;
+    }
+
+
+    /* HEADER */
+
+    .header{
+
+      background:#0f172a;
+
+      color:white;
+
+      border-radius:12px;
+
+      padding:11px 13px;
+
+      margin-bottom:8px;
+    }
+
+    .header-title{
+
+      font-size:17px;
+      font-weight:700;
+    }
+
+    .header-sub{
+
+      font-size:11px;
+
+      opacity:.8;
+
+      margin-top:3px;
+    }
+
+
+    /* LOGIN */
+
+    .login-box{
+
+      max-width:400px;
+
+      margin:30px auto;
+
+      background:white;
+
+      border-radius:14px;
+
+      padding:18px;
+
+      box-shadow:
+        0 3px 15px rgba(0,0,0,.08);
+    }
+
+    .login-title{
+
+      font-size:20px;
+
+      font-weight:700;
+
+      margin-bottom:15px;
+    }
+
+
+    /* INPUT */
+
+    input,
+    select{
+
+      width:100%;
+
+      border:
+        1px solid #cbd5e1;
+
+      background:white;
+
+      border-radius:9px;
+
+      padding:10px 11px;
+
+      font-size:15px;
+
+      outline:none;
+    }
+
+    input:focus,
+    select:focus{
+
+      border-color:#2563eb;
+    }
+
+    .field{
+
+      margin-bottom:10px;
+    }
+
+    .field-label{
+
+      font-size:12px;
+
+      font-weight:700;
+
+      color:#475569;
+
+      margin-bottom:4px;
+    }
+
+
+    /* BUTTONS */
+
+    button{
+
+      border:0;
+
+      border-radius:8px;
+
+      padding:8px 11px;
+
+      font-size:13px;
+
+      font-weight:700;
+
+      cursor:pointer;
+    }
+
+    button:active{
+
+      transform:scale(.97);
+    }
+
+    .btn-primary{
+
+      background:#2563eb;
+      color:white;
+    }
+
+    .btn-success{
+
+      background:#16a34a;
+      color:white;
+    }
+
+    .btn-danger{
+
+      background:#dc2626;
+      color:white;
+    }
+
+    .btn-light{
+
+      background:#e2e8f0;
+      color:#172033;
+    }
+
+    .btn-small{
+
+      padding:6px 9px;
+
+      font-size:12px;
+    }
+
+
+    /* USER */
+
+    .user-bar{
+
+      background:white;
+
+      border-radius:10px;
+
+      padding:9px 11px;
+
+      margin-bottom:8px;
+
+      display:flex;
+
+      justify-content:space-between;
+
+      align-items:center;
+
+      gap:8px;
+
+      box-shadow:
+        0 2px 8px rgba(0,0,0,.05);
+    }
+
+    .user-info{
+
+      min-width:0;
+    }
+
+    .user-name{
+
+      font-size:14px;
+
+      font-weight:700;
+    }
+
+    .user-gp{
+
+      font-size:11px;
+
+      color:#64748b;
+
+      margin-top:2px;
+
+      white-space:nowrap;
+
+      overflow:hidden;
+
+      text-overflow:ellipsis;
+    }
+
+
+    /* CONTROL */
+
+    .control-box{
+
+      background:white;
+
+      border-radius:10px;
+
+      padding:10px;
+
+      margin-bottom:8px;
+
+      box-shadow:
+        0 2px 8px rgba(0,0,0,.05);
+    }
+
+    .search-row{
+
+      display:grid;
+
+      grid-template-columns:
+        1fr auto;
+
+      gap:7px;
+
+      margin-top:7px;
+    }
+
+    .search-input{
+
+      font-size:14px;
+    }
+
+    .hint{
+
+      font-size:10px;
+
+      color:#64748b;
+
+      margin-top:5px;
+
+      line-height:1.4;
+    }
+
+
+    /* ACTION */
+
+    .action-bar{
+
+      display:flex;
+
+      flex-wrap:wrap;
+
+      gap:6px;
+
+      margin-bottom:8px;
+    }
+
+
+    /* COLUMNS */
+
+    .columns{
+
+      display:grid;
+
+      grid-template-columns:
+        1fr 1fr;
+
+      gap:8px;
+
+      align-items:start;
+    }
+
+    .panel{
+
+      background:white;
+
+      border-radius:10px;
+
+      overflow:hidden;
+
+      box-shadow:
+        0 2px 8px rgba(0,0,0,.05);
+
+      min-width:0;
+    }
+
+    .panel-header{
+
+      padding:8px 9px;
+
+      background:#e2e8f0;
+
+      border-bottom:
+        1px solid #cbd5e1;
+
+      display:flex;
+
+      justify-content:space-between;
+
+      align-items:center;
+
+      gap:5px;
+    }
+
+    .panel-title{
+
+      font-size:12px;
+
+      font-weight:800;
+
+      white-space:nowrap;
+    }
+
+    .panel-count{
+
+      font-size:11px;
+
+      background:#334155;
+
+      color:white;
+
+      border-radius:20px;
+
+      padding:2px 7px;
+
+      min-width:22px;
+
+      text-align:center;
+    }
+
+    .panel-body{
+
+      padding:6px;
+    }
+
+
+    /* FAMILY */
+
+    .family{
+
+      border:
+        1px solid #dbe3ec;
+
+      border-radius:8px;
+
+      margin-bottom:6px;
+
+      overflow:hidden;
+    }
+
+    .family-header{
+
+      background:#f8fafc;
+
+      padding:6px 7px;
+
+      border-bottom:
+        1px solid #e2e8f0;
+    }
+
+    .family-title{
+
+      font-size:12px;
+
+      font-weight:800;
+    }
+
+    .family-meta{
+
+      font-size:10px;
+
+      color:#64748b;
+
+      margin-top:2px;
+    }
+
+
+    /* MEMBER */
+
+    .member{
+
+      display:flex;
+
+      align-items:center;
+
+      gap:6px;
+
+      padding:7px 6px;
+
+      border-bottom:
+        1px solid #edf2f7;
+    }
+
+    .member:last-child{
+
+      border-bottom:0;
+    }
+
+    .member-check{
+
+      width:18px;
+
+      height:18px;
+
+      flex:0 0 18px;
+
+      accent-color:#2563eb;
+    }
+
+    .member-main{
+
+      min-width:0;
+
+      flex:1;
+    }
+
+    .member-name{
+
+      font-size:12px;
+
+      font-weight:700;
+
+      line-height:1.2;
+
+      word-break:break-word;
+    }
+
+    .member-reg{
+
+      font-size:9px;
+
+      color:#64748b;
+
+      margin-top:2px;
+
+      word-break:break-all;
+    }
+
+
+    /* STATUS BADGES */
+
+    .status-wrap{
+
+      display:flex;
+
+      flex-wrap:wrap;
+
+      gap:3px;
+
+      flex:0 0 auto;
+    }
+
+    .badge{
+
+      font-size:8px;
+
+      font-weight:800;
+
+      padding:2px 4px;
+
+      border-radius:4px;
+
+      white-space:nowrap;
+    }
+
+    .badge-yes{
+
+      background:#dcfce7;
+
+      color:#166534;
+    }
+
+    .badge-no{
+
+      background:#fee2e2;
+
+      color:#991b1b;
+    }
+
+
+    /* SELECTED */
+
+    .selected-scroll{
+
+      max-height:65vh;
+
+      overflow-y:auto;
+
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .selected-empty{
+
+      padding:20px 8px;
+
+      text-align:center;
+
+      color:#94a3b8;
+
+      font-size:11px;
+    }
+
+    .selected-item{
+
+      display:flex;
+
+      align-items:center;
+
+      gap:4px;
+
+      padding:7px 4px;
+
+      border-bottom:
+        1px solid #edf2f7;
+    }
+
+    .selected-item:last-child{
+
+      border-bottom:0;
+    }
+
+    .selected-sl{
+
+      flex:0 0 20px;
+
+      font-size:10px;
+
+      font-weight:800;
+
+      color:#64748b;
+
+      text-align:center;
+    }
+
+    .selected-main{
+
+      min-width:0;
+
+      flex:1;
+    }
+
+    .selected-name{
+
+      font-size:11px;
+
+      font-weight:700;
+
+      line-height:1.2;
+
+      word-break:break-word;
+    }
+
+    .selected-job{
+
+      font-size:9px;
+
+      font-weight:800;
+
+      color:#334155;
+
+      margin-top:2px;
+
+      word-break:break-all;
+    }
+
+    .selected-status{
+
+      display:flex;
+
+      flex-direction:column;
+
+      gap:2px;
+
+      flex:0 0 auto;
+    }
+
+    .selected-status .badge{
+
+      font-size:7px;
+
+      padding:2px 3px;
+
+      text-align:center;
+    }
+
+    .remove-btn{
+
+      flex:0 0 20px;
+
+      width:20px;
+
+      height:20px;
+
+      padding:0;
+
+      border-radius:6px;
+
+      background:#fee2e2;
+
+      color:#b91c1c;
+
+      font-size:14px;
+
+      font-weight:900;
+    }
+
+
+    /* FINAL PREVIEW */
+    .preview-overlay{
+      position:fixed; inset:0; background:#f1f5f9; z-index:10000; display:none;
+      overflow:auto;
+    }
+    .preview-overlay.show{display:block;}
+    .preview-top{position:sticky;top:0;background:#0f172a;color:white;padding:10px;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+    .preview-top-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .preview-title{font-size:16px;font-weight:800;}
+    .preview-sub{font-size:10px;opacity:.8;margin-top:3px;}
+    .preview-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+    .preview-actions button{font-size:11px;padding:7px 9px;}
+    .preview-body{max-width:1200px;margin:auto;padding:8px;}
+    .preview-summary{background:white;border-radius:10px;padding:9px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);font-size:11px;}
+    .preview-tools{display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:8px;}
+    .preview-table-wrap{background:white;border-radius:10px;overflow:auto;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+    .preview-table{width:100%;border-collapse:collapse;font-size:10px;min-width:760px;}
+    .preview-table th{position:sticky;top:0;background:#e2e8f0;text-align:left;padding:7px;border-bottom:1px solid #cbd5e1;z-index:1;}
+    .preview-table td{padding:6px 7px;border-bottom:1px solid #edf2f7;vertical-align:top;}
+    .missing-account{background:#fff7ed!important;color:#9a3412;font-weight:700;}
+    @media(max-width:600px){.preview-table{font-size:9px;min-width:700px}.preview-title{font-size:14px}.preview-body{padding:5px}.preview-tools{grid-template-columns:1fr auto;}}
+
+    .pdf-header-fields{background:#fff;border-radius:10px;padding:10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+    .pdf-title-preview{font-size:16px;font-weight:900;text-align:center;margin-bottom:8px;}
+    .pdf-header-fields label{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;}
+    #workName{flex:1;border:1px solid #cbd5e1;border-radius:6px;padding:7px 8px;font-size:12px;}
+
+    /* A4 PRINT / PDF */
+  @media print{
+    @page{size:A4 portrait;margin:10mm;}
+    body{background:#fff!important;}
+    body *{visibility:hidden!important;}
+    #previewOverlay,#previewOverlay *{visibility:visible!important;}
+    #previewOverlay{position:static!important;display:block!important;overflow:visible!important;background:#fff!important;}
+    .preview-top{display:none!important;}
+    .preview-body{max-width:none!important;padding:0!important;margin:0!important;}
+    .preview-summary,.preview-tools{display:none!important;}
+    .preview-table-wrap{overflow:visible!important;box-shadow:none!important;border-radius:0!important;}
+    .preview-table{width:100%!important;min-width:0!important;font-size:9pt!important;border-collapse:collapse!important;}
+    .preview-table th{position:static!important;background:#e5e7eb!important;color:#000!important;padding:4pt!important;border:1px solid #555!important;}
+    .preview-table td{padding:4pt!important;border:1px solid #777!important;color:#000!important;}
+  }
+
+    /* STATUS */
+
+    .status{
+
+      display:none;
+
+      background:#0f172a;
+
+      color:white;
+
+      border-radius:8px;
+
+      padding:8px 10px;
+
+      font-size:11px;
+
+      margin-bottom:8px;
+    }
+
+    .status.show{
+
+      display:block;
+    }
+
+    .status.error{
+
+      background:#fee2e2;
+
+      color:#991b1b;
+    }
+
+    .status.success{
+
+      background:#dcfce7;
+
+      color:#166534;
+    }
+
+
+    /* LOADING */
+
+    .loading{
+
+      position:fixed;
+
+      inset:0;
+
+      background:
+        rgba(15,23,42,.35);
+
+      display:none;
+
+      align-items:center;
+
+      justify-content:center;
+
+      z-index:9999;
+    }
+
+    .loading.show{
+
+      display:flex;
+    }
+
+    .loading-box{
+
+      background:white;
+
+      padding:16px 20px;
+
+      border-radius:12px;
+
+      font-size:13px;
+
+      font-weight:700;
+
+      box-shadow:
+        0 5px 25px rgba(0,0,0,.2);
+    }
+
+
+    /* MOBILE */
+
+    @media(max-width:600px){
+
+      .app{
+
+        padding:7px;
+      }
+
+      .header{
+
+        padding:10px 11px;
+
+        margin-bottom:7px;
+      }
+
+      .header-title{
+
+        font-size:16px;
+      }
+
+      .columns{
+
+        grid-template-columns:
+          1fr 1fr;
+
+        gap:6px;
+      }
+
+      .panel-header{
+
+        padding:7px 6px;
+      }
+
+      .panel-title{
+
+        font-size:10px;
+      }
+
+      .panel-count{
+
+        font-size:9px;
+
+        padding:2px 5px;
+      }
+
+      .panel-body{
+
+        padding:4px;
+      }
+
+      .family{
+
+        margin-bottom:5px;
+      }
+
+      .family-header{
+
+        padding:5px;
+      }
+
+      .family-title{
+
+        font-size:10px;
+      }
+
+      .family-meta{
+
+        font-size:8px;
+      }
+
+      .member{
+
+        padding:6px 3px;
+
+        gap:4px;
+      }
+
+      .member-check{
+
+        width:16px;
+
+        height:16px;
+
+        flex-basis:16px;
+      }
+
+      .member-name{
+
+        font-size:10px;
+      }
+
+      .member-reg{
+
+        font-size:8px;
+      }
+
+      .badge{
+
+        font-size:7px;
+
+        padding:2px 3px;
+      }
+
+      .selected-name{
+
+        font-size:10px;
+      }
+
+      .selected-job{
+
+        font-size:8px;
+
+        font-weight:800;
+      }
+
+      .selected-sl{
+
+        font-size:9px;
+
+        flex-basis:17px;
+      }
+
+      .selected-status .badge{
+
+        font-size:6.5px;
+      }
+
+      .remove-btn{
+
+        width:19px;
+
+        height:19px;
+
+        flex-basis:19px;
+
+        font-size:11px;
+      }
+
+      .action-bar button{
+
+        font-size:10px;
+
+        padding:6px 7px;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<!-- LOADING -->
+
+<div
+  class="loading"
+  id="loading">
+
+  <div
+    class="loading-box"
+    id="loadingText">
+
+    Loading...
+
+  </div>
+
+</div>
+
+
+
+<div class="app">
+
+
+  <!-- HEADER -->
+
+  <div class="header">
+
+    <div class="header-title">
+
+      📋 G RAM-G 4A/Demand List Builder
+
+    </div>
+
+    <div class="header-sub">
+
+      শ্রমিক নির্বাচন, তালিকা প্রস্তুতি ও ডিমান্ড ব্যবস্থাপনা
+
+    </div>
+
+  </div>
+
+
+
+  <!-- LOGIN -->
+
+  <div id="loginView">
+
+
+    <div class="login-box">
+
+
+      <div class="login-title">
+
+        🔐 User Login
+
+      </div>
+
+
+      <div class="field">
+
+        <div class="field-label">
+
+          Username
+
+        </div>
+
+
+        <input
+          id="username"
+          type="text"
+          placeholder="Username"
+          autocomplete="username">
+
+      </div>
+
+
+      <div class="field">
+
+        <div class="field-label">
+
+          PIN
+
+        </div>
+
+
+        <input
+          id="pin"
+          type="password"
+          inputmode="numeric"
+          placeholder="PIN"
+          autocomplete="current-password">
+
+      </div>
+
+
+      <button
+        class="btn-primary"
+        style="width:100%;"
+        onclick="login()">
+
+        Login
+
+      </button>
+
+
+      <div
+        id="loginMessage"
+        class="hint"
+        style="margin-top:9px;">
+
+      </div>
+
+      <div class="login-branding" style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #e2e8f0;">
+        <div style="font-size:12px;color:#475569;">Developed &amp; Maintained by</div>
+        <div style="font-size:14px;font-weight:800;color:#0f172a;margin-top:3px;">Koushik Sarkar (VLE)</div>
+        <button class="btn-light btn-small" style="margin-top:10px;" onclick="openUserGuide()">❔ User Guide &amp; Help</button>
+      </div>
+
+      <div id="userGuideModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:9999;padding:12px;overflow:auto;">
+        <div style="max-width:720px;margin:10px auto;background:white;border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;background:white;padding-bottom:10px;border-bottom:1px solid #e2e8f0;">
+            <div><div style="font-size:18px;font-weight:800;">📖 User Guide</div><div style="font-size:11px;color:#64748b;margin-top:2px;">G RAM-G 4A/Demand List Builder</div></div>
+            <button class="btn-light btn-small" onclick="closeUserGuide()">✕</button>
+          </div>
+          <div style="font-size:13px;line-height:1.55;color:#334155;padding-top:10px;">
+            <h3>১. Login</h3><p>Username ও PIN লিখে Login করুন। Login করলে আপনার নির্ধারিত GP স্বয়ংক্রিয়ভাবে লোড হবে।</p>
+            <h3>২. Village নির্বাচন</h3><p>Village নির্বাচন করলে সংশ্লিষ্ট Job Card ও worker list দেখা যাবে।</p>
+            <h3>৩. Worker Search</h3><p>Job Card নম্বর, Village/Household নম্বর বা একাধিক নম্বর একসঙ্গে Search করা যাবে। Space, comma, semicolon বা নতুন লাইনে একাধিক নম্বর দিতে পারবেন।</p>
+            <h3>৪. Worker নির্বাচন</h3><p>eKYC এবং ABPS দুটোই YES থাকা worker নির্বাচন করুন। ☑️ করে Selected List-এ যোগ করুন এবং ❌ দিয়ে ভুল selection বাদ দিন।</p>
+            <h3>৫. Auto Save</h3><p>Worker select/remove করলে তালিকা automatically save হয়। Logout করলেও saved list মুছে যাবে না; আবার Login করলে ফিরে পাবেন।</p>
+            <h3>৬. Final Preview</h3><p>Final Preview-তে Job Card No, Applicant Name, eKYC, ABPS, Account No এবং IFSC যাচাই করুন। Account না থাকলে Missing Account সতর্কতা দেখাবে।</p>
+            <h3>৭. Excel Download</h3><p>Final list থেকে প্রয়োজনীয় worker information-সহ Excel download করুন।</p>
+            <h3>৮. PDF Download</h3><p>Download PDF চাপলে সরাসরি A4 PDF তৈরি হবে। একাধিক page হলে table header প্রতিটি page-এ থাকবে।</p>
+            <h3>৯. Edit List</h3><p>Final Preview থেকে Edit List ব্যবহার করে আবার worker যোগ বা বাদ দিতে পারবেন।</p>
+            <h3>১০. Clear Selected</h3><p>পুরো Selected List মুছতে Clear Selected ব্যবহার করুন। এতে saved selection-ও মুছে যাবে।</p>
+            <h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
+            <h3>১২. Help &amp; Support</h3><p>সমস্যা হলে প্রথমে এই User Guide দেখুন। প্রয়োজন হলে administrator/VLE-এর সঙ্গে যোগাযোগ করুন।</p>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+  </div>
+
+
+
+  <!-- MAIN -->
+
+  <div
+    id="mainView"
+    style="display:none;">
+
+
+    <!-- USER -->
+
+    <div class="user-bar">
+
+
+      <div class="user-info">
+
+
+        <div
+          class="user-name"
+          id="userName">
+
+        </div>
+
+
+        <div
+          class="user-gp"
+          id="userGp">
+
+        </div>
+
+
+      </div>
+
+
+      <button
+        class="btn-light btn-small"
+        onclick="logout()">
+
+        Logout
+
+      </button>
+
+
+    </div>
+
+
+
+    <!-- STATUS -->
+
+    <div
+      id="status"
+      class="status">
+
+    </div>
+
+
+
+    <!-- CONTROL -->
+
+    <div class="control-box">
+
+
+      <div class="field-label">
+
+        Village
+
+      </div>
+
+
+      <select
+        id="villageSelect"
+        onchange="villageChanged()">
+
+        <option value="">
+
+          Select Village
+
+        </option>
+
+      </select>
+
+
+
+      <div class="search-row">
+
+
+        <input
+          id="searchInput"
+          class="search-input"
+          type="text"
+          placeholder="Job Card No: 11 12 15 / 001/011"
+          oninput="searchInputChanged()"
+          onkeydown="searchKey(event)">
+
+
+        <button
+          class="btn-primary"
+          onclick="searchBeneficiary()">
+
+          Search
+
+        </button>
+
+
+      </div>
+
+
+
+      <div class="hint">
+
+        Example:
+        <b>11 12 15</b>
+        |
+        <b>001/011</b>
+        |
+        <b>1/10</b>
+        |
+        Full Job Card No
+
+      </div>
+
+
+    </div>
+
+
+
+    <!-- ACTION -->
+
+    <div class="action-bar">
+
+
+      <button
+        class="btn-light btn-small"
+        onclick="selectAllCurrent()">
+
+        ☑ Select All
+
+      </button>
+
+
+      <button
+        class="btn-light btn-small"
+        onclick="selectEkycAbps()">
+
+        ✓ eKYC + ABPS
+
+      </button>
+
+
+      <button
+        class="btn-danger btn-small"
+        onclick="clearSelected()">
+
+        Clear Selected
+
+      </button>
+
+
+      <button
+        class="btn-success btn-small"
+        onclick="openFinalPreview()">
+
+        👀 Preview Final List
+
+      </button>
+
+
+    </div>
+
+
+
+    <!-- TWO COLUMNS -->
+
+    <div class="columns">
+
+
+      <!-- SEARCH -->
+
+      <div class="panel">
+
+
+        <div class="panel-header">
+
+
+          <div class="panel-title">
+
+            🔎 Search Beneficiary
+
+          </div>
+
+
+          <div
+            class="panel-count"
+            id="searchCount">
+
+            0
+
+          </div>
+
+
+        </div>
+
+
+        <div
+          class="panel-body"
+          id="searchResults">
+
+
+          <div class="selected-empty">
+
+            Job Card search করুন।
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+
+      <!-- SELECTED -->
+
+      <div class="panel">
+
+
+        <div class="panel-header">
+
+
+          <div class="panel-title">
+
+            ☑ Selected Beneficiary
+
+          </div>
+
+
+          <div
+            class="panel-count"
+            id="selectedCount">
+
+            0
+
+          </div>
+
+
+        </div>
+
+
+        <div class="panel-body">
+
+
+          <div
+            class="selected-scroll"
+            id="selectedResults">
+
+
+            <div class="selected-empty">
+
+              এখনো কোনো worker select করা হয়নি।
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+</div>
+
+
+
+  <!-- FINAL PREVIEW -->
+  <div id="previewOverlay" class="preview-overlay">
+    <div class="preview-top">
+      <div class="preview-top-row">
+        <div><div class="preview-title">📋 Final List Preview</div><div class="preview-sub" id="previewSub">Checking selected workers...</div></div>
+        <button class="btn-light btn-small" onclick="closeFinalPreview()">✕ Close</button>
+      </div>
+      <div class="preview-actions">
+        <button class="btn-light" onclick="closeFinalPreview()">✏ Edit List</button>
+        <button class="btn-light" onclick="downloadFinalPdf()">📄 Download PDF</button>
+        <button class="btn-success" onclick="generateFinalExcel()">📥 Generate Excel</button>
+      </div>
+    </div>
+    <div class="preview-body">
+      <div class="pdf-header-fields">
+        <div class="pdf-title-preview">VB-G RAM G DEMAND LIST</div>
+        <label>Work Name: <input id="workName" type="text" placeholder="Work Name (optional)"></label>
+      </div>
+      <div class="preview-summary" id="previewSummary"></div>
+      <div class="preview-tools">
+        <input id="previewSearch" placeholder="Applicant / Job Card search..." oninput="renderPreviewTable()">
+        <select id="previewVillage" onchange="renderPreviewTable()"><option value="">All Villages</option></select>
+      </div>
+      <div class="preview-table-wrap"><table class="preview-table"><thead><tr><th>SL No</th><th>Job Card No</th><th>Applicant Name</th><th>eKYC</th><th>ABPS</th><th>Account No</th><th>IFSC Code</th></tr></thead><tbody id="previewTableBody"></tbody></table></div>
+    </div>
+  </div>
+
+<script>
+
+
+  /* =====================================================
+     GLOBAL
+  ====================================================== */
+
+  let token = '';
+
+  let currentUser = null;
+
+  let villages = [];
+
+  let families = [];
+
+  let selected = new Map();
+
+
+
+  /* =====================================================
+     LOADING
+  ====================================================== */
+
+  function showLoading(text){
+
+    document
+      .getElementById(
+        'loadingText'
+      )
+      .textContent =
+      text || 'Loading...';
+
+
+    document
+      .getElementById(
+        'loading'
+      )
+      .classList.add(
+        'show'
+      );
+
+  }
+
+
+  function hideLoading(){
+
+    document
+      .getElementById(
+        'loading'
+      )
+      .classList.remove(
+        'show'
+      );
+
+  }
+
+
+
+  /* =====================================================
+     STATUS
+  ====================================================== */
+
+  function showStatus(
+    message,
+    type
+  ){
+
+    const el =
+      document.getElementById(
+        'status'
+      );
+
+
+    el.textContent =
+      message || '';
+
+
+    el.className =
+      'status show';
+
+
+    if(
+      type === 'error'
+    ){
+
+      el.classList.add(
+        'error'
+      );
+
+    }
+
+
+    if(
+      type === 'success'
+    ){
+
+      el.classList.add(
+        'success'
+      );
+
+    }
+
+
+    setTimeout(
+      function(){
+
+        el.classList.remove(
+          'show'
+        );
+
+      },
+      4000
+    );
+
+  }
+
+
+
+  /* =====================================================
+     LOGIN
+  ====================================================== */
+
+  function login(){
+
+    const username =
+      document
+        .getElementById(
+          'username'
+        )
+        .value
+        .trim();
+
+
+    const pin =
+      document
+        .getElementById(
+          'pin'
+        )
+        .value
+        .trim();
+
+
+    if(
+      !username ||
+      !pin
+    ){
+
+      document
+        .getElementById(
+          'loginMessage'
+        )
+        .textContent =
+        'Username এবং PIN দিন।';
+
+      return;
+
+    }
+
+
+    showLoading(
+      'Login হচ্ছে...'
+    );
+
+
+    google.script.run
+
+      .withSuccessHandler(
+        function(res){
+
+          hideLoading();
+
+
+          if(
+            !res ||
+            !res.ok
+          ){
+
+            document
+              .getElementById(
+                'loginMessage'
+              )
+              .textContent =
+
+              res &&
+              res.message
+
+                ? res.message
+
+                : 'Login failed';
+
+            return;
+
+          }
+
+
+          token =
+            res.token;
+
+
+          currentUser =
+            res.user;
+
+
+          document
+            .getElementById(
+              'loginView'
+            )
+            .style.display =
+            'none';
+
+
+          document
+            .getElementById(
+              'mainView'
+            )
+            .style.display =
+            'block';
+
+
+          document
+            .getElementById(
+              'userName'
+            )
+            .textContent =
+
+            currentUser.name ||
+            currentUser.username;
+
+
+          document
+            .getElementById(
+              'userGp'
+            )
+            .textContent =
+
+            'GP: ' +
+            currentUser.gp;
+
+
+          loadVillages();
+          loadSavedSelection();
+
+        }
+      )
+
+
+      .withFailureHandler(
+        function(err){
+
+          hideLoading();
+
+
+          document
+            .getElementById(
+              'loginMessage'
+            )
+            .textContent =
+
+            err.message ||
+            String(err);
+
+        }
+      )
+
+
+      .login(
+        username,
+        pin
+      );
+
+  }
+
+
+
+  /* =====================================================
+     LOGOUT
+  ====================================================== */
+
+  function logout(){
+
+    if(saveTimer){
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+
+    token = '';
+
+    currentUser = null;
+
+    villages = [];
+
+    families = [];
+
+    selected.clear();
+    clearSearchResults();
+    renderSelected();
+
+
+    document
+      .getElementById(
+        'mainView'
+      )
+      .style.display =
+      'none';
+
+
+    document
+      .getElementById(
+        'loginView'
+      )
+      .style.display =
+      'block';
+
+
+    document
+      .getElementById(
+        'username'
+      )
+      .value = '';
+
+
+    document
+      .getElementById(
+        'pin'
+      )
+      .value = '';
+
+  }
+
+
+
+  /* =====================================================
+     LOAD VILLAGES
+  ====================================================== */
+
+  function loadVillages(){
+
+    showLoading(
+      'Village list loading...'
+    );
+
+
+    google.script.run
+
+      .withSuccessHandler(
+        function(res){
+
+          hideLoading();
+
+
+          villages =
+            res || [];
+
+
+          const select =
+            document
+              .getElementById(
+                'villageSelect'
+              );
+
+
+          select.innerHTML =
+            '<option value="">' +
+            'Select Village' +
+            '</option>';
+
+
+          villages.forEach(
+            function(v){
+
+              const option =
+                document
+                  .createElement(
+                    'option'
+                  );
+
+
+              option.value =
+                String(v.v);
+
+
+              option.textContent =
+
+                String(v.v)
+                  .padStart(
+                    3,
+                    '0'
+                  ) +
+
+                ' — ' +
+
+                v.families +
+
+                ' families';
+
+
+              select.appendChild(
+                option
+              );
+
+            }
+          );
+
+        }
+      )
+
+
+      .withFailureHandler(
+        function(err){
+
+          hideLoading();
+
+
+          showStatus(
+            err.message ||
+            String(err),
+
+            'error'
+          );
+
+        }
+      )
+
+
+      .getVillages(
+        token
+      );
+
+  }
+
+
+
+  /* =====================================================
+     VILLAGE CHANGE
+  ====================================================== */
+
+  function villageChanged(){
+    families = [];
+    document.getElementById('searchInput').value = '';
+    clearSearchResults();
+    // IMPORTANT: Village change never clears Selected Beneficiary.
+    showStatus('Village changed. Selected list রাখা হয়েছে।','success');
+  }
+
+
+
+  /* =====================================================
+     SEARCH INPUT
+  ====================================================== */
+
+  function searchInputChanged(){
+
+    const value =
+      document
+        .getElementById(
+          'searchInput'
+        )
+        .value
+        .trim();
+
+
+    if(
+      value === ''
+    ){
+
+      clearSearchResults();
+
+    }
+
+  }
+
+
+  function clearSearchResults(){
+
+    families = [];
+
+
+    document
+      .getElementById(
+        'searchResults'
+      )
+      .innerHTML =
+
+      '<div class="selected-empty">' +
+
+      'Job Card search করুন।' +
+
+      '</div>';
+
+
+    document
+      .getElementById(
+        'searchCount'
+      )
+      .textContent =
+      '0';
+
+  }
+
+
+
+  /* =====================================================
+     ENTER
+  ====================================================== */
+
+  function searchKey(event){
+
+    if(
+      event.key ===
+      'Enter'
+    ){
+
+      event.preventDefault();
+
+      searchBeneficiary();
+
+    }
+
+  }
+
+
+
+  /* =====================================================
+     PARSE SEARCH
+  ====================================================== */
+
+  function parseSearchInput(text){
+    text=String(text||'').trim();
+    if(!text) return [];
+    text=text.replace(/Tab/gi,' ').replace(/,/g,' ').replace(/;/g,' ').replace(/\r?\n/g,' ');
+    const tokens=text.split(/\s+/).filter(Boolean);
+    const result=[];
+    const selectedVillage=Number(document.getElementById('villageSelect').value);
+
+    tokens.forEach(function(token){
+      let m=token.match(/^WB-\d{2}-\d{3}-(\d{3})-(\d{3})\/(\d+)$/i);
+      if(m){ result.push({v:Number(m[2]),h:Number(m[3])}); return; }
+      m=token.match(/^(\d+)\/(\d+)$/);
+      if(m){ result.push({v:Number(m[1]),h:Number(m[2])}); return; }
+      m=token.match(/^(\d+)-(\d+)$/);
+      if(m && selectedVillage){
+        const a=Number(m[1]), b=Number(m[2]), step=a<=b?1:-1;
+        for(let n=a;;n+=step){result.push({v:selectedVillage,h:n}); if(n===b)break;}
+        return;
+      }
+      if(/^\d+$/.test(token) && selectedVillage){ result.push({v:selectedVillage,h:Number(token)}); }
+    });
+    const unique={};
+    result.forEach(x=>unique[x.v+'/'+x.h]=x);
+    return Object.keys(unique).map(k=>unique[k]);
+  }
+
+
+
+  /* =====================================================
+     SEARCH
+  ====================================================== */
+
+  function searchBeneficiary(){
+
+    const village =
+      document
+        .getElementById(
+          'villageSelect'
+        )
+        .value;
+
+
+    if(!village){
+
+      showStatus(
+        'আগে Village select করুন।',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    const text =
+      document
+        .getElementById(
+          'searchInput'
+        )
+        .value
+        .trim();
+
+
+    if(!text){
+
+      clearSearchResults();
+
+      return;
+
+    }
+
+
+    const entries =
+      parseSearchInput(
+        text
+      );
+
+
+    if(
+      !entries.length
+    ){
+
+      showStatus(
+        'Valid Job Card পাওয়া যায়নি।',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    showLoading(
+      'Beneficiary search হচ্ছে...'
+    );
+
+
+    google.script.run
+
+      .withSuccessHandler(
+        function(res){
+
+          hideLoading();
+
+
+          families =
+            res || [];
+
+
+          renderSearchResults();
+
+
+          showStatus(
+
+            families.length +
+            'টি Job Card পাওয়া গেছে।',
+
+            'success'
+
+          );
+
+        }
+      )
+
+
+      .withFailureHandler(
+        function(err){
+
+          hideLoading();
+
+
+          showStatus(
+
+            err.message ||
+            String(err),
+
+            'error'
+
+          );
+
+        }
+      )
+
+
+      .getFamilies(
+        token,
+        entries
+      );
+
+  }
+
+
+
+  /* =====================================================
+     MAKE SELECTED MEMBER
+  ====================================================== */
+
+  function makeSelectedMember(
+    member,
+    family
+  ){
+
+    return {
+
+      id:
+        member.id,
+
+      jobCard:
+        member.jobCard,
+
+      applicantNo:
+        member.applicantNo,
+
+      name:
+        member.name,
+
+      ekyc:
+        !!member.ekyc,
+
+      abps:
+        !!member.abps,
+
+      aadhaarSeeded:
+        !!member.aadhaarSeeded,
+
+      authenticationDone:
+        !!member.authenticationDone
+
+    };
+
+  }
+
+
+
+  /* =====================================================
+     SEARCH RESULTS
+  ====================================================== */
+
+  function renderSearchResults(){
+
+    const container =
+      document
+        .getElementById(
+          'searchResults'
+        );
+
+
+    container.innerHTML = '';
+
+
+    let totalMembers = 0;
+
+
+    if(
+      !families.length
+    ){
+
+      container.innerHTML =
+
+        '<div class="selected-empty">' +
+
+        'কোনো Job Card পাওয়া যায়নি।' +
+
+        '</div>';
+
+
+      document
+        .getElementById(
+          'searchCount'
+        )
+        .textContent =
+        '0';
+
+
+      return;
+
+    }
+
+
+    families.forEach(
+      function(family){
+
+        totalMembers +=
+          family.members.length;
+
+
+        const familyBox =
+          document
+            .createElement(
+              'div'
+            );
+
+
+        familyBox.className =
+          'family';
+
+
+        const familyHeader =
+          document
+            .createElement(
+              'div'
+            );
+
+
+        familyHeader.className =
+          'family-header';
+
+
+        familyHeader.innerHTML =
+
+          '<div class="family-title">' +
+
+          escapeHtml(
+            family.jobCard
+          ) +
+
+          '</div>' +
+
+
+          '<div class="family-meta">' +
+
+          family.members.length +
+
+          ' members' +
+
+          '</div>';
+
+
+        familyBox.appendChild(
+          familyHeader
+        );
+
+
+
+        family.members.forEach(
+          function(member){
+
+            const row =
+              document
+                .createElement(
+                  'div'
+                );
+
+
+            row.className =
+              'member';
+
+
+            const checked =
+              selected.has(
+                member.id
+              );
+
+
+            row.innerHTML =
+
+              '<input ' +
+
+              'type="checkbox" ' +
+
+              'class="member-check" ' +
+
+              'data-id="' +
+
+              escapeAttr(
+                member.id
+              ) +
+
+              '" ' +
+
+              (
+                checked
+                  ? 'checked'
+                  : ''
+              ) +
+
+              (
+                (member.ekyc && member.abps)
+                  ? ''
+                  : 'disabled title="eKYC এবং ABPS দুটোই YES না হলে select করা যাবে না"'
+              ) +
+
+              '>' +
+
+
+              '<div class="member-main">' +
+
+              '<div class="member-name">' +
+
+              escapeHtml(
+                member.name
+              ) +
+
+              '</div>' +
+
+
+              '<div class="member-reg">' +
+
+              escapeHtml(
+                member.jobCard
+              ) +
+
+              ' • App ' +
+
+              escapeHtml(
+                member.applicantNo
+              ) +
+
+              '</div>' +
+
+              '</div>' +
+
+
+              '<div class="status-wrap">' +
+
+              '<span class="badge ' +
+
+              (
+                member.ekyc
+                  ? 'badge-yes'
+                  : 'badge-no'
+              ) +
+
+              '">' +
+
+              'eKYC' +
+
+              '</span>' +
+
+
+              '<span class="badge ' +
+
+              (
+                member.abps
+                  ? 'badge-yes'
+                  : 'badge-no'
+              ) +
+
+              '">' +
+
+              'ABPS' +
+
+              '</span>' +
+
+              '</div>';
+
+
+            const checkbox =
+              row.querySelector(
+                '.member-check'
+              );
+
+
+            checkbox.addEventListener(
+              'change',
+              function(){
+
+                toggleMember(
+
+                  member,
+
+                  family,
+
+                  checkbox.checked
+
+                );
+
+              }
+            );
+
+
+            familyBox.appendChild(
+              row
+            );
+
+          }
+        );
+
+
+        container.appendChild(
+          familyBox
+        );
+
+      }
+    );
+
+
+    document
+      .getElementById(
+        'searchCount'
+      )
+      .textContent =
+      totalMembers;
+
+
+    updateFamilyHeaders();
+
+  }
+
+
+
+  /* =====================================================
+     TOGGLE
+  ====================================================== */
+
+  function toggleMember(
+    member,
+    family,
+    checked
+  ){
+
+    if(checked){
+
+      selected.set(
+
+        member.id,
+
+        makeSelectedMember(
+          member,
+          family
+        )
+
+      );
+
+    }else{
+
+      selected.delete(
+        member.id
+      );
+
+    }
+
+
+    /*
+      Search result থাকবে।
+
+      শুধু Selected update হবে।
+    */
+
+    renderSelected();
+
+    updateFamilyHeaders();
+
+    scheduleSaveSelection();
+
+  }
+
+
+
+  /* =====================================================
+     FAMILY HEADER
+  ====================================================== */
+
+  function updateFamilyHeaders(){
+
+    const boxes =
+      document.querySelectorAll(
+        '#searchResults .family'
+      );
+
+
+    boxes.forEach(
+      function(box,index){
+
+        const family =
+          families[index];
+
+
+        if(!family){
+
+          return;
+
+        }
+
+
+        let count = 0;
+
+
+        family.members.forEach(
+          function(member){
+
+            if(
+              selected.has(
+                member.id
+              )
+            ){
+
+              count++;
+
+            }
+
+          }
+        );
+
+
+        const meta =
+          box.querySelector(
+            '.family-meta'
+          );
+
+
+        if(meta){
+
+          meta.textContent =
+
+            family.members.length +
+
+            ' members • ' +
+
+            count +
+
+            ' ticked';
+
+        }
+
+      }
+    );
+
+  }
+
+
+
+  /* =====================================================
+     SELECTED
+  ====================================================== */
+
+  function shortJobCard(jc){
+    const p=parseJobCardClient(jc);
+    if(p){
+      return String(p.v).padStart(3,'0')+'/'+String(p.h).padStart(3,'0');
+    }
+    return String(jc||'');
+  }
+
+  function renderSelected(){
+    const container=document.getElementById('selectedResults');
+    container.innerHTML='';
+    document.getElementById('selectedCount').textContent=selected.size;
+    if(!selected.size){container.innerHTML='<div class="selected-empty">এখনো কোনো worker select করা হয়নি।</div>';return;}
+    let sl=1;
+    selected.forEach(function(item){
+      const row=document.createElement('div'); row.className='selected-item';
+      row.innerHTML='<div class="selected-sl">'+sl+'</div>'+
+        '<div class="selected-main">'+
+        '<div class="selected-job">'+escapeHtml(shortJobCard(item.jobCard))+'</div>'+
+        '<div class="selected-name">'+escapeHtml(item.name)+'</div>'+
+        '</div>'+
+        '<button class="remove-btn" title="Remove">✕</button>';
+      row.querySelector('.remove-btn').addEventListener('click',function(){selected.delete(item.id);syncCurrentCheckboxes();updateFamilyHeaders();renderSelected();scheduleSaveSelection();});
+      container.appendChild(row); sl++;
+    });
+  }
+
+
+
+  /* =====================================================
+     SYNC CHECKBOX
+  ====================================================== */
+
+  function syncCurrentCheckboxes(){
+
+    document
+      .querySelectorAll(
+        '#searchResults .member-check'
+      )
+      .forEach(
+        function(cb){
+
+          const id =
+            cb.getAttribute(
+              'data-id'
+            );
+
+
+          cb.checked =
+            selected.has(
+              id
+            );
+
+        }
+      );
+
+  }
+
+
+
+  /* =====================================================
+     SELECT ALL
+  ====================================================== */
+
+  function selectAllCurrent(){
+
+    if(
+      !families.length
+    ){
+
+      showStatus(
+        'আগে Job Card search করুন।',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    families.forEach(
+      function(family){
+
+        family.members.forEach(
+          function(member){
+
+            if(!member.ekyc || !member.abps) return;
+
+            selected.set(
+
+              member.id,
+
+              makeSelectedMember(
+                member,
+                family
+              )
+
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    renderSearchResults();
+
+    renderSelected();
+
+    scheduleSaveSelection();
+
+    showStatus(
+      'Current search-এর সব worker selected হয়েছে।',
+      'success'
+    );
+
+  }
+
+
+
+  /* =====================================================
+     SELECT eKYC + ABPS
+  ====================================================== */
+
+  function selectEkycAbps(){
+
+    if(
+      !families.length
+    ){
+
+      showStatus(
+        'আগে Job Card search করুন।',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    let count = 0;
+
+
+    families.forEach(
+      function(family){
+
+        family.members.forEach(
+          function(member){
+
+            if(
+              member.ekyc &&
+              member.abps
+            ){
+
+              selected.set(
+
+                member.id,
+
+                makeSelectedMember(
+                  member,
+                  family
+                )
+
+              );
+
+
+              count++;
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+
+    renderSearchResults();
+
+    renderSelected();
+
+    scheduleSaveSelection();
+
+    showStatus(
+
+      count +
+
+      ' জন eKYC + ABPS worker selected হয়েছে।',
+
+      'success'
+
+    );
+
+  }
+
+
+
+  /* =====================================================
+     CLEAR SELECTED
+  ====================================================== */
+
+  function clearSelected(){
+
+    if(
+      selected.size ===
+      0
+    ){
+
+      return;
+
+    }
+
+
+    const ok =
+      confirm(
+        'সব selected worker remove করবেন?'
+      );
+
+
+    if(!ok){
+
+      return;
+
+    }
+
+
+    selected.clear();
+
+
+    syncCurrentCheckboxes();
+
+    updateFamilyHeaders();
+
+    renderSelected();
+
+    localStorage.removeItem(selectionStorageKey());
+    google.script.run
+      .withSuccessHandler(function(){
+        showStatus('Selected list clear হয়েছে।','success');
+      })
+      .withFailureHandler(function(err){
+        showStatus('Local list clear হয়েছে, server list clear হয়নি: '+(err.message||String(err)),'error');
+      })
+      .clearSavedSelection(token);
+
+  }
+
+
+
+  /* =====================================================
+     DOWNLOAD EXCEL
+  ====================================================== */
+
+  let previewRows=[];
+  let accountMap={};
+  let saveTimer=null;
+
+  function selectionStorageKey(){
+    return currentUser
+      ? 'GramG_List_'+currentUser.username+'_'+currentUser.gp
+      : 'GramG_List_unknown';
+  }
+
+  function localSaveSelection(){
+    if(!currentUser) return;
+    try{
+      localStorage.setItem(selectionStorageKey(),JSON.stringify(Array.from(selected.values())));
+    }catch(e){}
+  }
+
+  function scheduleSaveSelection(){
+    if(!currentUser || !token) return;
+    localSaveSelection();
+    if(saveTimer) clearTimeout(saveTimer);
+    showSavedState('Saving...');
+    saveTimer=setTimeout(function(){
+      const activeToken=token;
+      const arr=Array.from(selected.values());
+      google.script.run
+        .withSuccessHandler(function(res){showSavedState(res&&res.ok?'Saved ✓':'Local saved');})
+        .withFailureHandler(function(){showSavedState('Local saved');})
+        .saveSelection(activeToken,arr);
+    },1200);
+  }
+
+  function showSavedState(text){
+    const sub=document.getElementById('previewSub');
+    if(sub && document.getElementById('previewOverlay').classList.contains('show')) sub.textContent=text;
+  }
+
+  function loadSavedSelection(){
+    if(!token || !currentUser) return;
+    google.script.run
+      .withSuccessHandler(function(serverItems){
+        let local=[];
+        try{local=JSON.parse(localStorage.getItem(selectionStorageKey())||'[]');if(!Array.isArray(local))local=[];}catch(e){local=[];}
+        // Server-side SELECTIONS is primary; LocalStorage is fallback only.
+        const source=(Array.isArray(serverItems)&&serverItems.length)?serverItems:local;
+        selected.clear();
+        (source||[]).forEach(function(item){if(item&&item.id)selected.set(item.id,item);});
+        renderSelected();
+        if((!serverItems||!serverItems.length)&&local.length) scheduleSaveSelection();
+        if(selected.size) showStatus(selected.size+' জন saved worker restore হয়েছে।','success');
+      })
+      .withFailureHandler(function(){
+        try{
+          const local=JSON.parse(localStorage.getItem(selectionStorageKey())||'[]');
+          selected.clear();
+          (Array.isArray(local)?local:[]).forEach(function(item){if(item&&item.id)selected.set(item.id,item);});
+          renderSelected();
+          if(selected.size) showStatus(selected.size+' জন local saved worker restore হয়েছে।','success');
+        }catch(e){}
+      })
+      .getSavedWorkers(token);
+  }
+
+  function openFinalPreview(){
+    if(!selected.size){showStatus('কোনো worker selected হয়নি।','error');return;}
+    showLoading('Final list প্রস্তুত হচ্ছে...');
+    const ids=Array.from(selected.keys());
+    google.script.run.withSuccessHandler(function(accounts){
+      hideLoading(); accountMap=accounts||{}; previewRows=Array.from(selected.values());
+      const vs={}; previewRows.forEach(x=>{const p=parseJobCardClient(x.jobCard);if(p)vs[p.v]=true;});
+      const sel=document.getElementById('previewVillage'); sel.innerHTML='<option value="">All Villages</option>';
+      Object.keys(vs).sort((a,b)=>Number(a)-Number(b)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent='Village '+String(v).padStart(3,'0');sel.appendChild(o);});
+      document.getElementById('previewSearch').value='';
+      document.getElementById('previewOverlay').classList.add('show');
+      document.body.style.overflow='hidden'; renderPreviewTable();
+    }).withFailureHandler(function(err){hideLoading();showStatus(err.message||String(err),'error');}).getAccounts(token,ids);
+  }
+
+  function closeFinalPreview(){document.getElementById('previewOverlay').classList.remove('show');document.body.style.overflow='';}
+
+  function parseJobCardClient(jc){const m=String(jc||'').match(/^WB-\d{2}-\d{3}-(\d{3})-(\d{3})\/(\d+)$/i);return m?{gp:m[1],v:Number(m[2]),h:Number(m[3]),no:m[4]}:null;}
+
+  function renderPreviewTable(){
+    const q=document.getElementById('previewSearch').value.trim().toLowerCase(), vf=document.getElementById('previewVillage').value;
+    const body=document.getElementById('previewTableBody'); body.innerHTML=''; let sl=1,shown=0,missing=0;
+    previewRows.forEach(item=>{
+      const p=parseJobCardClient(item.jobCard), key=String(item.jobCard).toUpperCase()+'|'+String(item.applicantNo);
+      const acc=accountMap[key]||{}; const hay=(item.name+' '+item.jobCard+' '+item.applicantNo).toLowerCase();
+      if(q&&!hay.includes(q))return; if(vf&&String(p?p.v:'')!==String(vf))return;
+      shown++; if(!acc.accountNo||!acc.ifsc)missing++;
+      const tr=document.createElement('tr'); if(!acc.accountNo||!acc.ifsc)tr.className='missing-account';
+      tr.innerHTML='<td>'+sl+++'</td><td>'+escapeHtml(item.jobCard)+'</td><td>'+escapeHtml(item.name)+'</td><td>'+badgeText(item.ekyc)+'</td><td>'+badgeText(item.abps)+'</td><td>'+escapeHtml(acc.accountNo||'⚠ Missing')+'</td><td>'+escapeHtml(acc.ifsc||'⚠ Missing')+'</td>'; body.appendChild(tr);
+    });
+    document.getElementById('previewSummary').innerHTML='<b>Total Selected:</b> '+previewRows.length+' &nbsp; | &nbsp; <b>Showing:</b> '+shown+' &nbsp; | &nbsp; <b>Missing Account:</b> '+missing;
+    document.getElementById('previewSub').textContent=currentUser.name+' • '+currentUser.gp+' • '+previewRows.length+' workers';
+  }
+
+  function badgeText(v){return v?'✓ YES':'✗ NO';}
+
+  function downloadFinalPdf(){
+    if(!previewRows.length)return;
+
+    const workName=(document.getElementById('workName')?.value||'').trim();
+    const q=(document.getElementById('previewSearch')?.value||'').trim().toLowerCase();
+    const vf=document.getElementById('previewVillage')?.value||'';
+    const rows=[];
+    let sl=1;
+
+    previewRows.forEach(item=>{
+      const p=parseJobCardClient(item.jobCard);
+      const key=String(item.jobCard).toUpperCase()+'|'+String(item.applicantNo);
+      const a=accountMap[key]||{};
+      const hay=(item.name+' '+item.jobCard+' '+item.applicantNo).toLowerCase();
+      if(q&&!hay.includes(q))return;
+      if(vf&&String(p?p.v:'')!==String(vf))return;
+      rows.push([sl++,String(item.jobCard||''),String(item.name||''),item.ekyc?'YES':'NO',item.abps?'YES':'NO',String(a.accountNo||''),String(a.ifsc||'')]);
+    });
+
+    if(!rows.length){showStatus('PDF বানানোর জন্য কোনো worker পাওয়া যায়নি।','error');return;}
+
+    try{
+      if(!window.jspdf||!window.jspdf.jsPDF){showStatus('PDF library load হয়নি। Internet connection check করুন।','error');return;}
+      const {jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+      const pageWidth=doc.internal.pageSize.getWidth();
+      const margin=10;
+
+      doc.setTextColor(0,0,0);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(15);
+      doc.text('VB-G RAM G DEMAND LIST',pageWidth/2,16,{align:'center'});
+      doc.setFontSize(10.5);
+      doc.text('Work Name:',margin,27);
+      if(workName){doc.setFont('helvetica','normal');doc.text(workName,margin+25,27);}
+
+      doc.autoTable({
+        startY:34,
+        margin:{left:margin,right:margin,top:10,bottom:10},
+        head:[['SL No','Job Card No','Applicant Name','eKYC','ABPS','Account No','IFSC Code']],
+        body:rows,
+        theme:'grid',
+        tableWidth:'auto',
+        styles:{font:'helvetica',fontSize:8.2,textColor:[0,0,0],lineColor:[80,80,80],lineWidth:0.25,cellPadding:2,valign:'middle',overflow:'linebreak'},
+        headStyles:{fillColor:[229,231,235],textColor:[0,0,0],fontStyle:'bold',halign:'center',valign:'middle'},
+        columnStyles:{0:{cellWidth:13,halign:'center'},1:{cellWidth:43},2:{cellWidth:43},3:{cellWidth:16,halign:'center'},4:{cellWidth:16,halign:'center'},5:{cellWidth:28},6:{cellWidth:24}},
+        rowPageBreak:'avoid'
+      });
+
+      let gp=(currentUser&&currentUser.gp)||'GP';
+      gp=gp.replace(/[^a-zA-Z0-9_-]+/g,'_');
+      const date=new Date().toISOString().slice(0,10);
+      doc.save('VB-G_RAM_G_DEMAND_LIST_'+gp+'_'+date+'.pdf');
+      showStatus(rows.length+' জন worker-এর A4 PDF download হয়েছে।','success');
+    }catch(err){
+      console.error(err);
+      showStatus('PDF তৈরি করা যায়নি: '+(err.message||String(err)),'error');
+    }
+  }
+
+  function generateFinalExcel(){
+    if(!previewRows.length)return;
+    const rows=[['SL No','Job Card No','Applicant Name','eKYC','ABPS','Account No','IFSC Code']];
+    const q=(document.getElementById('previewSearch')?.value||'').trim().toLowerCase();
+    const vf=document.getElementById('previewVillage')?.value||'';
+    let sl=1;
+
+    previewRows.forEach(item=>{
+      const p=parseJobCardClient(item.jobCard);
+      const key=String(item.jobCard).toUpperCase()+'|'+String(item.applicantNo);
+      const a=accountMap[key]||{};
+      const hay=(item.name+' '+item.jobCard+' '+item.applicantNo).toLowerCase();
+      if(q&&!hay.includes(q))return;
+      if(vf&&String(p?p.v:'')!==String(vf))return;
+      rows.push([sl++,item.jobCard,item.name,item.ekyc?'YES':'NO',item.abps?'YES':'NO',a.accountNo||'',a.ifsc||'']);
+    });
+
+    // Excel deliberately contains ONLY the list. No title, Work Name or supervision section.
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:8},{wch:25},{wch:28},{wch:10},{wch:10},{wch:20},{wch:17}];
+    const headerCells=['A1','B1','C1','D1','E1','F1','G1'];
+    headerCells.forEach(ref=>{if(ws[ref])ws[ref].s={font:{bold:true},alignment:{horizontal:'center',vertical:'center'},border:{top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}}};});
+    for(let r=1;r<rows.length;r++){
+      for(let c=0;c<7;c++){
+        const ref=XLSX.utils.encode_cell({r,c});
+        if(ws[ref])ws[ref].s={border:{top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}},alignment:{vertical:'center'}};
+      }
+    }
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Final List');
+    let gp=(currentUser&&currentUser.gp)||'GP'; gp=gp.replace(/[^a-zA-Z0-9_-]+/g,'_');
+    const date=new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb,'GramG_'+gp+'_FinalList_'+date+'.xlsx');
+    showStatus((sl-1)+' জন worker-এর Final Excel download হয়েছে।','success');
+  }
+
+  function downloadExcel(){ openFinalPreview(); }
+
+
+
+  /* =====================================================
+     ESCAPE
+  ====================================================== */
+
+  function escapeHtml(
+    value
+  ){
+
+    return String(
+      value == null
+        ? ''
+        : value
+    )
+
+      .replace(
+        /&/g,
+        '&amp;'
+      )
+
+      .replace(
+        /</g,
+        '&lt;'
+      )
+
+      .replace(
+        />/g,
+        '&gt;'
+      )
+
+      .replace(
+        /"/g,
+        '&quot;'
+      )
+
+      .replace(
+        /'/g,
+        '&#039;'
+      );
+
+  }
+
+
+  function escapeAttr(
+    value
+  ){
+
+    return escapeHtml(
+      value
+    );
+
+  }
+
+
+
+  /* =====================================================
+     PIN ENTER
+  ====================================================== */
+
+  document
+    .getElementById(
+      'pin'
+    )
+    .addEventListener(
+      'keydown',
+      function(event){
+
+        if(
+          event.key ===
+          'Enter'
+        ){
+
+          login();
+
+        }
+
+      }
+    );
+
+
+</script>
+
+
+<script>
+function openUserGuide(){document.getElementById('userGuideModal').style.display='block';document.body.style.overflow='hidden';}
+function closeUserGuide(){document.getElementById('userGuideModal').style.display='none';document.body.style.overflow='';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeUserGuide();});
+</script>
+
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./service-worker.js').catch(function(){});
+  });
+}
+</script>
+
+</body>
+
+</html>

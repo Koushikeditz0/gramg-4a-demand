@@ -1,0 +1,11 @@
+{
+  "name": "G RAM-G 4A/Demand List Builder",
+  "short_name": "G RAM-G 4A",
+  "description": "শ্রমিক নির্বাচন, তালিকা প্রস্তুতি ও ডিমান্ড ব্যবস্থাপনা",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "lang": "bn-IN"
+}

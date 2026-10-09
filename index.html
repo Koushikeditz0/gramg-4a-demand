@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="?pwa=manifest">
+  <link rel="manifest" href="./manifest.json">
 
   <meta
     name="viewport"
@@ -1418,6 +1418,47 @@
 
 <script>
 
+  // PWA bridge: emulate google.script.run over the Apps Script Web App API.
+  // Requests are POSTed; results are retrieved using a one-time random request ID.
+  const GRAMG_API_URL = 'https://script.google.com/macros/s/AKfycbyBBbK_qt3zywpw-bipuhsH-0ut3aRr4j4G_6o4zV5BedOl6lFju3v85WrjlvH8uHGd/exec';
+  function gramgApiCall(action, args, onSuccess, onFailure) {
+    const requestId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('r'+Date.now().toString(36)+Math.random().toString(36).slice(2));
+    const payload = JSON.stringify({requestId:requestId, action:action, args:args || []});
+    let finished = false;
+    const fail = (message) => { if (finished) return; finished=true; if (typeof onFailure==='function') onFailure({message:String(message || 'API request failed')}); };
+    const succeed = (value) => { if (finished) return; finished=true; if (typeof onSuccess==='function') onSuccess(value); };
+    fetch(GRAMG_API_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:payload, cache:'no-store'})
+      .catch(err => { fail(err && err.message ? err.message : err); });
+    const started = Date.now();
+    (function poll(){
+      if (finished) return;
+      if (Date.now()-started > 30000) { fail('Backend response পাওয়া যায়নি। Apps Script API update/deploy হয়েছে কি না দেখুন।'); return; }
+      const callbackName = '__gramg_cb_' + requestId.replace(/[^a-zA-Z0-9_]/g,'');
+      const script = document.createElement('script');
+      let settled = false;
+      const cleanup = () => { try { delete window[callbackName]; } catch(e) { window[callbackName]=undefined; } script.remove(); };
+      window[callbackName] = function(result){
+        settled=true; cleanup();
+        if (!result || result.pending) { setTimeout(poll, 450); return; }
+        if (result.ok) succeed(result.data);
+        else fail(result.error || 'Backend error');
+      };
+      script.onerror = function(){ if(settled)return; settled=true; cleanup(); setTimeout(poll,700); };
+      script.src = GRAMG_API_URL + '?api=1&action=poll&requestId=' + encodeURIComponent(requestId) + '&callback=' + callbackName + '&_=' + Date.now();
+      document.head.appendChild(script);
+    })();
+  }
+  // Keep existing UI calls unchanged by providing a google.script.run-compatible shim.
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  Object.defineProperty(window.google.script, 'run', {configurable:true, get:function(){
+    let success = function(){}; let failure = function(){};
+    const runner = {withSuccessHandler:function(fn){success=fn;return runner;}, withFailureHandler:function(fn){failure=fn;return runner;}};
+    ['login','getVillages','getFamilies','clearSavedSelection','saveSelection','getSavedWorkers','getAccounts'].forEach(function(name){
+      runner[name] = function(){ gramgApiCall(name, Array.prototype.slice.call(arguments), success, failure); };
+    });
+    return runner;
+  }});
 
   /* =====================================================
      GLOBAL

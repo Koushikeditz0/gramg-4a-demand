@@ -1434,15 +1434,72 @@
     script.onerror = function() { fail('Apps Script API load হয়নি। URL, deployment access (Anyone) এবং নতুন version deploy হয়েছে কি না পরীক্ষা করুন।'); };
     script.src = url; document.head.appendChild(script);
   }
+  // ---- Large payload helpers (JSONP GET URLs must stay short) ----
+  const GRAMG_CHUNK_CHARS = 3500; // encoded size of the list part of one request
+  function gramgPackChunks(list, maxChars) {
+    const chunks = []; let cur = [], len = 0;
+    list.forEach(function(s) {
+      const l = encodeURIComponent(JSON.stringify(s)).length + 3;
+      if (cur.length && len + l > maxChars) { chunks.push(cur); cur = []; len = 0; }
+      cur.push(s); len += l;
+    });
+    if (cur.length) chunks.push(cur);
+    return chunks;
+  }
+  // Only one save runs at a time; if more arrive meanwhile, only the newest one is kept.
+  let gramgSaveBusy = false, gramgSavePending = null;
+  function gramgSaveSelection(token, items, onSuccess, onFailure) {
+    if (gramgSaveBusy) { gramgSavePending = [token, items, onSuccess, onFailure]; return; }
+    gramgSaveBusy = true;
+    const finish = function(fn, arg) {
+      gramgSaveBusy = false;
+      try { if (typeof fn === 'function') fn(arg); } finally {
+        if (gramgSavePending) { const p = gramgSavePending; gramgSavePending = null; gramgSaveSelection.apply(null, p); }
+      }
+    };
+    const ids = (Array.isArray(items) ? items : []).map(function(x) {
+      return (x && x.jobCard) ? String(x.jobCard) + '|' + String(x.applicantNo || '') : '';
+    }).filter(Boolean);
+    const chunks = gramgPackChunks(ids, GRAMG_CHUNK_CHARS);
+    if (chunks.length <= 1) {
+      gramgApiCall('saveSelection', [token, ids], function(r) { finish(onSuccess, r); }, function(e) { finish(onFailure, e); });
+      return;
+    }
+    const batchId = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    let i = 0;
+    const next = function() {
+      gramgApiCall('saveSelectionPart', [token, batchId, i, chunks.length, chunks[i]], function(r) {
+        i++;
+        if (i < chunks.length) next(); else finish(onSuccess, r);
+      }, function(e) { finish(onFailure, e); });
+    };
+    next();
+  }
+  function gramgGetAccounts(token, ids, onSuccess, onFailure) {
+    const list = (Array.isArray(ids) ? ids : []).map(String);
+    const chunks = gramgPackChunks(list, GRAMG_CHUNK_CHARS);
+    if (chunks.length <= 1) { gramgApiCall('getAccounts', [token, list], onSuccess, onFailure); return; }
+    const out = {}; let i = 0;
+    const next = function() {
+      gramgApiCall('getAccounts', [token, chunks[i]], function(r) {
+        Object.assign(out, r || {}); i++;
+        if (i < chunks.length) next(); else if (typeof onSuccess === 'function') onSuccess(out);
+      }, onFailure);
+    };
+    next();
+  }
   // Keep existing UI calls unchanged by providing a google.script.run-compatible shim.
   window.google = window.google || {};
   window.google.script = window.google.script || {};
   Object.defineProperty(window.google.script, 'run', {configurable:true, get:function(){
     let success = function(){}; let failure = function(){};
     const runner = {withSuccessHandler:function(fn){success=fn;return runner;}, withFailureHandler:function(fn){failure=fn;return runner;}};
-    ['login','getVillages','getFamilies','clearSavedSelection','saveSelection','getSavedWorkers','getAccounts'].forEach(function(name){
+    ['login','getVillages','getFamilies','clearSavedSelection','getSavedWorkers'].forEach(function(name){
       runner[name] = function(){ gramgApiCall(name, Array.prototype.slice.call(arguments), success, failure); };
     });
+    // These two can carry hundreds of ids, so they are split into small requests (URL limit).
+    runner.saveSelection = function(token, items){ gramgSaveSelection(token, items, success, failure); };
+    runner.getAccounts = function(token, ids){ gramgGetAccounts(token, ids, success, failure); };
     return runner;
   }});
 
@@ -2836,7 +2893,7 @@
       const arr=Array.from(selected.values());
       google.script.run
         .withSuccessHandler(function(res){showSavedState(res&&res.ok?'Saved ✓':'Local saved');})
-        .withFailureHandler(function(){showSavedState('Local saved');})
+        .withFailureHandler(function(err){showSavedState('Local saved');showStatus('Server-e save hoyni (ei device-e saved ache): '+((err&&err.message)||err),'error');})
         .saveSelection(activeToken,arr);
     },1200);
   }

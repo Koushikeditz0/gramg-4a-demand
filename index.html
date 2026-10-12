@@ -2840,23 +2840,24 @@
 
 
     selected.clear();
-
-
     syncCurrentCheckboxes();
-
     updateFamilyHeaders();
-
     renderSelected();
-
-    localStorage.removeItem(selectionStorageKey());
+    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
+    const mySeq=++saveSeq, activeToken=token;
+    localSaveSelection();
+    setSelectionDirty(true);
     google.script.run
-      .withSuccessHandler(function(){
-        showStatus('Selected list clear হয়েছে।','success');
+      .withSuccessHandler(function(res){
+        if(mySeq===saveSeq && res && res.ok) setSelectionDirty(false);
+        showStatus('Selected list clear হয়েছে।','success');
       })
       .withFailureHandler(function(err){
-        showStatus('Local list clear হয়েছে, server list clear হয়নি: '+(err.message||String(err)),'error');
+        const msg=(err&&err.message)||String(err||'');
+        if(/session expired/i.test(msg)) { handleSaveFailure(err,activeToken); return; }
+        showStatus('Local list clear হয়েছে, server list clear হয়নি: '+msg,'error');
       })
-      .clearSavedSelection(token);
+      .saveSelection(activeToken,[]);
 
   }
 
@@ -2883,52 +2884,122 @@
     }catch(e){}
   }
 
+  /* ---- Multi-device safe sync ----
+     Server (SELECTIONS sheet) is the source of truth. This device's local copy only wins when it
+     holds changes the server never received (flag "dirty": offline / session expired / save failed). */
+  let saveSeq=0, lastSelectionRefresh=0;
+  function selectionDirtyKey(){ return selectionStorageKey()+'_dirty'; }
+  function selectionMarkerKey(){ return selectionStorageKey()+'_v2'; }
+  function setSelectionDirty(v){
+    try{ if(v) localStorage.setItem(selectionDirtyKey(),'1'); else localStorage.removeItem(selectionDirtyKey()); }catch(e){}
+  }
+  function isSelectionDirty(){
+    try{ return localStorage.getItem(selectionDirtyKey())==='1'; }catch(e){ return false; }
+  }
+  function readLocalSelection(){
+    try{
+      const l=JSON.parse(localStorage.getItem(selectionStorageKey())||'[]');
+      return Array.isArray(l)?l:[];
+    }catch(e){ return []; }
+  }
+  function applySelection(list){
+    selected.clear();
+    (list||[]).forEach(function(item){ if(item&&item.id) selected.set(item.id,item); });
+    renderSelected();
+    syncCurrentCheckboxes();
+    updateFamilyHeaders();
+  }
+  function handleSaveFailure(err,activeToken){
+    const msg=(err&&err.message)||String(err||'');
+    if(/session expired/i.test(msg)){
+      if(activeToken!==token) return; // an old request failing after a newer login: ignore
+      logout();
+      const lm=document.getElementById('loginMessage');
+      if(lm) lm.textContent='Session শেষ হয়ে গেছে। আবার Login করুন — আপনার list এই device-এ save আছে, Login করলে ফিরে আসবে।';
+      return;
+    }
+    showStatus('Server-এ save হয়নি (এই device-এ save আছে): '+msg,'error');
+  }
   function scheduleSaveSelection(){
     if(!currentUser || !token) return;
+    const mySeq=++saveSeq;
     localSaveSelection();
+    setSelectionDirty(true);
     if(saveTimer) clearTimeout(saveTimer);
     showSavedState('Saving...');
     saveTimer=setTimeout(function(){
+      saveTimer=null;
       const activeToken=token;
       const arr=Array.from(selected.values());
       google.script.run
-        .withSuccessHandler(function(res){showSavedState(res&&res.ok?'Saved ✓':'Local saved');})
-        .withFailureHandler(function(err){showSavedState('Local saved');showStatus('Server-e save hoyni (ei device-e saved ache): '+((err&&err.message)||err),'error');})
+        .withSuccessHandler(function(res){
+          if(mySeq===saveSeq && res && res.ok) setSelectionDirty(false);
+          showSavedState(res&&res.ok?'Saved ✓':'Local saved');
+        })
+        .withFailureHandler(function(err){
+          showSavedState('Local saved');
+          handleSaveFailure(err,activeToken);
+        })
         .saveSelection(activeToken,arr);
     },1200);
   }
-
   function showSavedState(text){
     const sub=document.getElementById('previewSub');
     if(sub && document.getElementById('previewOverlay').classList.contains('show')) sub.textContent=text;
   }
-
   function loadSavedSelection(){
     if(!token || !currentUser) return;
+    const activeToken=token;
     google.script.run
       .withSuccessHandler(function(serverItems){
-        let local=[];
-        try{local=JSON.parse(localStorage.getItem(selectionStorageKey())||'[]');if(!Array.isArray(local))local=[];}catch(e){local=[];}
-        // Server-side SELECTIONS is primary; LocalStorage is fallback only.
-        const source=(Array.isArray(serverItems)&&serverItems.length)?serverItems:local;
-        selected.clear();
-        (source||[]).forEach(function(item){if(item&&item.id)selected.set(item.id,item);});
-        renderSelected();
-        if((!serverItems||!serverItems.length)&&local.length) scheduleSaveSelection();
-        if(selected.size) showStatus(selected.size+' জন saved worker restore হয়েছে।','success');
+        if(activeToken!==token) return;
+        const server=Array.isArray(serverItems)?serverItems:[];
+        const local=readLocalSelection();
+        let legacy=false;
+        try{ legacy=!localStorage.getItem(selectionMarkerKey()); localStorage.setItem(selectionMarkerKey(),'1'); }catch(e){}
+        // Local wins only if it has unsent changes (or, once, from the old app version that kept a local-only list).
+        if(isSelectionDirty() || (legacy && !server.length && local.length)){
+          applySelection(local);
+          scheduleSaveSelection();
+          if(selected.size) showStatus(selected.size+' জন worker restore হয়েছে (এই device-এর unsaved কাজ সহ)।','success');
+          return;
+        }
+        applySelection(server);
+        localSaveSelection();
+        if(selected.size) showStatus(selected.size+' জন saved worker restore হয়েছে।','success');
       })
       .withFailureHandler(function(){
-        try{
-          const local=JSON.parse(localStorage.getItem(selectionStorageKey())||'[]');
-          selected.clear();
-          (Array.isArray(local)?local:[]).forEach(function(item){if(item&&item.id)selected.set(item.id,item);});
-          renderSelected();
-          if(selected.size) showStatus(selected.size+' জন local saved worker restore হয়েছে।','success');
-        }catch(e){}
+        if(activeToken!==token) return;
+        applySelection(readLocalSelection());
+        if(selected.size) showStatus('Server পাওয়া যায়নি; এই device-এর '+selected.size+' জন worker দেখাচ্ছে।','success');
       })
-      .getSavedWorkers(token);
+      .getSavedWorkers(activeToken);
   }
-
+  // When the app comes back to the foreground (e.g. after using the other device), pull the latest server list.
+  function refreshSelectionFromServer(){
+    if(!token || !currentUser || saveTimer || isSelectionDirty()) return;
+    const ov=document.getElementById('previewOverlay');
+    if(ov && ov.classList.contains('show')) return;
+    const now=Date.now();
+    if(now-lastSelectionRefresh<15000) return;
+    lastSelectionRefresh=now;
+    const activeToken=token, seqAtStart=saveSeq;
+    google.script.run
+      .withSuccessHandler(function(items){
+        if(activeToken!==token || saveSeq!==seqAtStart || saveTimer || isSelectionDirty()) return; // changed meanwhile
+        const server=Array.isArray(items)?items:[];
+        const a=server.map(function(x){return x.id;}).sort().join('\n');
+        const b=Array.from(selected.keys()).sort().join('\n');
+        if(a===b) return;
+        applySelection(server);
+        localSaveSelection();
+        showStatus('সর্বশেষ saved list load হয়েছে ('+selected.size+' জন)।','success');
+      })
+      .withFailureHandler(function(){})
+      .getSavedWorkers(activeToken);
+  }
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refreshSelectionFromServer(); });
+  window.addEventListener('focus',refreshSelectionFromServer);
   function openFinalPreview(){
     if(!selected.size){showStatus('কোনো worker selected হয়নি।','error');return;}
     showLoading('Final list প্রস্তুত হচ্ছে...');

@@ -106,7 +106,7 @@
     var attempt = 0;
     function once() {
       return ensureFresh().then(function () {
-        return request('/rest/v1/rpc/' + fn, { body: args || {} });
+        return request('/rest/v1/rpc/' + fn, { body: args || {}, timeout: opts.timeout });
       }).catch(function (e) {
         if (e.authLost) throw e;
         if (e.status === 401 && /JWT expired/i.test(e.message) && attempt === 0) {
@@ -118,6 +118,25 @@
           attempt++;
           return new Promise(function (r) { setTimeout(r, 1000 * Math.pow(2, attempt - 1)); }).then(once);
         }
+        throw e;
+      });
+    }
+    return once();
+  }
+
+  // Edge Function call with the user's own login token (same refresh rules as rpc).
+  function callFunction(name, payload) {
+    var attempt = 0;
+    function once() {
+      return ensureFresh().then(function () {
+        return request('/functions/v1/' + name, { body: payload || {}, timeout: 30000 });
+      }).catch(function (e) {
+        if (e.authLost) throw e;
+        if (e.status === 401 && /JWT expired/i.test(e.message) && attempt === 0) { attempt++; return refresh().then(once); }
+        if (AUTH_CODES.indexOf(e.code) >= 0) { authLost(e.code); e.authLost = true; throw e; }
+        if (e.status === 404 && !/^[A-Z_]+$/.test(e.message)) e.code = 'FUNCTION_NOT_DEPLOYED';
+        if (e.status === 401 && /invalid jwt/i.test(e.message)) e.code = 'FUNCTION_JWT_SETTING';
+        if (e.network) e.code = 'FUNCTION_UNREACHABLE';
         throw e;
       });
     }
@@ -139,7 +158,7 @@
   }
 
   var api = {
-    signIn: signIn, signOut: signOut, rpc: rpc,
+    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction,
     hasSession: function () { return !!session; },
     onAuthLost: null
   };

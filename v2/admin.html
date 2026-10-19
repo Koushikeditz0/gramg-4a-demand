@@ -71,6 +71,16 @@
     .filters button.active{background:#0f172a;color:#fff;}
     details.dups summary{cursor:pointer;font-weight:700;font-size:13px;color:#991b1b;}
     @media (max-width:600px){ .app{padding:6px;} .card{padding:10px;} th,td{padding:5px;} .header-title{font-size:15px;} }
+    input[type=password]{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:9px 10px;font-size:14px;}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;z-index:90;align-items:flex-start;justify-content:center;overflow:auto;padding:12px 8px;}
+    .modal.show{display:flex;}
+    .modal-box{background:#fff;border-radius:12px;width:100%;max-width:980px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+    .modal-box.small{max-width:420px;}
+    .modal-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;}
+    .modal-head h2{font-size:15px;margin:0;}
+    tr.flag-bad td{background:#fef2f2;} tr.flag-warn td{background:#fffbeb;}
+    .mono{font-family:Consolas,monospace;}
+    td.nw{white-space:nowrap;}
     .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
     .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
   </style>
@@ -140,6 +150,12 @@
   <!-- ============ IMPORT ============ -->
   <section id="tab-import" class="hidden">
     <div class="card">
+      <h2>💾 Backup</h2>
+      <div class="muted">উপরে বাছা GP-র সব worker (account সহ), সব list (পুরনো দফা সহ) আর user-তালিকা একটা Excel-এ নামবে। Workers sheet এই পাতাতেই আবার import করা যায়। <b>File-এ bank account নম্বর আছে — নিরাপদ জায়গায় রাখুন, কাউকে পাঠাবেন না।</b> মাসে অন্তত একবার নিন।</div>
+      <div style="margin-top:8px;"><button class="btn-success" id="backupBtn">💾 Backup Excel download</button></div>
+      <div class="muted" id="backupInfo" style="margin-top:4px;"></div>
+    </div>
+    <div class="card">
       <h2>Worker ও Account data import</h2>
       <div class="muted">CSV বা Excel (.xlsx) file দিন। একটা file-এ worker আর account দুটোই থাকতে পারে (যেমন SmartDesk Master Data)।
         শুধু দরকারি ৯টা column নেওয়া হয়: Job Card No, Applicant No, Applicant Name, Aadhaar Seeded, Authentication Done, ABPS, eKYC, Account No, IFSC। বাকি column (Caste, Gender, Age ইত্যাদি) নেওয়া হয় না।</div>
@@ -191,7 +207,21 @@
         <tbody id="users"></tbody></table></div>
     </div>
     <div class="card">
-      <h2>নতুন user যোগ করা</h2>
+      <h2>➕ নতুন supervisor</h2>
+      <div class="grid3">
+        <div><label class="f" for="nuName">পুরো নাম</label><input type="text" id="nuName" maxlength="100" placeholder="যেমন Ramesh Barman"></div>
+        <div><label class="f" for="nuUsername">Username</label><input type="text" id="nuUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="যেমন ramesh"></div>
+        <div><label class="f" for="nuGp">GP</label><select id="nuGp"></select></div>
+        <div><label class="f" for="nuPin">PIN (৬–১২ সংখ্যা)</label>
+          <div class="row" style="flex-wrap:nowrap;"><input type="text" id="nuPin" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
+          <button class="btn-light btn-small" id="nuPinGen" type="button" title="নতুন PIN বানান">🎲</button></div></div>
+      </div>
+      <div class="muted" style="margin-top:6px;">Username: ছোট হাতের ইংরেজি অক্ষর, সংখ্যা, <code>_ . -</code> (৩–৩২ অক্ষর)। সহজ PIN (111111, 123456) চলবে না। PIN-টা supervisor-কে নিজে জানিয়ে দিন।</div>
+      <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Supervisor তৈরি করুন</button></div>
+    </div>
+    <div class="card">
+      <details>
+      <summary style="cursor:pointer;font-weight:700;font-size:13px;">পুরনো পদ্ধতি: Supabase dashboard দিয়ে (Super Admin বানাতে বা Edge Function না থাকলে)</summary>
       <ol class="steps">
         <li>Supabase Dashboard → <b>Authentication → Users → Add user → Create new user</b>।<br>
             Email: <code>username@users.gramg.invalid</code> (যেমন <code>ramesh@users.gramg.invalid</code>), Password: কমপক্ষে ৬ সংখ্যার PIN, <b>Auto Confirm User ✅</b>।</li>
@@ -208,15 +238,51 @@
         <label class="f" for="linkGp">GP</label><select id="linkGp"></select>
         <div style="margin-top:10px;"><button class="btn-primary" id="linkBtn">➕ Profile যোগ করুন</button></div>
       </div>
+      </details>
     </div>
   </section>
+
+  <!-- list preview -->
+  <div class="modal" id="pvModal" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div><h2 id="pvTitle">List</h2><div class="muted" id="pvSub"></div></div>
+        <button class="btn-light btn-small" id="pvClose">✕ বন্ধ</button>
+      </div>
+      <div class="stats" id="pvStats"></div>
+      <div class="row" style="margin:6px 0;">
+        <input type="text" id="pvSearch" placeholder="নাম / Job Card খুঁজুন" style="flex:1 1 180px;">
+        <select id="pvVillage" style="flex:0 1 160px;"></select>
+      </div>
+      <div class="table-wrap" style="max-height:60vh;"><table>
+        <thead><tr><th>SL</th><th>Job Card No</th><th>App</th><th>নাম</th><th>eKYC</th><th>ABPS</th><th>Account No</th><th>IFSC</th><th></th></tr></thead>
+        <tbody id="pvBody"></tbody></table></div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn-light btn-small" id="pvExcel">⬇ এই list-এর Excel</button>
+        <label class="check" style="margin:0;"><input type="checkbox" id="pvPick"><span>K-Desk export-এ নিন</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIN reset -->
+  <div class="modal" id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <div class="modal-box small">
+      <div class="modal-head"><h2 id="pinTitle">🔑 নতুন PIN</h2><button class="btn-light btn-small" id="pinClose">✕</button></div>
+      <div class="muted" id="pinWho"></div>
+      <label class="f" for="pinNew">নতুন PIN (৬–১২ সংখ্যা)</label>
+      <div class="row" style="flex-wrap:nowrap;"><input type="text" id="pinNew" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
+        <button class="btn-light btn-small" id="pinGen" type="button" title="নতুন PIN বানান">🎲</button></div>
+      <div class="muted" style="margin-top:6px;">PIN বদলালে ওই user সব device থেকে সঙ্গে সঙ্গে logout হবেন, তারপর নতুন PIN দিয়ে login করবেন।</div>
+      <div style="margin-top:10px;"><button class="btn-primary" id="pinSave">🔑 PIN বদলান</button></div>
+    </div>
+  </div>
 
   <div class="muted" style="text-align:center;margin:14px 0;">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
 </div>
 
-<script src="./js/config.js?v=20261019c"></script>
-<script src="./js/sb-client.js?v=20261019c"></script>
-<script src="./js/import-map.js?v=20261019c"></script>
-<script src="./js/admin.js?v=20261019c"></script>
+<script src="./js/config.js?v=20261019d"></script>
+<script src="./js/sb-client.js?v=20261019d"></script>
+<script src="./js/import-map.js?v=20261019d"></script>
+<script src="./js/admin.js?v=20261019d"></script>
 </body>
 </html>

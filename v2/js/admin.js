@@ -28,7 +28,18 @@
       NETWORK: 'Server-এর সঙ্গে যোগাযোগ হয়নি। Internet দেখুন।',
       LIST_NOT_FOUND: 'List পাওয়া যায়নি (হয়তো নতুন দফা শুরু হয়েছে)। Refresh করুন।',
       LIST_NOT_LOCKED: 'নতুন দফা শুরু করার আগে list Lock করুন।',
-      LIST_LOCKED: 'List lock করা আছে।'
+      LIST_LOCKED: 'List lock করা আছে।',
+      BAD_USERNAME: 'Username ঠিক নয়: ৩–৩২ অক্ষর, শুধু ছোট হাতের ইংরেজি অক্ষর, সংখ্যা, _ . -',
+      BAD_NAME: 'পুরো নাম লিখুন (১০০ অক্ষরের মধ্যে)।', BAD_GP: 'GP বেছে নিন।',
+      PIN_FORMAT: 'PIN ৬ থেকে ১২ সংখ্যার হতে হবে, শুধু অঙ্ক।',
+      WEAK_PIN: 'PIN খুব সহজ (যেমন 111111 বা 123456)। অন্য PIN দিন।',
+      USERNAME_TAKEN: 'এই username আগে থেকেই আছে। অন্য username দিন।',
+      USER_NOT_FOUND: 'User পাওয়া যায়নি।', ONLY_SUPERVISORS: 'এখান থেকে শুধু supervisor-এর PIN বদলানো যায়।',
+      AUTH_ERROR: 'Supabase Auth-এ সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।',
+      SERVER_NOT_CONFIGURED: 'Edge Function-এর সেটিং ঠিক নেই (key পাওয়া যায়নি)।',
+      FUNCTION_JWT_SETTING: 'Edge Function-এ "Verify JWT" চালু আছে। Supabase → Edge Functions → admin-users → সেটিং থেকে সেটা বন্ধ করুন (নির্দেশিকা দেখুন)।',
+      FUNCTION_UNREACHABLE: 'Edge Function-এ পৌঁছানো যায়নি। Internet দেখুন; তারপর দেখুন "admin-users" deploy হয়েছে আর "Verify JWT" বন্ধ আছে কি না।',
+      FUNCTION_NOT_DEPLOYED: '"admin-users" Edge Function এখনো deploy করা হয়নি। নির্দেশিকা দেখে deploy করুন, অথবা পুরনো পদ্ধতি ব্যবহার করুন।'
     };
     return map[e.code] || (e.hint ? e.hint : 'Error: ' + (e.message || e));
   }
@@ -53,7 +64,7 @@
   function loadGps() {
     return SB.rpc('admin_list_gps').then(function (gps) {
       state.gps = gps || [];
-      [$('gpSelect'), $('linkGp'), $('dashGp')].forEach(function (sel) {
+      [$('gpSelect'), $('linkGp'), $('dashGp'), $('nuGp')].forEach(function (sel) {
         var keep = sel.value; sel.innerHTML = '';
         state.gps.forEach(function (g) { var o = el('option', g.name + ' (' + g.jc_prefix + ')'); o.value = g.id; sel.appendChild(o); });
         if (keep) sel.value = keep;
@@ -152,7 +163,7 @@
       return next();
     }).then(function () {
       progress(0.85, 'যাচাই হচ্ছে (নতুন / পরিবর্তিত / duplicate)...');
-      return SB.rpc('admin_classify_import', { p_job_id: state.jobId });
+      return SB.rpc('admin_classify_import', { p_job_id: state.jobId }, { timeout: 180000 });
     }).then(function (res) {
       progress(null);
       state.counts = res.counts; state.problems = res.problems || [];
@@ -218,7 +229,7 @@
               '\nবাদ পড়বে: ' + bn(c.invalid + c.conflicting_repeats) + '\n\nভুল হলে Import History থেকে ফেরানো যাবে।';
     if (!confirm(msg)) return;
     state.busy = true; loading('Import হচ্ছে... (বন্ধ করবেন না)');
-    SB.rpc('admin_commit_import', { p_job_id: state.jobId }).then(function (r) {
+    SB.rpc('admin_commit_import', { p_job_id: state.jobId }, { timeout: 180000 }).then(function (r) {
       status('✅ Import সম্পন্ন: নতুন ' + bn(r.new) + ', পরিবর্তিত ' + bn(r.updated) + ', account ' + bn(r.accounts) +
              (r.deactivated ? ', inactive ' + bn(r.deactivated) : '') + '।', 'ok');
       $('previewCard').classList.add('hidden'); $('fileInput').value = ''; $('previewBtn').disabled = true; state.jobId = null;
@@ -252,7 +263,7 @@
           b.addEventListener('click', function () {
             if (!confirm('এই import ফেরাবেন? এর আগের অবস্থায় data ফিরে যাবে।')) return;
             loading('Rollback হচ্ছে...');
-            SB.rpc('admin_rollback_import', { p_job_id: j.id }).then(function (r) {
+            SB.rpc('admin_rollback_import', { p_job_id: j.id }, { timeout: 180000 }).then(function (r) {
               status('↩ Rollback সম্পন্ন: ' + bn(r.restored) + ' জনের তথ্য ফেরানো, ' + bn(r.deleted_new) + ' জন নতুন worker মোছা' +
                      (r.deactivated_new_in_lists ? ', ' + bn(r.deactivated_new_in_lists) + ' জন (list-এ থাকায়) inactive' : '') + '।', 'ok');
               return loadGps().then(loadHistory);
@@ -287,6 +298,9 @@
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
           });
           act.appendChild(t);
+          var pb = el('button', '🔑 PIN', 'btn-light btn-small'); pb.style.marginLeft = '4px';
+          pb.addEventListener('click', function () { openPinModal(u); });
+          act.appendChild(pb);
           if (u.active_devices > 0) {
             var lo = el('button', 'সব device logout', 'btn-light btn-small'); lo.style.marginLeft = '4px';
             lo.addEventListener('click', function () {
@@ -423,6 +437,7 @@
 
     var acts = el('div', null, 'acts');
     function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
+    if (r.list_id && n > 0) act('👁 দেখুন', 'btn-primary', function () { openPreview(r); });
     if (r.list_id && (st === 'submitted' || st === 'draft') && n > 0) act('🔒 Lock', 'btn-light', function () { listAction(r, 'lock'); });
     if (r.list_id && (st === 'submitted' || st === 'locked')) act('↩ ফেরত দিন', 'btn-light', function () {
       if (confirm(r.username + '-এর list আবার খসড়া করবেন? Supervisor তখন বদলাতে পারবেন।')) listAction(r, 'reopen');
@@ -436,6 +451,7 @@
         .then(function () { status(r.username + ' ' + (r.active ? 'বন্ধ' : 'চালু') + ' করা হয়েছে।', 'ok'); return loadDashboard(); })
         .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
     });
+    act('🔑 PIN', 'btn-light', function () { openPinModal(r); });
     card.appendChild(acts);
     return card;
   }
@@ -533,6 +549,185 @@
       status(msg, report.skipped.length ? 'info' : 'ok');
       return loadDashboard();
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+
+  // ---------- PIN helpers ----------
+  function weakPin(p) {
+    if (!/^[0-9]{6,12}$/.test(p)) return 'PIN_FORMAT';
+    if (/^(\d)\1+$/.test(p) || '01234567890123456789'.indexOf(p) >= 0 || '98765432109876543210'.indexOf(p) >= 0) return 'WEAK_PIN';
+    return null;
+  }
+  function randomPin() {
+    var p;
+    do {
+      var a = new Uint32Array(8); crypto.getRandomValues(a);
+      p = Array.prototype.map.call(a, function (x) { return String(x % 10); }).join('');
+    } while (weakPin(p) || p[0] === '0');
+    return p;
+  }
+  function onlyDigits(inp) { inp.addEventListener('input', function () { var v = inp.value.replace(/\D/g, ''); if (v !== inp.value) inp.value = v; }); }
+  onlyDigits($('nuPin')); onlyDigits($('pinNew'));
+  $('nuPinGen').addEventListener('click', function () { $('nuPin').value = randomPin(); });
+  $('pinGen').addEventListener('click', function () { $('pinNew').value = randomPin(); });
+  $('nuUsername').addEventListener('input', function () { var v = this.value.toLowerCase().replace(/\s+/g, ''); if (v !== this.value) this.value = v; });
+
+  // ---------- create supervisor (Edge Function) ----------
+  $('nuBtn').addEventListener('click', function () {
+    var name = $('nuName').value.trim(), un = $('nuUsername').value.trim().toLowerCase(), pin = $('nuPin').value.trim();
+    var gp = Number($('nuGp').value);
+    var bad = !name ? 'BAD_NAME' : !/^[a-z0-9_.-]{3,32}$/.test(un) ? 'BAD_USERNAME' : weakPin(pin) || (!gp ? 'BAD_GP' : null);
+    if (bad) { status(errText({ code: bad }), 'err'); return; }
+    loading('Supervisor তৈরি হচ্ছে...');
+    SB.callFunction('admin-users', { action: 'create_user', username: un, full_name: name, pin: pin, gp_id: gp })
+      .then(function (r) {
+        status('✅ ' + r.username + ' তৈরি হয়েছে। Login: username "' + r.username + '", PIN "' + pin + '"। PIN-টা supervisor-কে জানিয়ে দিন।', 'ok');
+        $('nuName').value = ''; $('nuUsername').value = ''; $('nuPin').value = '';
+        return Promise.all([loadUsers(), loadDashboard()]);
+      }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+
+  // ---------- PIN reset (Edge Function) ----------
+  var pinTarget = null;
+  function openPinModal(u) {
+    pinTarget = u; $('pinWho').textContent = (u.full_name || u.username) + ' (@' + u.username + ')';
+    $('pinNew').value = ''; $('pinModal').classList.add('show'); $('pinNew').focus();
+  }
+  function closePin() { $('pinModal').classList.remove('show'); pinTarget = null; }
+  $('pinClose').addEventListener('click', closePin);
+  $('pinSave').addEventListener('click', function () {
+    var pin = $('pinNew').value.trim(), bad = weakPin(pin);
+    if (bad) { status(errText({ code: bad }), 'err'); return; }
+    var u = pinTarget; if (!u) return;
+    loading('PIN বদলানো হচ্ছে...');
+    SB.callFunction('admin-users', { action: 'reset_pin', user_id: u.user_id, pin: pin })
+      .then(function (r) {
+        closePin();
+        status('✅ ' + r.username + '-এর নতুন PIN: "' + pin + '"। সব device থেকে logout করানো হয়েছে।', 'ok');
+        return Promise.all([loadUsers(), loadDashboard()]);
+      }).catch(function (e) { if (!e.authLost) { closePin(); status(errText(e), 'err'); } })
+      .then(function () { loading(''); });
+  });
+
+  // ---------- list preview ----------
+  var pv = { data: null, row: null };
+  function yn(b) { return b ? 'Yes' : 'No'; }
+  function openPreview(r) {
+    loading('List খুলছে...');
+    SB.rpc('admin_list_items', { p_list_id: r.list_id }).then(function (d) {
+      pv.data = d; pv.row = r;
+      $('pvTitle').textContent = (d.full_name || d.username) + ' (@' + d.username + ')';
+      $('pvSub').textContent = STATE_BN[rowState(r)] + (d.work_name ? ' · Work Name: ' + d.work_name : '') + (d.submitted_at ? ' · জমা: ' + fmtDate(d.submitted_at) : '');
+      var items = d.items || [], noAcc = 0, dup = 0, bad = 0, vs = {};
+      items.forEach(function (x) { if (!x.account_no) noAcc++; if (x.in_other_lists > 0) dup++; if (!x.active || !x.eligible) bad++; vs[x.village_no] = true; });
+      var S = $('pvStats'); S.innerHTML = '';
+      function stat(n, label, cls) { var e = el('div', null, 'stat ' + (cls || '')); e.appendChild(el('div', bn(n), 'n')); e.appendChild(el('div', label, 'l')); S.appendChild(e); }
+      stat(items.length, 'মোট worker'); stat(Object.keys(vs).length, 'গ্রাম');
+      stat(noAcc, 'Account নেই', noAcc ? 'warn' : ''); stat(dup, 'অন্য list-এও আছে', dup ? 'bad' : '');
+      stat(bad, 'এখন inactive / eKYC-ABPS নেই', bad ? 'bad' : '');
+      var sel = $('pvVillage'); sel.innerHTML = '';
+      var o = el('option', 'সব গ্রাম'); o.value = ''; sel.appendChild(o);
+      Object.keys(vs).map(Number).sort(function (a, b) { return a - b; }).forEach(function (v) { var oo = el('option', 'Village ' + vno(v)); oo.value = v; sel.appendChild(oo); });
+      $('pvSearch').value = ''; $('pvPick').checked = dash.picked.has(r.list_id);
+      renderListPreview(); $('pvModal').classList.add('show');
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
+  function renderListPreview() {
+    var q = $('pvSearch').value.trim().toLowerCase(), v = $('pvVillage').value, tb = $('pvBody'); tb.innerHTML = '';
+    var sl = 0;
+    (pv.data.items || []).forEach(function (x) {
+      if (v && String(x.village_no) !== v) return;
+      if (q && x.applicant_name.toLowerCase().indexOf(q) < 0 && x.job_card_no.toLowerCase().indexOf(q) < 0) return;
+      var tr = el('tr', null, (!x.active || !x.eligible) ? 'flag-bad' : (x.in_other_lists > 0 || !x.account_no) ? 'flag-warn' : '');
+      [++sl, x.job_card_no, x.applicant_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '—', x.ifsc || '—'].forEach(function (c, i) {
+        var td = el('td', String(c)); if (i === 1 || i === 6 || i === 7) td.className = 'mono nw'; tr.appendChild(td);
+      });
+      var notes = [];
+      if (!x.active) notes.push('inactive'); else if (!x.eligible) notes.push('eKYC/ABPS নেই');
+      if (x.in_other_lists > 0) notes.push('অন্য list-এও');
+      if (!x.account_no) notes.push('account নেই');
+      tr.appendChild(el('td', notes.join(', ')));
+      tb.appendChild(tr);
+    });
+    if (!sl) { var tr = el('tr'); var td = el('td', 'কিছু পাওয়া যায়নি।'); td.colSpan = 9; tr.appendChild(td); tb.appendChild(tr); }
+  }
+  $('pvSearch').addEventListener('input', renderListPreview);
+  $('pvVillage').addEventListener('change', renderListPreview);
+  $('pvClose').addEventListener('click', function () { $('pvModal').classList.remove('show'); });
+  $('pvPick').addEventListener('change', function () {
+    if (!pv.row) return;
+    if (this.checked) dash.picked.add(pv.row.list_id); else dash.picked.delete(pv.row.list_id);
+    renderDashboard();
+  });
+  $('pvExcel').addEventListener('click', function () {
+    if (!pv.data) return;
+    loadXlsx().then(function () {
+      var aoa = [['SL No', 'Job Card No', 'Applicant Name', 'eKYC', 'ABPS', 'Account No', 'IFSC Code']];
+      (pv.data.items || []).forEach(function (x, i) { aoa.push([i + 1, x.job_card_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '', x.ifsc || '']); });
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }];
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'List');
+      XLSX.writeFile(wb, 'List_' + pv.data.username + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+    }).catch(function (e) { status(errText(e), 'err'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { $('pvModal').classList.remove('show'); closePin(); }
+  });
+
+  // ---------- backup ----------
+  $('backupBtn').addEventListener('click', function () {
+    var gp = Number($('gpSelect').value); if (!gp) return;
+    var g = state.gps.filter(function (x) { return x.id === gp; })[0] || { name: 'GP' + gp };
+    var workers = [], lists = [], users = [];
+    loading('Backup তৈরি হচ্ছে... (workers)');
+    function pageWorkers(after) {
+      return SB.rpc('admin_backup_workers', { p_gp_id: gp, p_after_id: after, p_limit: 5000 }, { retry: true }).then(function (r) {
+        var rows = (r && r.rows) || [];
+        workers = workers.concat(rows);
+        $('loadingText').textContent = 'Backup তৈরি হচ্ছে... ' + bn(workers.length) + ' worker';
+        return rows.length ? pageWorkers(r.next_after_id) : null;
+      });
+    }
+    function pageLists(offset) {
+      return SB.rpc('admin_backup_lists', { p_gp_id: gp, p_offset: offset, p_limit: 5000 }, { retry: true }).then(function (r) {
+        var rows = (r && r.rows) || [];
+        lists = lists.concat(rows);
+        return rows.length === 5000 ? pageLists(offset + 5000) : null;
+      });
+    }
+    loadXlsx().then(function () { return pageWorkers(0); })
+      .then(function () { return pageLists(0); })
+      .then(function () { return SB.rpc('admin_list_users'); })
+      .then(function (u) {
+        users = (u || []).filter(function (x) { return x.role === 'super_admin' || x.gp_id === gp; });
+        var wb = XLSX.utils.book_new();
+        // Workers: same column names as the import, so this sheet can be imported again.
+        var wa = [['Job Card No', 'Applicant No', 'Applicant Name', 'Aadhaar Seeded', 'Authentication Done', 'ABPS', 'eKYC', 'Account No', 'IFSC', 'Active']];
+        workers.forEach(function (w) {
+          wa.push([w.job_card_no, String(w.applicant_no), w.applicant_name, yn(w.aadhaar_seeded), yn(w.authentication_done),
+                   yn(w.abps), yn(w.ekyc), w.account_no || '', w.ifsc || '', yn(w.active)]);
+        });
+        var ws = XLSX.utils.aoa_to_sheet(wa);
+        ws['!cols'] = [{ wch: 26 }, { wch: 8 }, { wch: 30 }, { wch: 8 }, { wch: 8 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }, { wch: 6 }];
+        XLSX.utils.book_append_sheet(wb, ws, 'Workers');
+        var la = [['Username', 'List অবস্থা', 'Submit অবস্থা', 'Work Name', 'তৈরি', 'জমা', 'Lock', 'Export', 'Job Card No', 'Applicant No', 'Applicant Name']];
+        lists.forEach(function (x) {
+          la.push([x.username, x.status === 'active' ? 'চলতি' : 'পুরনো দফা', STATE_BN[x.submit_state] || x.submit_state, x.work_name || '',
+                   fmtDate(x.created_at), x.submitted_at ? fmtDate(x.submitted_at) : '', x.locked_at ? fmtDate(x.locked_at) : '',
+                   x.exported_at ? fmtDate(x.exported_at) : '', x.job_card_no, String(x.applicant_no), x.applicant_name]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(la), 'Lists');
+        var ua = [['Username', 'নাম', 'Role', 'অবস্থা', 'শেষ login']];
+        users.forEach(function (x) { ua.push([x.username, x.full_name, x.role === 'super_admin' ? 'Super Admin' : 'Supervisor', x.active ? 'চালু' : 'বন্ধ', x.last_seen ? fmtDate(x.last_seen) : '']); });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ua), 'Users');
+        var d = new Date(), stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        XLSX.writeFile(wb, 'GramG_Backup_' + g.name.replace(/[^A-Za-z0-9_-]+/g, '_') + '_' + stamp + '.xlsx');
+        var msg = '✅ Backup নেমেছে: ' + bn(workers.length) + ' worker, ' + bn(lists.length) + ' list-row, ' + bn(users.length) + ' user।';
+        $('backupInfo').textContent = msg + ' (' + fmtDate(d.toISOString()) + ')';
+        status(msg, 'ok');
+      }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   });
 

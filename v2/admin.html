@@ -52,6 +52,25 @@
     .chip.ign{background:#f1f5f9;color:#64748b;text-decoration:line-through;}
     ol.steps{font-size:12px;line-height:1.6;padding-left:18px;margin:6px 0;}
     code{background:#f1f5f9;border-radius:4px;padding:1px 4px;font-size:11px;}
+    input[type=date],input[type=number]{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:9px 10px;font-size:14px;}
+    .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;}
+    .ucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:8px;}
+    .ucard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
+    .ucard.sel{border-color:#2563eb;box-shadow:0 0 0 2px #bfdbfe;}
+    .ucard .top{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;}
+    .ucard .nm{font-weight:800;font-size:14px;} .ucard .un{font-size:11px;color:#64748b;}
+    .ucard .meta{font-size:12px;color:#334155;line-height:1.5;}
+    .ucard .acts{display:flex;gap:5px;flex-wrap:wrap;}
+    .ucard label.pick{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;}
+    .ucard label.pick input{width:18px;height:18px;}
+    .pill.draft{background:#dbeafe;color:#1e40af;} .pill.submitted{background:#dcfce7;color:#166534;}
+    .pill.locked{background:#fef3c7;color:#92400e;} .pill.empty{background:#f1f5f9;color:#64748b;}
+    .pill.dup{background:#fee2e2;color:#991b1b;}
+    .filters{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;}
+    .filters button{background:#e2e8f0;color:#334155;padding:6px 10px;font-size:12px;}
+    .filters button.active{background:#0f172a;color:#fff;}
+    details.dups summary{cursor:pointer;font-weight:700;font-size:13px;color:#991b1b;}
+    @media (max-width:600px){ .app{padding:6px;} .card{padding:10px;} th,td{padding:5px;} .header-title{font-size:15px;} }
     .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
     .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
   </style>
@@ -72,13 +91,54 @@
   <div id="status" class="status" role="status" aria-live="polite"></div>
 
   <div class="tabs" role="tablist">
-    <button class="tab active" data-tab="import">📥 Data Import</button>
+    <button class="tab active" data-tab="dash">📊 Dashboard</button>
+    <button class="tab" data-tab="import">📥 Data Import</button>
     <button class="tab" data-tab="history">🕘 Import History</button>
     <button class="tab" data-tab="users">👥 Users</button>
   </div>
 
+  <!-- ============ DASHBOARD ============ -->
+  <section id="tab-dash">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">Supervisor-দের list</h2>
+        <button class="btn-light btn-small" id="dashRefresh">🔄 Refresh</button>
+      </div>
+      <label class="f" for="dashGp">Gram Panchayat</label>
+      <select id="dashGp"></select>
+      <div class="stats" id="dashStats"></div>
+      <div id="dupBox" class="hidden"></div>
+      <div class="filters" id="dashFilters">
+        <button data-f="all" class="active">সব</button>
+        <button data-f="submitted">জমা দিয়েছে</button>
+        <button data-f="draft">খসড়া</button>
+        <button data-f="empty">list নেই</button>
+        <button data-f="locked">Lock করা</button>
+      </div>
+      <div class="muted" id="dashUpdated"></div>
+    </div>
+    <div class="ucards" id="dashCards"></div>
+
+    <div class="card" id="exportCard" style="margin-top:8px;">
+      <h2>📥 K-Desk Demand file</h2>
+      <div class="muted">উপরে যে list-গুলোতে <b>"Export-এ নিন"</b> tick দেবেন, সেগুলো একটা Excel-এ যাবে। Column: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>। একই worker দুই list-এ থাকলে file-এ একবারই থাকবে।</div>
+      <div class="grid3" style="margin-top:6px;">
+        <div><label class="f" for="expFrom">From (Work date)</label><input type="date" id="expFrom"></div>
+        <div><label class="f" for="expDays">Days</label><input type="number" id="expDays" min="1" max="366" inputmode="numeric" placeholder="যেমন 14"></div>
+        <div><label class="f" for="expWork">Work code</label><input type="text" id="expWork" maxlength="100" placeholder="Work code"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="expLock" checked><span>Export হয়ে গেলে এই list-গুলো <b>Lock</b> করুন (supervisor আর বদলাতে পারবেন না)।</span></label>
+      <div class="muted" id="expSummary">কোনো list বাছা হয়নি।</div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn-success" id="expBtn" disabled>📥 K-Desk Excel তৈরি করুন</button>
+        <button class="btn-light btn-small" id="pickSubmitted">জমা দেওয়া সব list বাছুন</button>
+        <button class="btn-light btn-small" id="pickNone">বাছাই মুছুন</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ IMPORT ============ -->
-  <section id="tab-import">
+  <section id="tab-import" class="hidden">
     <div class="card">
       <h2>Worker ও Account data import</h2>
       <div class="muted">CSV বা Excel (.xlsx) file দিন। একটা file-এ worker আর account দুটোই থাকতে পারে (যেমন SmartDesk Master Data)।
@@ -154,9 +214,9 @@
   <div class="muted" style="text-align:center;margin:14px 0;">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
 </div>
 
-<script src="./js/config.js"></script>
-<script src="./js/sb-client.js"></script>
-<script src="./js/import-map.js"></script>
-<script src="./js/admin.js"></script>
+<script src="./js/config.js?v=20261019c"></script>
+<script src="./js/sb-client.js?v=20261019c"></script>
+<script src="./js/import-map.js?v=20261019c"></script>
+<script src="./js/admin.js?v=20261019c"></script>
 </body>
 </html>

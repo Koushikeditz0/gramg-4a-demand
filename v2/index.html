@@ -680,6 +680,12 @@
     /* v2 additions */
     .v2-badge{font-size:10px;font-weight:800;background:#2563eb;color:#fff;border-radius:6px;padding:1px 6px;vertical-align:middle;}
     .user-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+    .list-state-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-radius:10px;padding:9px 11px;margin:0 0 8px;font-size:13px;line-height:1.4;}
+    .list-state-bar.draft{background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe;}
+    .list-state-bar.submitted{background:#dcfce7;color:#166534;border:1px solid #86efac;}
+    .list-state-bar.locked{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+    .list-state-bar button{flex:0 0 auto;}
+    body.list-readonly .member-check,body.list-readonly .remove-btn{pointer-events:none;opacity:.35;}
     .save-chip{font-size:10px;font-weight:800;border-radius:20px;padding:3px 8px;white-space:nowrap;background:#e2e8f0;color:#334155;}
     .save-chip.saving{background:#fef9c3;color:#854d0e;}
     .save-chip.saved{background:#dcfce7;color:#166534;}
@@ -1101,7 +1107,7 @@
             <h3>৮. PDF Download</h3><p>Download PDF চাপলে সরাসরি A4 PDF তৈরি হবে। একাধিক page হলে table header প্রতিটি page-এ থাকবে।</p>
             <h3>৯. Edit List</h3><p>Final Preview থেকে Edit List ব্যবহার করে আবার worker যোগ বা বাদ দিতে পারবেন।</p>
             <h3>১০. Clear Selected</h3><p>পুরো Selected List মুছতে Clear Selected ব্যবহার করুন। এতে saved selection-ও মুছে যাবে।</p>
-            <h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
+            <h3>১০ক. List জমা দেওয়া (Submit)</h3><p>বাছাই শেষ হলে উপরের নীল পট্টিতে <b>📤 Submit (জমা দিন)</b> চাপুন। জমা দেওয়ার পর list আর বদলানো যায় না; বদলাতে হলে <b>↩ ফেরত নিন</b> চেপে আবার খসড়া করুন, তারপর আবার Submit করুন। Admin list <b>Lock</b> করলে (সাধারণত K-Desk-এ demand দেওয়ার পর) আর ফেরত নেওয়া যাবে না। Admin নতুন দফা শুরু করলে আপনি একটা নতুন খালি list পাবেন।</p><h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
             <h3>১২. Help &amp; Support</h3><p>সমস্যা হলে প্রথমে এই User Guide দেখুন। প্রয়োজন হলে administrator/VLE-এর সঙ্গে যোগাযোগ করুন।</p>
           </div>
         </div>
@@ -1292,6 +1298,9 @@
 
 
 
+    <!-- LIST STATE (draft / submitted / locked) -->
+    <div id="listStateBar" class="list-state-bar" style="display:none;" role="status" aria-live="polite"></div>
+
     <!-- TWO COLUMNS -->
 
     <div class="columns">
@@ -1431,9 +1440,9 @@
     </div>
   </div>
 
-<script src="./js/config.js"></script>
-<script src="./js/sb-client.js"></script>
-<script src="./js/gramg-adapter.js"></script>
+<script src="./js/config.js?v=20261019c"></script>
+<script src="./js/sb-client.js?v=20261019c"></script>
+<script src="./js/gramg-adapter.js?v=20261019c"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -1740,6 +1749,8 @@
     selected.clear();
     clearSearchResults();
     renderSelected();
+    listState={state:'draft',submittedAt:null}; renderListState();
+    document.body.classList.remove('list-readonly');
 
 
     document
@@ -2371,6 +2382,8 @@
     checked
   ){
 
+    if(listLocked(true)){ syncCurrentCheckboxes(); return; }
+
     if(checked){
 
       selected.set(
@@ -2508,7 +2521,7 @@
         '<div class="selected-name">'+escapeHtml(item.name)+'</div>'+
         '</div>'+
         '<button class="remove-btn" title="Remove">✕</button>';
-      row.querySelector('.remove-btn').addEventListener('click',function(){selected.delete(item.id);syncCurrentCheckboxes();updateFamilyHeaders();renderSelected();scheduleSaveSelection();});
+      row.querySelector('.remove-btn').addEventListener('click',function(){if(listLocked(true))return;selected.delete(item.id);syncCurrentCheckboxes();updateFamilyHeaders();renderSelected();scheduleSaveSelection();});
       container.appendChild(row); sl++;
     });
   }
@@ -2551,6 +2564,7 @@
   ====================================================== */
 
   function selectAllCurrent(){
+    if(listLocked(true)) return;
 
     if(
       !families.length
@@ -2612,6 +2626,7 @@
   ====================================================== */
 
   function selectEkycAbps(){
+    if(listLocked(true)) return;
 
     if(
       !families.length
@@ -2690,6 +2705,8 @@
 
   function clearSelected(){
 
+    if(listLocked(true)) return;
+
     if(
       selected.size ===
       0
@@ -2729,7 +2746,7 @@
       .withFailureHandler(function(err){
         const msg=(err&&err.message)||String(err||'');
         if(err && err.authLost) return;
-        if(err && err.code==='VERSION_CONFLICT'){ setSelectionDirty(false); refreshSelectionFromServer(true); showStatus(msg,'error'); return; }
+        if(err && (err.code==='VERSION_CONFLICT' || err.code==='LIST_LOCKED')){ setSelectionDirty(false); refreshSelectionFromServer(true); showStatus(msg,'error'); return; }
         if(/session expired/i.test(msg)) { handleSaveFailure(err,activeToken); return; }
         setSaveChip('failed');
         showStatus('Local list clear হয়েছে, server list clear হয়নি: '+msg,'error');
@@ -2789,6 +2806,12 @@
   function handleSaveFailure(err,activeToken){
     const msg=(err&&err.message)||String(err||'');
     if(err && err.authLost) return;   // gramgOnAuthLost already logged out with a message
+    if(err && err.code==='LIST_LOCKED'){
+      setSelectionDirty(false); setSaveChip('');
+      showStatus(msg+' সর্বশেষ জমা দেওয়া list দেখানো হচ্ছে।','error');
+      refreshSelectionFromServer(true);
+      return;
+    }
     if(/session expired/i.test(msg)){
       if(activeToken!==token) return; // an old request failing after a newer login: ignore
       logout();
@@ -2801,6 +2824,7 @@
   }
   function scheduleSaveSelection(){
     if(!currentUser || !token) return;
+    if(listLocked()) return;
     const mySeq=++saveSeq;
     localSaveSelection();
     setSelectionDirty(true);
@@ -2848,6 +2872,7 @@
         let legacy=false;
         try{ legacy=!localStorage.getItem(selectionMarkerKey()); localStorage.setItem(selectionMarkerKey(),'1'); }catch(e){}
         // Local wins only if it has unsent changes (or, once, from the old app version that kept a local-only list).
+        if(listLocked()) setSelectionDirty(false);
         if(isSelectionDirty() || (legacy && !server.length && local.length)){
           applySelection(local);
           scheduleSaveSelection();
@@ -3177,6 +3202,56 @@ GramgSB.onAuthLost=function(code){
   const lm=document.getElementById('loginMessage');
   if(lm) lm.textContent=(AUTH_LOST_MSG[code]||AUTH_LOST_MSG.NOT_LOGGED_IN)+(unsaved?' এই device-এর না-পাঠানো selection রাখা আছে, Login করলে ফিরে আসবে।':'');
 };
+/* ---------- list Submit / Lock ---------- */
+let listState={state:'draft',submittedAt:null};
+function listLocked(showMsg){
+  const locked=listState.state!=='draft';
+  if(locked && showMsg){
+    showStatus(listState.state==='locked'
+      ? 'Admin এই list lock করেছেন, এখন বদলানো যাবে না।'
+      : 'List জমা দেওয়া আছে। বদলাতে চাইলে আগে "↩ ফেরত নিন" চাপুন।','error');
+  }
+  return locked;
+}
+function fmtBnDate(s){ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function renderListState(){
+  const bar=document.getElementById('listStateBar'); if(!bar) return;
+  if(!currentUser){ bar.style.display='none'; return; }
+  const st=listState.state;
+  document.body.classList.toggle('list-readonly', st!=='draft');
+  const wn=document.getElementById('workName'); if(wn) wn.disabled=(st!=='draft');
+  bar.className='list-state-bar '+st; bar.style.display='flex'; bar.innerHTML='';
+  const txt=document.createElement('div'); let btn=document.createElement('button');
+  if(st==='draft'){
+    txt.textContent='📝 খসড়া list — worker বাছাই শেষ হলে Admin-কে জমা দিন।';
+    btn.className='btn-success btn-small'; btn.textContent='📤 Submit (জমা দিন)'; btn.id='submitListBtn';
+    btn.onclick=submitMyList;
+  }else if(st==='submitted'){
+    txt.textContent='✅ জমা দেওয়া হয়েছে'+(listState.submittedAt?' ('+fmtBnDate(listState.submittedAt)+')':'')+'। Admin lock করার আগে পর্যন্ত ফেরত নিয়ে বদলাতে পারবেন।';
+    btn.className='btn-light btn-small'; btn.textContent='↩ ফেরত নিন'; btn.id='unsubmitListBtn';
+    btn.onclick=unsubmitMyList;
+  }else{
+    txt.textContent='🔒 Admin list lock করেছেন — এখন বদলানো যাবে না। নতুন দফা শুরু হলে খালি list পাবেন।';
+    btn=null;
+  }
+  bar.appendChild(txt); if(btn) bar.appendChild(btn);
+}
+window.gramgOnListState=function(s){ listState=s||{state:'draft'}; renderListState(); };
+function submitMyList(){
+  if(!selected.size){ showStatus('খালি list জমা দেওয়া যায় না। আগে worker select করুন।','error'); return; }
+  if(saveTimer || isSelectionDirty()){ showStatus('পরিবর্তন এখনো save হচ্ছে। "Saved ✓" দেখালে আবার Submit চাপুন।','error'); if(!saveTimer) scheduleSaveSelection(); return; }
+  if(!confirm(selected.size+' জন worker সহ list Admin-কে জমা দেবেন?\nজমা দেওয়ার পর বদলাতে হলে আগে "ফেরত নিন" চাপতে হবে।')) return;
+  showLoading('List জমা দেওয়া হচ্ছে...');
+  gramgAdapter.submitList().then(function(r){
+    hideLoading(); showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে।','success');
+  },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
+}
+function unsubmitMyList(){
+  showLoading('List ফেরত নেওয়া হচ্ছে...');
+  gramgAdapter.unsubmitList().then(function(){
+    hideLoading(); showStatus('List ফেরত নেওয়া হয়েছে, এখন বদলাতে পারবেন। শেষ হলে আবার Submit করুন।','success');
+  },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
+}
 window.addEventListener('online',function(){ if(currentUser && isSelectionDirty()) scheduleSaveSelection(); });
 document.getElementById('workName').addEventListener('change',function(e){ gramgAdapter.setWorkName(e.target.value); });
 (function restoreSession(){

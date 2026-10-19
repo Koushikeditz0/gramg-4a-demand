@@ -49,8 +49,8 @@
         if (!res.ok) {
           var msg = (data && (data.message || data.msg || data.error_description || data.error)) || ('HTTP ' + res.status);
           var code = (data && (data.error_code || data.code)) || String(res.status);
-          if (AUTH_CODES.concat(['VERSION_CONFLICT', 'LIST_NOT_FOUND', 'NOT_AUTHORIZED', 'TOO_MANY_JOB_CARDS',
-                                  'QUERY_TOO_SHORT', 'TOO_MANY_CHANGES', 'BAD_INPUT']).indexOf(msg) >= 0) code = msg;
+          // Our database functions raise short UPPER_CASE codes (LIST_LOCKED, VERSION_CONFLICT, ...).
+          if (typeof msg === 'string' && /^[A-Z][A-Z0-9_]{2,40}$/.test(msg)) code = msg;
           throw ApiError(code, msg, { status: res.status, hint: data && data.hint });
         }
         return data;

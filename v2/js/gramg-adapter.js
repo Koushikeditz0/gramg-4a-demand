@@ -17,7 +17,9 @@
     VERSION_CONFLICT: 'অন্য একটি device-এ এই list এইমাত্র পরিবর্তন হয়েছে। সর্বশেষ list দেখানো হচ্ছে — দেখে নিয়ে প্রয়োজনে আবার Clear করুন।',
     NOT_AUTHORIZED: 'এই কাজের অনুমতি আপনার নেই।',
     TOO_MANY_CHANGES: 'একবারে অনেক বেশি পরিবর্তন। কয়েক ধাপে করুন।',
-    BAD_INPUT: 'Search-এর তথ্য সঠিক নয়।'
+    BAD_INPUT: 'Search-এর তথ্য সঠিক নয়।',
+    LIST_LOCKED: 'এই list জমা দেওয়া বা lock করা আছে, তাই এখন বদলানো যাবে না।',
+    LIST_EMPTY: 'খালি list জমা দেওয়া যায় না। আগে worker select করুন।'
   };
   function bnError(e) {
     var out = new Error(BN[e.code] || ('Server error: ' + (e.message || e)));
@@ -25,7 +27,13 @@
     return out;
   }
 
-  var st = { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: null, workName: '' };
+  var st = { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: null, workName: '',
+             submitState: 'draft', submittedAt: null };
+  function notifyState() {
+    if (typeof window.gramgOnListState === 'function') {
+      try { window.gramgOnListState({ state: st.submitState, submittedAt: st.submittedAt }); } catch (e) {}
+    }
+  }
 
   function toMember(r) {
     var id = r.job_card_no + '|' + r.applicant_no;
@@ -115,6 +123,8 @@
   function getSavedWorkers() {
     return SB.rpc('get_active_list', {}, { retry: true }).then(function (r) {
       st.listId = r.list_id; st.version = r.version; st.workName = r.work_name || '';
+      st.submitState = r.submit_state || 'draft'; st.submittedAt = r.submitted_at || null;
+      notifyState();
       st.server = new Set((r.items || []).map(function (x) { return x.id; }));
       return (r.items || []).map(toMember);
     });
@@ -204,9 +214,24 @@
     });
   }
 
+  // Supervisor hands the list to the admin (read-only afterwards) / takes it back.
+  function changeSubmit(fn) {
+    return whenIdle().then(function () {
+      return st.listId ? null : getSavedWorkers();
+    }).then(function () {
+      return SB.rpc(fn, { p_list_id: st.listId });
+    }).then(function (r) {
+      st.submitState = r.submit_state; st.submittedAt = r.submitted_at || null;
+      if (r.version) st.version = r.version;
+      notifyState();
+      return r;
+    }, function (e) { throw bnError(e || {}); });
+  }
+
   function logout() {
     return whenIdle().catch(function () {}).then(function () { return SB.signOut(); }).then(function () {
-      st = { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: null, workName: '' };
+      st = { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: null, workName: '',
+             submitState: 'draft', submittedAt: null };
     });
   }
 
@@ -237,6 +262,9 @@
 
   window.gramgAdapter = {
     restore: restore, logout: logout, setWorkName: setWorkName,
+    submitList: function () { return changeSubmit('submit_list'); },
+    unsubmitList: function () { return changeSubmit('unsubmit_list'); },
+    listState: function () { return st.submitState; },
     workName: function () { return st.workName; },
     whenIdle: whenIdle
   };

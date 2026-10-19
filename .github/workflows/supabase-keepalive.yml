@@ -1,0 +1,33 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: v2/js/config.js
+          sparse-checkout-cone-mode: false
+      - name: Ping Supabase
+        run: |
+          set -eu
+          URL=$(grep -oE "SUPABASE_URL: *'[^']+'" v2/js/config.js | sed -E "s/.*'([^']+)'/\1/")
+          KEY=$(grep -oE "SUPABASE_PUBLISHABLE_KEY: *'[^']+'" v2/js/config.js | sed -E "s/.*'([^']+)'/\1/")
+          case "$KEY" in sb_publishable_*) ;; *) echo "config.js-এ publishable key পাওয়া যায়নি"; exit 1;; esac
+          for i in 1 2 3; do
+            code=$(curl -sS -o out.txt -w '%{http_code}' -X POST "$URL/rest/v1/rpc/ping" \
+                   -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}' || echo 000)
+            echo "attempt $i: HTTP $code $(cat out.txt 2>/dev/null)"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          exit 1

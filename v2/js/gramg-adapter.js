@@ -40,7 +40,7 @@
   function toFamilies(rows) {
     var order = [], fam = {};
     (rows || []).forEach(function (r) {
-      var key = r.village_no + '/' + r.household_no;
+      var key = r.job_card_no;                       // '483' and '483-A' are different families
       if (!fam[key]) {
         fam[key] = { key: key, village: r.village_no, household: r.household_no, jobCard: r.job_card_no, members: [] };
         order.push(key);
@@ -55,11 +55,11 @@
     return SB.rpc('register_session', { p_user_agent: String(navigator.userAgent || '').slice(0, 300) })
       .then(function (reg) {
         return SB.rpc('get_my_context').then(function (ctx) {
-          if (ctx.role !== 'gp_user') {
-            return SB.signOut().then(function () {
-              return { ok: false, message: 'এটি Super Admin account। Admin panel পরের ধাপে আসছে; এখন GP user দিয়ে Login করুন।' };
-            });
+          if (ctx.role === 'super_admin') {
+            location.href = './admin.html';
+            return { ok: false, message: 'Admin panel খুলছে...' };
           }
+          if (ctx.role !== 'gp_user') return { ok: false, message: 'এই account-এর অনুমতি নেই।' };
           st.ctx = ctx;
           return {
             ok: true, token: 'supabase', revoked: ((reg && reg.revoked) || []).length,

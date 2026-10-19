@@ -1093,7 +1093,7 @@
           <div style="font-size:13px;line-height:1.55;color:#334155;padding-top:10px;">
             <h3>১. Login</h3><p>Username ও PIN (কমপক্ষে ৬ সংখ্যা) লিখে Login করুন। Login করলে আপনার নির্ধারিত GP স্বয়ংক্রিয়ভাবে লোড হবে। একবার Login করলে Logout না করা পর্যন্ত এই device-এ Login থাকবে।</p><h3>১ক. সর্বোচ্চ ২টি device</h3><p>একটি account একসঙ্গে সর্বোচ্চ ২টি device-এ চালু থাকতে পারে। তৃতীয় device-এ Login করলে সবচেয়ে পুরনো device থেকে স্বয়ংক্রিয়ভাবে Logout হয়ে যাবে এবং সেখানে বার্তা দেখাবে।</p>
             <h3>২. Village নির্বাচন</h3><p>Village নির্বাচন করলে সংশ্লিষ্ট Job Card ও worker list দেখা যাবে।</p>
-            <h3>৩. Worker Search</h3><p>Job Card নম্বর, Village/Household নম্বর বা একাধিক নম্বর একসঙ্গে Search করা যাবে। Space, comma, semicolon বা নতুন লাইনে একাধিক নম্বর দিতে পারবেন।</p>
+            <h3>৩. Worker Search</h3><p>Job Card নম্বর, Village/Household নম্বর বা একাধিক নম্বর একসঙ্গে Search করা যাবে। Space, comma, semicolon বা নতুন লাইনে একাধিক নম্বর দিতে পারবেন। Range (যেমন <b>11-20</b>, সর্বোচ্চ ৫০০টি) ও "-A" যুক্ত Job Card (যেমন <b>483-A</b>) দেওয়া যায়। নাম লিখে Search করলে নাম দিয়ে খোঁজা হবে।</p>
             <h3>৪. Worker নির্বাচন</h3><p>eKYC এবং ABPS দুটোই YES থাকা worker নির্বাচন করুন। ☑️ করে Selected List-এ যোগ করুন এবং ❌ দিয়ে ভুল selection বাদ দিন।</p>
             <h3>৫. Auto Save</h3><p>Worker select/remove করলে তালিকা automatically save হয়। উপরে ডানদিকে অবস্থা দেখাবে: <b>Pending</b> (পাঠানোর অপেক্ষায়), <b>Saving…</b>, <b>Saved ✓</b> অথবা <b>Save Failed</b> (Internet দেখে আবার চেষ্টা হবে)। Logout করলেও saved list মুছে যাবে না; আবার Login করলে ফিরে পাবেন।</p>
             <h3>৬. Final Preview</h3><p>Final Preview-তে Job Card No, Applicant Name, eKYC, ABPS, Account No এবং IFSC যাচাই করুন। Account না থাকলে Missing Account সতর্কতা দেখাবে।</p>
@@ -1980,12 +1980,12 @@
     const selectedVillage=Number(document.getElementById('villageSelect').value);
 
     tokens.forEach(function(token){
-      let m=token.match(/^WB-\d{2}-\d{3}-(\d{3})-(\d{3})\/(\d+)$/i);
+      let m=token.match(/^WB-\d{2}-\d{3}-(\d{3})-(\d{3})\/(\d+)(-[A-Z])?$/i);
       if(m){
         if(currentUser&&currentUser.jcPrefix&&token.toUpperCase().slice(0,13)!==currentUser.jcPrefix){ otherGp.push(token); return; }
         result.push({v:Number(m[2]),h:Number(m[3])}); return;
       }
-      m=token.match(/^(\d+)\/(\d+)$/);
+      m=token.match(/^(\d+)\/(\d+)(-[A-Za-z])?$/);
       if(m){ result.push({v:Number(m[1]),h:Number(m[2])}); return; }
       m=token.match(/^(\d+)-(\d+)$/);
       if(m && selectedVillage){
@@ -1993,6 +1993,8 @@
         for(let n=a;;n+=step){result.push({v:selectedVillage,h:n}); if(n===b)break;}
         return;
       }
+      m=token.match(/^(\d+)-[A-Za-z]$/);               // household with suffix, e.g. 483-A
+      if(m && selectedVillage){ result.push({v:selectedVillage,h:Number(m[1])}); return; }
       if(/^\d+$/.test(token) && selectedVillage){ result.push({v:selectedVillage,h:Number(token)}); }
     });
     const unique={};
@@ -2012,7 +2014,8 @@
     if(!text){ clearSearchResults(); return; }
 
     // Name search: the input contains letters and is not a full Job Card
-    if(/[A-Za-z\u0980-\u09FF]/.test(text) && !/WB-\d/i.test(text)){
+    // (a single letter like the "A" in 483-A is a Job Card suffix, not a name)
+    if(/[A-Za-z\u0980-\u09FF]{2,}/.test(text.replace(/WB-\d/gi,'')) && !/WB-\d/i.test(text)){
       if(text.replace(/\s+/g,'').length<2){ showStatus('নাম দিয়ে খুঁজতে কমপক্ষে ২টি অক্ষর লিখুন।','error'); return; }
       showLoading('নাম দিয়ে search হচ্ছে...');
       google.script.run
@@ -2486,7 +2489,7 @@
   function shortJobCard(jc){
     const p=parseJobCardClient(jc);
     if(p){
-      return String(p.v).padStart(3,'0')+'/'+String(p.h).padStart(3,'0');
+      return String(p.v).padStart(3,'0')+'/'+String(p.h).padStart(3,'0')+(p.sfx||'');
     }
     return String(jc||'');
   }
@@ -2905,7 +2908,7 @@
 
   function closeFinalPreview(){document.getElementById('previewOverlay').classList.remove('show');document.body.style.overflow='';}
 
-  function parseJobCardClient(jc){const m=String(jc||'').match(/^WB-\d{2}-\d{3}-(\d{3})-(\d{3})\/(\d+)$/i);return m?{gp:m[1],v:Number(m[2]),h:Number(m[3]),no:m[4]}:null;}
+  function parseJobCardClient(jc){const m=String(jc||'').match(/^WB-\d{2}-\d{3}-(\d{3})-(\d{3})\/(\d+)(-[A-Z])?$/i);return m?{gp:m[1],v:Number(m[2]),h:Number(m[3]),sfx:(m[4]||'').toUpperCase()}:null;}
 
   function renderPreviewTable(){
     const q=document.getElementById('previewSearch').value.trim().toLowerCase(), vf=document.getElementById('previewVillage').value;

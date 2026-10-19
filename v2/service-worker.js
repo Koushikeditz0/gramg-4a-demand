@@ -1,8 +1,8 @@
 // v2 service worker: caches only the app shell (same origin). Data requests go to
 // Supabase (another origin) and are never cached, so offline never shows stale data
 // as if it were saved.
-const CACHE_NAME = 'gramg-4a-demand-v2.0.0';
-const APP_SHELL = ['./', './index.html', './manifest.json', './js/config.js', './js/sb-client.js', './js/gramg-adapter.js', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'gramg-4a-demand-v2.1.0';
+const APP_SHELL = ['./', './index.html', './manifest.json', './js/config.js', './js/sb-client.js', './js/gramg-adapter.js', './admin.html', './js/admin.js', './js/import-map.js', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(APP_SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

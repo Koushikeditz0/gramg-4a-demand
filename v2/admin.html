@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>G RAM-G 4A Admin</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#172033;}
+    .app{max-width:1100px;margin:auto;padding:8px;}
+    .header{background:#0f172a;color:#fff;border-radius:12px;padding:11px 13px;margin-bottom:8px;}
+    .header-title{font-size:17px;font-weight:700;}
+    .header-sub{font-size:11px;opacity:.8;margin-top:3px;}
+    .badge{font-size:10px;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:middle;}
+    .badge-admin{background:#f59e0b;color:#111;}
+    .bar{background:#fff;border-radius:10px;padding:9px 11px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+    .bar .who{font-size:14px;font-weight:700;} .bar .role{font-size:11px;color:#64748b;}
+    button{border:0;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer;}
+    button:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-primary{background:#2563eb;color:#fff;} .btn-success{background:#16a34a;color:#fff;}
+    .btn-danger{background:#dc2626;color:#fff;} .btn-light{background:#e2e8f0;color:#172033;}
+    .btn-small{padding:6px 9px;font-size:12px;}
+    .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+    .tab{background:#e2e8f0;color:#334155;} .tab.active{background:#0f172a;color:#fff;}
+    .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+    .card h2{font-size:15px;margin:0 0 8px;} .card h3{font-size:13px;margin:12px 0 6px;}
+    .muted{font-size:11px;color:#64748b;line-height:1.5;}
+    label.f{display:block;font-size:12px;font-weight:700;color:#475569;margin:8px 0 4px;}
+    input[type=text],input[type=file],select{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:9px 10px;font-size:14px;}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .check{display:flex;gap:8px;align-items:flex-start;font-size:12px;margin:10px 0;line-height:1.4;}
+    .check input{width:18px;height:18px;flex:0 0 18px;margin-top:1px;}
+    .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin:8px 0;}
+    .stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;}
+    .stat .n{font-size:20px;font-weight:800;} .stat .l{font-size:11px;color:#475569;margin-top:2px;}
+    .stat.good .n{color:#166534;} .stat.warn .n{color:#9a3412;} .stat.bad .n{color:#991b1b;}
+    .progress{height:8px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin:8px 0;}
+    .progress > div{height:100%;background:#2563eb;width:0;transition:width .2s;}
+    .table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:8px;max-height:420px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{position:sticky;top:0;background:#e2e8f0;text-align:left;padding:6px 7px;}
+    td{padding:6px 7px;border-top:1px solid #edf2f7;vertical-align:top;}
+    .pill{font-size:10px;font-weight:800;border-radius:20px;padding:2px 7px;white-space:nowrap;}
+    .pill.on{background:#dcfce7;color:#166534;} .pill.off{background:#fee2e2;color:#991b1b;} .pill.neutral{background:#e2e8f0;color:#334155;}
+    .status{display:none;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
+    .status.show{display:block;} .status.ok{background:#dcfce7;color:#166534;} .status.err{background:#fee2e2;color:#991b1b;} .status.info{background:#e0e7ff;color:#3730a3;}
+    .hidden{display:none!important;}
+    .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+    .chip{font-size:11px;background:#dcfce7;color:#166534;border-radius:6px;padding:2px 6px;}
+    .chip.ign{background:#f1f5f9;color:#64748b;text-decoration:line-through;}
+    ol.steps{font-size:12px;line-height:1.6;padding-left:18px;margin:6px 0;}
+    code{background:#f1f5f9;border-radius:4px;padding:1px 4px;font-size:11px;}
+    .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
+    .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
+  </style>
+</head>
+<body>
+<div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
+<div class="app">
+  <div class="header">
+    <div class="header-title">📋 G RAM-G 4A/Demand List Builder <span class="badge badge-admin">Admin</span></div>
+    <div class="header-sub">শ্রমিক নির্বাচন, তালিকা প্রস্তুতি ও ডিমান্ড ব্যবস্থাপনা</div>
+  </div>
+
+  <div class="bar">
+    <div><div class="who" id="who">…</div><div class="role">Super Admin</div></div>
+    <button class="btn-light btn-small" id="logoutBtn">Logout</button>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="import">📥 Data Import</button>
+    <button class="tab" data-tab="history">🕘 Import History</button>
+    <button class="tab" data-tab="users">👥 Users</button>
+  </div>
+
+  <!-- ============ IMPORT ============ -->
+  <section id="tab-import">
+    <div class="card">
+      <h2>Worker ও Account data import</h2>
+      <div class="muted">CSV বা Excel (.xlsx) file দিন। একটা file-এ worker আর account দুটোই থাকতে পারে (যেমন SmartDesk Master Data)।
+        শুধু দরকারি ৯টা column নেওয়া হয়: Job Card No, Applicant No, Applicant Name, Aadhaar Seeded, Authentication Done, ABPS, eKYC, Account No, IFSC। বাকি column (Caste, Gender, Age ইত্যাদি) নেওয়া হয় না।</div>
+      <label class="f" for="gpSelect">Gram Panchayat</label>
+      <select id="gpSelect"></select>
+      <div class="muted" id="gpStats" style="margin-top:4px;"></div>
+      <label class="f" for="fileInput">File</label>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+      <label class="check"><input type="checkbox" id="deactivateMissing">
+        <span>এই file-এ যাদের নাম <b>নেই</b>, তাদের <b>inactive</b> করুন (delete হবে না, পুরনো selection থাকবে)। পুরো GP-র সম্পূর্ণ file দিলে তবেই এটা tick করুন।</span></label>
+      <button class="btn-primary" id="previewBtn" disabled>🔍 যাচাই করুন (Preview)</button>
+      <div class="progress hidden" id="progress"><div></div></div>
+      <div class="muted" id="progressText"></div>
+    </div>
+
+    <div class="card hidden" id="previewCard">
+      <h2>Preview — এখনো কিছু save হয়নি</h2>
+      <div id="mappingInfo" class="muted"></div>
+      <div class="stats" id="stats"></div>
+      <div id="problemsBox" class="hidden">
+        <h3>সমস্যা ও সতর্কতা (প্রথম ৩০০টি)</h3>
+        <div class="table-wrap"><table><thead><tr><th>Row</th><th>Job Card No</th><th>App</th><th>সমস্যা</th></tr></thead><tbody id="problems"></tbody></table></div>
+        <div class="row" style="margin-top:6px;"><button class="btn-light btn-small" id="problemsCsvBtn">⬇ সমস্যার তালিকা (CSV)</button></div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn-success" id="commitBtn">✅ Confirm Import</button>
+        <button class="btn-light" id="cancelBtn">বাতিল</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="tab-history" class="hidden">
+    <div class="card">
+      <h2>Import History</h2>
+      <div class="muted">শুধু সবচেয়ে শেষ import ফেরানো (Rollback) যায়। Rollback করলে সেই import-এর আগের অবস্থা ফিরে আসে; ওই import-এ নতুন আসা worker কেউ select না করে থাকলে মুছে যায়, করে থাকলে inactive হয়।</div>
+      <div class="table-wrap" style="margin-top:8px;"><table>
+        <thead><tr><th>তারিখ</th><th>File</th><th>অবস্থা</th><th>নতুন</th><th>পরিবর্তিত</th><th>Account</th><th>Inactive</th><th>কে</th><th></th></tr></thead>
+        <tbody id="history"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ USERS ============ -->
+  <section id="tab-users" class="hidden">
+    <div class="card">
+      <h2>Users</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Username</th><th>নাম</th><th>GP</th><th>অবস্থা</th><th>Device</th><th>শেষ ব্যবহার</th><th></th></tr></thead>
+        <tbody id="users"></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>নতুন user যোগ করা</h2>
+      <ol class="steps">
+        <li>Supabase Dashboard → <b>Authentication → Users → Add user → Create new user</b>।<br>
+            Email: <code>username@users.gramg.invalid</code> (যেমন <code>ramesh@users.gramg.invalid</code>), Password: কমপক্ষে ৬ সংখ্যার PIN, <b>Auto Confirm User ✅</b>।</li>
+        <li>এই পাতায় নিচে <b>তালিকা Refresh</b> করে user-কে বেছে নাম ও GP দিয়ে <b>Profile যোগ করুন</b>।</li>
+      </ol>
+      <div class="row"><button class="btn-light btn-small" id="refreshUnlinked">🔄 তালিকা Refresh</button></div>
+      <div id="unlinkedBox" class="muted" style="margin-top:6px;"></div>
+      <div id="linkForm" class="hidden">
+        <label class="f" for="linkUser">User (email)</label><select id="linkUser"></select>
+        <label class="f" for="linkUsername">Username</label><input type="text" id="linkUsername" readonly>
+        <label class="f" for="linkName">পুরো নাম</label><input type="text" id="linkName" maxlength="100">
+        <label class="f" for="linkRole">Role</label>
+        <select id="linkRole"><option value="gp_user">GP User</option><option value="super_admin">Super Admin</option></select>
+        <label class="f" for="linkGp">GP</label><select id="linkGp"></select>
+        <div style="margin-top:10px;"><button class="btn-primary" id="linkBtn">➕ Profile যোগ করুন</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="muted" style="text-align:center;margin:14px 0;">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
+</div>
+
+<script src="./js/config.js"></script>
+<script src="./js/sb-client.js"></script>
+<script src="./js/import-map.js"></script>
+<script src="./js/admin.js"></script>
+</body>
+</html>

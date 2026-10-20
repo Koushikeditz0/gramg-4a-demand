@@ -19,7 +19,13 @@
     TOO_MANY_CHANGES: 'একবারে অনেক বেশি পরিবর্তন। কয়েক ধাপে করুন।',
     BAD_INPUT: 'Search-এর তথ্য সঠিক নয়।',
     LIST_LOCKED: 'এই list জমা দেওয়া বা lock করা আছে, তাই এখন বদলানো যাবে না।',
-    LIST_EMPTY: 'খালি list জমা দেওয়া যায় না। আগে worker select করুন।'
+    LIST_EMPTY: 'খালি list জমা দেওয়া যায় না। আগে worker select করুন।',
+    NO_LIST: 'আগে একটা list খুলুন: উপরে "➕ নতুন list" চাপুন।',
+    NEED_WORK_NAME: 'Work Name লিখুন।',
+    NEED_SUPERVISORS: 'যথেষ্ট Supervisor-এর নাম দেওয়া হয়নি।',
+    TOO_MANY_LISTS: 'একসঙ্গে সর্বোচ্চ ৫টা চলতি list রাখা যায়। পুরনো list শেষ হলে নতুন খুলুন।',
+    DUPLICATE_WORK_NAME: 'এই Work Name-এ আপনার আরেকটা list আছে। অন্য নাম দিন।',
+    LIST_NOT_EMPTY: 'List-এ worker আছে। মোছার আগে Clear Selected করুন।'
   };
   function bnError(e) {
     var out = new Error(BN[e.code] || ('Server error: ' + (e.message || e)));
@@ -27,13 +33,24 @@
     return out;
   }
 
-  var st = { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: null, workName: '',
-             submitState: 'draft', submittedAt: null };
+  function freshState(ctx) {
+    return { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: ctx || null, workName: '',
+             submitState: 'draft', submittedAt: null, supervisors: [], lists: [] };
+  }
+  var st = freshState();
   function notifyState() {
     if (typeof window.gramgOnListState === 'function') {
-      try { window.gramgOnListState({ state: st.submitState, submittedAt: st.submittedAt }); } catch (e) {}
+      try {
+        window.gramgOnListState({ state: st.submitState, submittedAt: st.submittedAt, listId: st.listId,
+                                  workName: st.workName, supervisors: st.supervisors.slice(), lists: st.lists.slice(),
+                                  noList: !st.listId });
+      } catch (e) {}
     }
   }
+  // the list the supervisor last worked on is remembered per device
+  function memKey() { return 'GramG2_ListSel_' + ((st.ctx && st.ctx.username) || ''); }
+  function remember(id) { try { if (id) localStorage.setItem(memKey(), id); else localStorage.removeItem(memKey()); } catch (e) {} }
+  function remembered() { try { return localStorage.getItem(memKey()); } catch (e) { return null; } }
 
   function toMember(r) {
     var id = r.job_card_no + '|' + r.applicant_no;
@@ -42,7 +59,8 @@
       id: id, wid: r.id, jobCard: r.job_card_no, applicantNo: String(r.applicant_no),
       name: r.applicant_name, ekyc: !!r.ekyc, abps: !!r.abps,
       aadhaarSeeded: !!r.aadhaar_seeded, authenticationDone: !!r.authentication_done,
-      eligible: !!r.eligible, active: r.active !== false
+      eligible: !!r.eligible, active: r.active !== false,
+      takenListId: r.taken_list_id || null, takenWork: r.taken_work || '', takenOther: !!r.taken_other
     };
   }
   function toFamilies(rows) {
@@ -120,14 +138,71 @@
   }
 
   // ---------------- saved list ----------------
-  function getSavedWorkers() {
-    return SB.rpc('get_active_list', {}, { retry: true }).then(function (r) {
-      st.listId = r.list_id; st.version = r.version; st.workName = r.work_name || '';
-      st.submitState = r.submit_state || 'draft'; st.submittedAt = r.submitted_at || null;
-      notifyState();
-      st.server = new Set((r.items || []).map(function (x) { return x.id; }));
-      return (r.items || []).map(toMember);
+  function refreshLists() {
+    return SB.rpc('get_my_lists', {}, { retry: true }).then(function (lists) {
+      st.lists = lists || [];
+      var ids = st.lists.map(function (l) { return l.list_id; });
+      if (!st.listId || ids.indexOf(st.listId) < 0) {
+        var m = remembered();
+        st.listId = ids.indexOf(m) >= 0 ? m : (ids[0] || null);
+      }
     });
+  }
+  function applyList(r) {
+    if (!r) {
+      st.listId = null; st.version = 0; st.server = new Set(); st.workName = ''; st.supervisors = [];
+      st.submitState = 'draft'; st.submittedAt = null;
+      notifyState(); return [];
+    }
+    st.listId = r.list_id; st.version = r.version; st.workName = r.work_name || '';
+    st.supervisors = r.supervisors || [];
+    st.submitState = r.submit_state || 'draft'; st.submittedAt = r.submitted_at || null;
+    st.server = new Set((r.items || []).map(function (x) { return x.id; }));
+    st.lists.forEach(function (l) {
+      if (l.list_id === r.list_id) { l.workers = (r.items || []).length; l.work_name = st.workName; l.submit_state = st.submitState; l.supervisors = st.supervisors; }
+    });
+    remember(st.listId);
+    notifyState();
+    return (r.items || []).map(toMember);
+  }
+  // Loads the current list (the one picked before on this device, else the first).
+  function getSavedWorkers() {
+    return refreshLists().then(function () {
+      if (!st.listId) return applyList(null);
+      return SB.rpc('get_list', { p_list_id: st.listId }, { retry: true }).then(applyList, function (e) {
+        if (e.code !== 'LIST_NOT_FOUND') throw e;
+        st.listId = null; remember(null);                 // e.g. the admin marked it "work complete"
+        return refreshLists().then(function () {
+          return st.listId ? SB.rpc('get_list', { p_list_id: st.listId }, { retry: true }).then(applyList) : applyList(null);
+        });
+      });
+    });
+  }
+  function switchList(id) {
+    return whenIdle().then(function () { st.listId = id; remember(id); return getSavedWorkers(); });
+  }
+  function createList(name) {
+    return whenIdle().then(function () {
+      return SB.rpc('create_list', { p_work_name: String(name || '') });
+    }).then(function (r) {
+      st.listId = r.list_id; remember(r.list_id);
+      return refreshLists().then(function () { return applyList(r); });
+    }, function (e) { throw bnError(e || {}); });
+  }
+  function setMeta(name, supervisors) {
+    if (!st.listId) return Promise.reject(bnError({ code: 'NO_LIST' }));
+    return whenIdle().then(function () {
+      return SB.rpc('set_list_meta', { p_list_id: st.listId, p_work_name: String(name || ''), p_supervisors: supervisors || [] });
+    }).then(function (r) {
+      st.workName = r.work_name || ''; st.supervisors = r.supervisors || []; st.version = r.version;
+      st.lists.forEach(function (l) { if (l.list_id === st.listId) { l.work_name = st.workName; l.supervisors = st.supervisors; } });
+      notifyState(); return r;
+    }, function (e) { throw bnError(e || {}); });
+  }
+  function deleteList() {
+    if (!st.listId) return Promise.resolve([]);
+    return whenIdle().then(function () { return SB.rpc('delete_list', { p_list_id: st.listId }); })
+      .then(function () { st.listId = null; remember(null); return getSavedWorkers(); }, function (e) { throw bnError(e || {}); });
   }
 
   // One save at a time; while one runs, only the newest wanted state is kept.
@@ -159,6 +234,7 @@
   function applyDiff(want) {
     var ready = st.listId ? Promise.resolve() : getSavedWorkers();
     return ready.then(function () {
+      if (!st.listId) throw { code: 'NO_LIST' };
       var add = [], remove = [];
       want.forEach(function (w) { if (!st.server.has(w)) add.push(w); });
       st.server.forEach(function (w) { if (!want.has(w)) remove.push(w); });
@@ -230,8 +306,7 @@
 
   function logout() {
     return whenIdle().catch(function () {}).then(function () { return SB.signOut(); }).then(function () {
-      st = { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: null, workName: '',
-             submitState: 'draft', submittedAt: null };
+      st = freshState();
     });
   }
 
@@ -263,6 +338,10 @@
   window.gramgAdapter = {
     restore: restore, logout: logout, setWorkName: setWorkName,
     submitList: function () { return changeSubmit('submit_list'); },
+    switchList: switchList, createList: createList, setMeta: setMeta, deleteList: deleteList,
+    listId: function () { return st.listId; },
+    supervisors: function () { return st.supervisors.slice(); },
+    lists: function () { return st.lists.slice(); },
     unsubmitList: function () { return changeSubmit('unsubmit_list'); },
     listState: function () { return st.submitState; },
     workName: function () { return st.workName; },

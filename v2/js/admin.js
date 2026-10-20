@@ -29,6 +29,9 @@
       LIST_NOT_FOUND: 'List পাওয়া যায়নি (হয়তো নতুন দফা শুরু হয়েছে)। Refresh করুন।',
       LIST_NOT_LOCKED: 'নতুন দফা শুরু করার আগে list Lock করুন।',
       LIST_LOCKED: 'List lock করা আছে।',
+      BAD_PREFIX: 'Job Card prefix ঠিক নয়। যেমন: WB-08-005-014 (প্রথম ১৩ অক্ষর)।',
+      GP_EXISTS: 'এই prefix-এর GP আগে থেকেই আছে।',
+      NEED_WORK_NAME: 'Work Name লিখুন।',
       BAD_USERNAME: 'Username ঠিক নয়: ৩–৩২ অক্ষর, শুধু ছোট হাতের ইংরেজি অক্ষর, সংখ্যা, _ . -',
       BAD_NAME: 'পুরো নাম লিখুন (১০০ অক্ষরের মধ্যে)।', BAD_GP: 'GP বেছে নিন।',
       PIN_FORMAT: 'PIN ৬ থেকে ১২ সংখ্যার হতে হবে, শুধু অঙ্ক।',
@@ -347,11 +350,12 @@
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
   });
 
-  // ---------- dashboard ----------
-  var dash = { rows: [], dups: [], filter: 'all', picked: new Set(), loading: false };
+  // ---------- dashboard (one card per supervisor, one sub-card per list/work) ----------
+  var dash = { users: [], rows: [], dups: [], filter: 'all', picked: new Set(), loading: false };
   var STATE_BN = { draft: 'খসড়া', submitted: 'জমা দিয়েছে', locked: 'Lock করা', empty: 'list নেই' };
-  function rowState(r) { return !r.list_id || !Number(r.workers) ? 'empty' : r.submit_state; }
+  function rowState(r) { return !r.list_id ? 'empty' : r.submit_state; }
   function vno(v) { return String(v).padStart(3, '0'); }
+  function reqSup(n) { return Math.max(1, Math.floor((Number(n) || 0) / 20)); }
 
   function loadDashboard() {
     var gp = Number($('dashGp').value);
@@ -361,7 +365,14 @@
       SB.rpc('admin_dashboard', { p_gp_id: gp }, { retry: true }),
       SB.rpc('admin_list_duplicates', { p_gp_id: gp }, { retry: true })
     ]).then(function (res) {
-      dash.rows = res[0] || []; dash.dups = res[1] || [];
+      dash.users = res[0] || []; dash.dups = res[1] || [];
+      dash.rows = [];
+      dash.users.forEach(function (u) {
+        (u.lists || []).forEach(function (l) {
+          var r = Object.assign({}, l); r.user_id = u.user_id; r.username = u.username; r.full_name = u.full_name; r.user_active = u.active;
+          dash.rows.push(r);
+        });
+      });
       var ids = new Set(dash.rows.map(function (r) { return r.list_id; }));
       dash.picked.forEach(function (id) { if (!ids.has(id)) dash.picked.delete(id); });
       renderDashboard();
@@ -372,16 +383,19 @@
 
   function renderDashboard() {
     var S = $('dashStats'); S.innerHTML = '';
-    var c = { all: dash.rows.length, submitted: 0, draft: 0, empty: 0, locked: 0 };
-    dash.rows.forEach(function (r) { c[rowState(r)]++; });
+    var c = { submitted: 0, draft: 0, locked: 0, short: 0 };
+    dash.rows.forEach(function (r) { c[r.submit_state]++; if ((r.supervisors || []).length < reqSup(r.workers)) c.short++; });
+    var noList = dash.users.filter(function (u) { return !(u.lists || []).length; }).length;
     function stat(n, label, cls) { var d = el('div', null, 'stat ' + (cls || '')); d.appendChild(el('div', bn(n), 'n')); d.appendChild(el('div', label, 'l')); S.appendChild(d); }
-    stat(c.all, 'মোট supervisor'); stat(c.submitted, 'জমা দিয়েছে', 'good'); stat(c.draft, 'খসড়া (জমা দেয়নি)', 'warn');
-    stat(c.empty, 'list নেই / খালি'); stat(c.locked, 'Lock করা'); stat(dash.dups.length, 'দুই list-এ একই worker', dash.dups.length ? 'bad' : '');
+    stat(dash.users.length, 'মোট supervisor'); stat(dash.rows.length, 'চলতি list (কাজ)');
+    stat(c.submitted, 'জমা দিয়েছে', 'good'); stat(c.draft, 'খসড়া (জমা দেয়নি)', 'warn'); stat(c.locked, 'Lock করা');
+    stat(noList, 'list নেই'); stat(c.short, 'Supervisor-এর নাম কম', c.short ? 'bad' : '');
+    if (dash.dups.length) stat(dash.dups.length, 'দুই list-এ একই worker (পুরনো)', 'bad');
 
     var D = $('dupBox'); D.innerHTML = '';
     D.classList.toggle('hidden', !dash.dups.length);
     if (dash.dups.length) {
-      var det = el('details', null, 'dups'); det.appendChild(el('summary', '⚠ ' + dash.dups.length + ' জন worker একাধিক supervisor-এর list-এ আছে — দেখুন'));
+      var det = el('details', null, 'dups'); det.appendChild(el('summary', '⚠ ' + dash.dups.length + ' জন worker একাধিক list-এ আছেন (নতুন নিয়মের আগের) — দেখুন'));
       var wrap = el('div', null, 'table-wrap'); wrap.style.marginTop = '6px';
       var t = el('table'); var th = el('tr');
       ['Job Card No', 'App', 'নাম', 'কার কার list-এ'].forEach(function (h) { th.appendChild(el('th', h)); });
@@ -397,72 +411,89 @@
 
     document.querySelectorAll('#dashFilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.f === dash.filter); });
     var C = $('dashCards'); C.innerHTML = '';
-    var rows = dash.rows.filter(function (r) { return dash.filter === 'all' || rowState(r) === dash.filter; });
-    if (!rows.length) C.appendChild(el('div', dash.rows.length ? 'এই ভাগে কেউ নেই।' : 'এই GP-তে এখনো কোনো supervisor নেই। Users tab থেকে যোগ করুন।', 'card muted'));
-    rows.forEach(function (r) { C.appendChild(userCard(r)); });
+    var shown = 0;
+    dash.users.forEach(function (u) {
+      var lists = (u.lists || []).filter(function (l) { return dash.filter === 'all' || l.submit_state === dash.filter; });
+      if (dash.filter === 'empty' ? (u.lists || []).length : (dash.filter !== 'all' && !lists.length)) return;
+      C.appendChild(userCard(u, lists)); shown++;
+    });
+    if (!shown) C.appendChild(el('div', dash.users.length ? 'এই ভাগে কিছু নেই।' : 'এই GP-তে এখনো কোনো supervisor নেই। Users tab থেকে যোগ করুন।', 'card muted'));
     updateExportSummary();
   }
 
-  function userCard(r) {
-    var st = rowState(r), n = Number(r.workers || 0);
-    var card = el('div', null, 'ucard' + (dash.picked.has(r.list_id) ? ' sel' : ''));
+  function userCard(u, lists) {
+    var card = el('div', null, 'ucard');
     var top = el('div', null, 'top');
-    var who = el('div'); who.appendChild(el('div', r.full_name || r.username, 'nm')); who.appendChild(el('div', '@' + r.username + (r.active ? '' : ' · বন্ধ'), 'un'));
+    var who = el('div'); who.appendChild(el('div', u.full_name || u.username, 'nm')); who.appendChild(el('div', '@' + u.username + (u.active ? '' : ' · বন্ধ'), 'un'));
     var pills = el('div'); pills.style.textAlign = 'right';
-    pills.appendChild(el('span', STATE_BN[st], 'pill ' + st));
-    if (!r.active) { pills.appendChild(document.createTextNode(' ')); pills.appendChild(el('span', 'User বন্ধ', 'pill off')); }
+    pills.appendChild(el('span', (u.lists || []).length + 'টা list', 'pill neutral'));
+    if (!u.active) { pills.appendChild(document.createTextNode(' ')); pills.appendChild(el('span', 'User বন্ধ', 'pill off')); }
     top.appendChild(who); top.appendChild(pills); card.appendChild(top);
+    card.appendChild(el('div', 'Device: ' + u.active_devices + ' চালু · শেষ login ' + fmtDate(u.last_seen), 'meta'));
+    if (!(u.lists || []).length) card.appendChild(el('div', 'কোনো চলতি list নেই।', 'muted'));
+    lists.forEach(function (l) {
+      var r = dash.rows.filter(function (x) { return x.list_id === l.list_id; })[0];
+      card.appendChild(listCard(r));
+    });
+    var acts = el('div', null, 'acts');
+    function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
+    act('🔑 PIN', 'btn-light', function () { openPinModal(u); });
+    act(u.active ? 'User বন্ধ' : 'User চালু', u.active ? 'btn-danger' : 'btn-success', function () {
+      if (u.active && !confirm(u.username + '-এর account বন্ধ করবেন? সব device থেকে সঙ্গে সঙ্গে logout হবে।')) return;
+      SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
+        .then(function () { status(u.username + ' ' + (u.active ? 'বন্ধ' : 'চালু') + ' করা হয়েছে।', 'ok'); return loadDashboard(); })
+        .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
+    });
+    card.appendChild(acts);
+    return card;
+  }
 
+  function listCard(r) {
+    var st = r.submit_state, n = Number(r.workers || 0), sups = r.supervisors || [], need = reqSup(n);
+    var box = el('div', null, 'lcard' + (dash.picked.has(r.list_id) ? ' sel' : ''));
+    box.dataset.list = r.list_id;
+    var head = el('div', null, 'lhead');
+    head.appendChild(el('div', r.work_name || '(Work Name নেই)', 'lname'));
+    head.appendChild(el('span', STATE_BN[st], 'pill ' + st));
+    box.appendChild(head);
     var meta = el('div', null, 'meta');
-    function line(label, value) { var d = el('div'); d.appendChild(el('b', label + ': ')); d.appendChild(document.createTextNode(value)); meta.appendChild(d); }
-    line('Worker', bn(n) + ' জন');
-    if (r.villages && r.villages.length) line('গ্রাম', r.villages.map(vno).join(', '));
-    if (r.work_name) line('Work Name', r.work_name);
-    if (r.list_id) line('শেষ পরিবর্তন', fmtDate(r.list_updated_at));
+    function line(label, value, cls) { var d = el('div', null, cls || ''); d.appendChild(el('b', label + ': ')); d.appendChild(document.createTextNode(value)); meta.appendChild(d); }
+    line('Worker', bn(n) + ' জন' + (r.villages && r.villages.length ? ' · গ্রাম ' + r.villages.map(vno).join(', ') : ''));
+    line('Supervisor', (sups.length ? sups.join(', ') : '—') + (sups.length < need ? '  ⚠ ' + need + ' জন লাগবে' : ''), sups.length < need ? 'warnline' : '');
     if (r.submitted_at) line('জমা', fmtDate(r.submitted_at));
     if (r.exported_at) line('Export', fmtDate(r.exported_at) + (r.export_count > 1 ? ' (' + r.export_count + ' বার)' : ''));
-    line('Device', r.active_devices + ' চালু · শেষ login ' + fmtDate(r.last_seen));
-    card.appendChild(meta);
-    if (Number(r.dup_workers)) card.appendChild(el('div', '⚠ ' + r.dup_workers + ' জন worker অন্য list-এও আছে', 'pill dup'));
-
-    if (r.list_id && n > 0) {
+    box.appendChild(meta);
+    if (n > 0) {
       var pick = el('label', null, 'pick'); var cb = document.createElement('input'); cb.type = 'checkbox';
       cb.checked = dash.picked.has(r.list_id); cb.dataset.list = r.list_id;
       cb.addEventListener('change', function () {
         if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id);
-        card.classList.toggle('sel', cb.checked); updateExportSummary();
+        box.classList.toggle('sel', cb.checked); updateExportSummary();
       });
-      pick.appendChild(cb); pick.appendChild(document.createTextNode('Export-এ নিন')); card.appendChild(pick);
+      pick.appendChild(cb); pick.appendChild(document.createTextNode('K-Desk export-এ নিন')); box.appendChild(pick);
     }
-
     var acts = el('div', null, 'acts');
     function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
-    if (r.list_id && n > 0) act('👁 দেখুন', 'btn-primary', function () { openPreview(r); });
-    if (r.list_id && (st === 'submitted' || st === 'draft') && n > 0) act('🔒 Lock', 'btn-light', function () { listAction(r, 'lock'); });
-    if (r.list_id && (st === 'submitted' || st === 'locked')) act('↩ ফেরত দিন', 'btn-light', function () {
-      if (confirm(r.username + '-এর list আবার খসড়া করবেন? Supervisor তখন বদলাতে পারবেন।')) listAction(r, 'reopen');
+    act('👁 দেখুন', 'btn-primary', function () { openPreview(r); });
+    if ((st === 'submitted' || st === 'draft') && n > 0) act('🔒 Lock', 'btn-light', function () { listAction(r, 'lock'); });
+    if (st === 'submitted' || st === 'locked') act('↩ ফেরত দিন', 'btn-light', function () {
+      if (confirm('"' + r.work_name + '" (' + r.username + ') আবার খসড়া করবেন? Supervisor তখন বদলাতে পারবেন।')) listAction(r, 'reopen');
     });
-    if (r.list_id && st === 'locked') act('🆕 নতুন দফা', 'btn-primary', function () {
-      if (confirm(r.username + '-এর এই list বন্ধ (archive) করে নতুন খালি list শুরু করবেন?\nপুরনো list history-তে থেকে যাবে।')) listAction(r, 'new_round');
+    if (st === 'locked') act('✔ কাজ শেষ', 'btn-success', function () {
+      if (confirm('"' + r.work_name + '" (' + r.username + ') — কাজ শেষ?\nList বন্ধ হবে (history-তে থাকবে), আর এর ' + n + ' জন worker আবার নতুন কাজে বাছাইযোগ্য হবেন।')) listAction(r, 'complete');
     });
-    act(r.active ? 'User বন্ধ' : 'User চালু', r.active ? 'btn-danger' : 'btn-success', function () {
-      if (r.active && !confirm(r.username + '-এর account বন্ধ করবেন? সব device থেকে সঙ্গে সঙ্গে logout হবে।')) return;
-      SB.rpc('admin_set_user_active', { p_user_id: r.user_id, p_active: !r.active })
-        .then(function () { status(r.username + ' ' + (r.active ? 'বন্ধ' : 'চালু') + ' করা হয়েছে।', 'ok'); return loadDashboard(); })
-        .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
-    });
-    act('🔑 PIN', 'btn-light', function () { openPinModal(r); });
-    card.appendChild(acts);
-    return card;
+    if (Number(r.submissions)) act('🕘 আগের জমা (' + r.submissions + ')', 'btn-light', function () { openSubmissions(r); });
+    box.appendChild(acts);
+    return box;
   }
 
   function listAction(r, action) {
     loading('অপেক্ষা করুন...');
     return SB.rpc('admin_set_list_state', { p_list_id: r.list_id, p_action: action })
       .then(function () {
-        var msg = { lock: 'list lock করা হয়েছে।', reopen: 'list আবার খসড়া করা হয়েছে।', new_round: 'নতুন দফা শুরু হয়েছে।' }[action];
-        status(r.username + ': ' + msg, 'ok');
-        if (action === 'new_round') dash.picked.delete(r.list_id);
+        var msg = { lock: 'lock করা হয়েছে।', reopen: 'আবার খসড়া করা হয়েছে।', complete: 'কাজ শেষ — list বন্ধ হয়েছে, worker-রা আবার বাছাইযোগ্য।' }[action];
+        status('"' + r.work_name + '" (' + r.username + '): ' + msg, 'ok');
+        if (action === 'complete') dash.picked.delete(r.list_id);
         return loadDashboard();
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -472,8 +503,11 @@
   function updateExportSummary() {
     var rows = pickedRows(), n = 0, notSub = 0;
     rows.forEach(function (r) { n += Number(r.workers || 0); if (r.submit_state === 'draft') notSub++; });
+    var works = {}; rows.forEach(function (r) { works[(r.work_name || '').toLowerCase()] = true; });
     $('expSummary').textContent = rows.length
-      ? rows.length + 'টা list বাছা হয়েছে (' + rows.map(function (r) { return r.username; }).join(', ') + '), মোট ' + bn(n) + ' জন worker।' + (notSub ? ' ⚠ ' + notSub + 'টা list এখনো জমা দেওয়া হয়নি।' : '')
+      ? rows.length + 'টা list বাছা হয়েছে (' + rows.map(function (r) { return (r.work_name || '—') + ' / ' + r.username; }).join(', ') + '), মোট ' + bn(n) + ' জন worker।' +
+        (notSub ? ' ⚠ ' + notSub + 'টা list এখনো জমা দেওয়া হয়নি।' : '') +
+        (Object.keys(works).length > 1 ? ' ⚠ আলাদা আলাদা কাজের list একসঙ্গে বাছা হয়েছে — একটা file-এ একটাই Work code থাকবে।' : '')
       : 'কোনো list বাছা হয়নি।';
     $('expBtn').disabled = !rows.length;
   }
@@ -484,7 +518,7 @@
     b.addEventListener('click', function () { dash.filter = b.dataset.f; renderDashboard(); });
   });
   $('pickSubmitted').addEventListener('click', function () {
-    dash.rows.forEach(function (r) { if (r.list_id && Number(r.workers) && r.submit_state === 'submitted') dash.picked.add(r.list_id); });
+    dash.rows.forEach(function (r) { if (Number(r.workers) && r.submit_state === 'submitted') dash.picked.add(r.list_id); });
     renderDashboard();
   });
   $('pickNone').addEventListener('click', function () { dash.picked.clear(); renderDashboard(); });
@@ -492,6 +526,74 @@
     if (document.visibilityState === 'visible' && !$('tab-dash').classList.contains('hidden')) loadDashboard();
   });
   (function () { var d = new Date(); $('expFrom').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+
+  // ---------- submitted copies ----------
+  function openSubmissions(r) {
+    loading('আগের জমা খুলছে...');
+    SB.rpc('admin_list_submissions', { p_list_id: r.list_id }).then(function (subs) {
+      $('subTitle').textContent = 'আগের জমা — ' + (r.work_name || '') + ' (@' + r.username + ')';
+      var box = $('subBody'); box.innerHTML = '';
+      (subs || []).forEach(function (s, i) {
+        var det = el('details'); if (i === 0) det.open = true;
+        det.appendChild(el('summary', fmtDate(s.submitted_at) + ' · ' + bn(s.worker_count) + ' জন · ' + (s.work_name || '') +
+          ((s.supervisors || []).length ? ' · Supervisor: ' + s.supervisors.join(', ') : '')));
+        var wrap = el('div', null, 'table-wrap'); wrap.style.margin = '6px 0 10px';
+        var t = el('table'), thead = el('thead'), th = el('tr');
+        ['SL', 'Job Card No', 'App', 'নাম'].forEach(function (h) { th.appendChild(el('th', h)); });
+        thead.appendChild(th); t.appendChild(thead);
+        var tb = el('tbody');
+        (s.workers || []).forEach(function (w, k) {
+          var tr = el('tr');
+          [k + 1, w.job_card_no, w.applicant_no, w.applicant_name].forEach(function (v, ci) { var td = el('td', String(v)); if (ci === 1) td.className = 'mono nw'; tr.appendChild(td); });
+          tb.appendChild(tr);
+        });
+        t.appendChild(tb); wrap.appendChild(t); det.appendChild(wrap); box.appendChild(det);
+      });
+      if (!(subs || []).length) box.appendChild(el('div', 'কোনো জমা নেই।', 'muted'));
+      $('subModal').classList.add('show');
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
+  $('subClose').addEventListener('click', function () { $('subModal').classList.remove('show'); });
+
+  // ---------- eKYC / ABPS report ----------
+  $('ekycBtn').addEventListener('click', function () {
+    var gp = Number($('dashGp').value); if (!gp) return;
+    loading('হিসাব হচ্ছে...');
+    SB.rpc('admin_ekyc_report', { p_gp_id: gp }, { retry: true }).then(function (rep) {
+      dash.ekyc = rep;
+      var tb = $('ekBody'); tb.innerHTML = '';
+      var tot = { workers: 0, eligible: 0, no_ekyc: 0, no_abps: 0, no_both: 0 };
+      (rep.villages || []).forEach(function (v) {
+        var tr = el('tr');
+        [vno(v.village_no), bn(v.workers), bn(v.eligible), bn(v.no_ekyc), bn(v.no_abps), bn(v.no_both)].forEach(function (x) { tr.appendChild(el('td', x)); });
+        tb.appendChild(tr);
+        Object.keys(tot).forEach(function (k) { tot[k] += Number(v[k]) || 0; });
+      });
+      var tr = el('tr', null, 'flag-warn');
+      ['মোট', bn(tot.workers), bn(tot.eligible), bn(tot.no_ekyc), bn(tot.no_abps), bn(tot.no_both)].forEach(function (x) { var td = el('td', x); td.style.fontWeight = '800'; tr.appendChild(td); });
+      tb.appendChild(tr);
+      $('ekSub').textContent = bn((rep.missing || []).length) + ' জন active worker-এর eKYC বা ABPS নেই (তাঁরা list-এ বাছা যান না)।';
+      $('ekModal').classList.add('show');
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+  $('ekClose').addEventListener('click', function () { $('ekModal').classList.remove('show'); });
+  $('ekExcel').addEventListener('click', function () {
+    var rep = dash.ekyc; if (!rep) return;
+    var g = state.gps.filter(function (x) { return String(x.id) === $('dashGp').value; })[0] || { name: 'GP' };
+    loadXlsx().then(function () {
+      var wb = XLSX.utils.book_new();
+      var va = [['Village', 'মোট worker', 'eKYC+ABPS আছে', 'eKYC নেই', 'ABPS নেই', 'দুটোই নেই']];
+      (rep.villages || []).forEach(function (v) { va.push([vno(v.village_no), v.workers, v.eligible, v.no_ekyc, v.no_abps, v.no_both]); });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(va), 'গ্রাম অনুযায়ী');
+      var ma = [['Village', 'Job Card No', 'Applicant No', 'Applicant Name', 'eKYC', 'ABPS', 'Aadhaar Seeded', 'Authentication Done']];
+      (rep.missing || []).forEach(function (w) { ma.push([vno(w.village_no), w.job_card_no, String(w.applicant_no), w.applicant_name, yn(w.ekyc), yn(w.abps), yn(w.aadhaar_seeded), yn(w.authentication_done)]); });
+      var ws = XLSX.utils.aoa_to_sheet(ma); ws['!cols'] = [{ wch: 7 }, { wch: 26 }, { wch: 8 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 10 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, ws, 'eKYC-ABPS নেই');
+      XLSX.writeFile(wb, 'eKYC_ABPS_' + g.name.replace(/[^A-Za-z0-9_-]+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+    }).catch(function (e) { status(errText(e), 'err'); });
+  });
 
   // ---------- K-Desk export ----------
   function ddmmyyyy(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
@@ -614,22 +716,35 @@
   var pv = { data: null, row: null };
   function yn(b) { return b ? 'Yes' : 'No'; }
   function openPreview(r) {
+    pv.row = r;
+    loadPreview(true);
+  }
+  function loadPreview(first) {
+    var r = pv.row; if (!r) return Promise.resolve();
     loading('List খুলছে...');
-    SB.rpc('admin_list_items', { p_list_id: r.list_id }).then(function (d) {
-      pv.data = d; pv.row = r;
-      $('pvTitle').textContent = (d.full_name || d.username) + ' (@' + d.username + ')';
-      $('pvSub').textContent = STATE_BN[rowState(r)] + (d.work_name ? ' · Work Name: ' + d.work_name : '') + (d.submitted_at ? ' · জমা: ' + fmtDate(d.submitted_at) : '');
+    return SB.rpc('admin_list_items', { p_list_id: r.list_id }).then(function (d) {
+      pv.data = d;
+      $('pvTitle').textContent = (d.work_name || '(Work Name নেই)') + ' — ' + (d.full_name || d.username) + ' (@' + d.username + ')';
+      $('pvSub').textContent = STATE_BN[d.submit_state] + (d.submitted_at ? ' · জমা: ' + fmtDate(d.submitted_at) : '') +
+        (Number(d.submissions) ? ' · আগের জমা: ' + d.submissions + 'টা' : '');
       var items = d.items || [], noAcc = 0, dup = 0, bad = 0, vs = {};
       items.forEach(function (x) { if (!x.account_no) noAcc++; if (x.in_other_lists > 0) dup++; if (!x.active || !x.eligible) bad++; vs[x.village_no] = true; });
+      var need = Number(d.required_supervisors) || 1, have = (d.supervisors || []).length;
       var S = $('pvStats'); S.innerHTML = '';
       function stat(n, label, cls) { var e = el('div', null, 'stat ' + (cls || '')); e.appendChild(el('div', bn(n), 'n')); e.appendChild(el('div', label, 'l')); S.appendChild(e); }
       stat(items.length, 'মোট worker'); stat(Object.keys(vs).length, 'গ্রাম');
-      stat(noAcc, 'Account নেই', noAcc ? 'warn' : ''); stat(dup, 'অন্য list-এও আছে', dup ? 'bad' : '');
+      stat(have + '/' + need, 'Supervisor (দেওয়া/লাগবে)', have < need ? 'bad' : 'good');
+      stat(noAcc, 'Account নেই', noAcc ? 'warn' : ''); if (dup) stat(dup, 'অন্য list-এও আছে', 'bad');
       stat(bad, 'এখন inactive / eKYC-ABPS নেই', bad ? 'bad' : '');
-      var sel = $('pvVillage'); sel.innerHTML = '';
-      var o = el('option', 'সব গ্রাম'); o.value = ''; sel.appendChild(o);
-      Object.keys(vs).map(Number).sort(function (a, b) { return a - b; }).forEach(function (v) { var oo = el('option', 'Village ' + vno(v)); oo.value = v; sel.appendChild(oo); });
-      $('pvSearch').value = ''; $('pvPick').checked = dash.picked.has(r.list_id);
+      $('pvWork').value = d.work_name || '';
+      $('pvSups').value = (d.supervisors || []).join(', ');
+      if (first) {
+        var sel = $('pvVillage'); sel.innerHTML = '';
+        var o = el('option', 'সব গ্রাম'); o.value = ''; sel.appendChild(o);
+        Object.keys(vs).map(Number).sort(function (a, b) { return a - b; }).forEach(function (v) { var oo = el('option', 'Village ' + vno(v)); oo.value = v; sel.appendChild(oo); });
+        $('pvSearch').value = ''; $('pvAddInput').value = ''; $('pvAddResults').innerHTML = '';
+      }
+      $('pvPick').checked = dash.picked.has(r.list_id);
       renderListPreview(); $('pvModal').classList.add('show');
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -649,10 +764,69 @@
       if (x.in_other_lists > 0) notes.push('অন্য list-এও');
       if (!x.account_no) notes.push('account নেই');
       tr.appendChild(el('td', notes.join(', ')));
+      var tdx = el('td'); var rb = el('button', '✕', 'btn-light btn-small'); rb.title = 'এই list থেকে বাদ দিন';
+      rb.addEventListener('click', function () {
+        if (!confirm(x.applicant_name + ' (' + x.job_card_no + ')-কে এই list থেকে বাদ দেবেন?')) return;
+        editList([], [x.worker_id], x.applicant_name + ' বাদ দেওয়া হয়েছে।');
+      });
+      tdx.appendChild(rb); tr.appendChild(tdx);
       tb.appendChild(tr);
     });
-    if (!sl) { var tr = el('tr'); var td = el('td', 'কিছু পাওয়া যায়নি।'); td.colSpan = 9; tr.appendChild(td); tb.appendChild(tr); }
+    if (!sl) { var tr = el('tr'); var td = el('td', 'কিছু পাওয়া যায়নি।'); td.colSpan = 10; tr.appendChild(td); tb.appendChild(tr); }
   }
+  function editList(add, remove, okMsg) {
+    loading('List বদলানো হচ্ছে...');
+    return SB.rpc('admin_edit_list', { p_list_id: pv.row.list_id, p_add: add, p_remove: remove }).then(function (r) {
+      var rej = r.rejected || [];
+      var why = { IN_OTHER_LIST: 'অন্য list-এ আছেন', NOT_ELIGIBLE: 'eKYC/ABPS নেই', INACTIVE: 'inactive', NOT_FOUND: 'এই GP-র নন' };
+      status(rej.length ? ('⚠ যোগ হয়নি: ' + rej.map(function (x) { return why[x.reason] || x.reason; }).join(', ')) : ('✅ ' + okMsg), rej.length ? 'err' : 'ok');
+      return Promise.all([loadPreview(false), loadDashboard()]);
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
+  $('pvMetaSave').addEventListener('click', function () {
+    var name = $('pvWork').value.trim();
+    var sups = $('pvSups').value.split(/[,\n]/).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!name) { status('Work Name লিখুন।', 'err'); return; }
+    loading('Save হচ্ছে...');
+    SB.rpc('admin_set_list_meta', { p_list_id: pv.row.list_id, p_work_name: name, p_supervisors: sups }).then(function () {
+      status('✅ Work Name / Supervisor save হয়েছে।', 'ok');
+      return Promise.all([loadPreview(false), loadDashboard()]);
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+  // "002/012 2/15 WB-08-005-001-003/007" -> village/household pairs
+  function parsePairs(text) {
+    var out = [];
+    String(text || '').split(/[\s,;]+/).forEach(function (t) {
+      var m = /^(?:WB-\d{2}-\d{3}-\d{3}-)?(\d{1,3})\/(\d{1,4})(?:-[A-Z])?$/i.exec(t.trim());
+      if (m) out.push({ v: Number(m[1]), h: Number(m[2]) });
+    });
+    return out;
+  }
+  $('pvAddBtn').addEventListener('click', function () {
+    var pairs = parsePairs($('pvAddInput').value);
+    var box = $('pvAddResults'); box.innerHTML = '';
+    if (!pairs.length) { box.appendChild(el('div', 'Job Card লিখুন, যেমন 002/012 (গ্রাম/household) বা পুরো নম্বর।', 'muted')); return; }
+    SB.rpc('admin_search_households', { p_gp_id: pv.data.gp_id, p_villages: pairs.map(function (p) { return p.v; }), p_households: pairs.map(function (p) { return p.h; }) })
+      .then(function (rows) {
+        if (!(rows || []).length) { box.appendChild(el('div', 'কাউকে পাওয়া যায়নি।', 'muted')); return; }
+        rows.forEach(function (w) {
+          var row = el('div', null, 'addrow');
+          row.appendChild(el('span', w.job_card_no + ' · ' + w.applicant_name + ' · eKYC ' + (w.ekyc ? '✓' : '✗') + ' ABPS ' + (w.abps ? '✓' : '✗'), 'mono'));
+          if (w.taken_list_id === pv.row.list_id) row.appendChild(el('span', 'এই list-এ আছেন', 'pill on'));
+          else if (w.taken_list_id) row.appendChild(el('span', '"' + w.taken_work + '" (' + w.taken_username + ')-এ আছেন', 'pill off'));
+          else if (!w.eligible) row.appendChild(el('span', 'eKYC/ABPS নেই', 'pill off'));
+          else {
+            var b = el('button', '➕ যোগ', 'btn-success btn-small');
+            b.addEventListener('click', function () { editList([w.id], [], w.applicant_name + ' যোগ হয়েছে।').then(function () { $('pvAddBtn').click(); }); });
+            row.appendChild(b);
+          }
+          box.appendChild(row);
+        });
+      }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
+  });
+  $('pvAddInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('pvAddBtn').click(); });
   $('pvSearch').addEventListener('input', renderListPreview);
   $('pvVillage').addEventListener('change', renderListPreview);
   $('pvClose').addEventListener('click', function () { $('pvModal').classList.remove('show'); });
@@ -669,11 +843,29 @@
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }];
       var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'List');
-      XLSX.writeFile(wb, 'List_' + pv.data.username + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+      var info = [['Work Name', pv.data.work_name || ''], ['Supervisor', (pv.data.supervisors || []).join(', ')], ['Workers', (pv.data.items || []).length], ['Username', pv.data.username]];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), 'Work Info');
+      XLSX.writeFile(wb, 'List_' + pv.data.username + '_' + String(pv.data.work_name || '').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 30) + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
     }).catch(function (e) { status(errText(e), 'err'); });
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { $('pvModal').classList.remove('show'); closePin(); }
+    if (e.key === 'Escape') { ['pvModal', 'subModal', 'ekModal'].forEach(function (m) { $(m).classList.remove('show'); }); closePin(); }
+  });
+
+  // ---------- add a GP ----------
+  $('gpPrefix').addEventListener('input', function () { var v = this.value.toUpperCase(); if (v !== this.value) this.value = v; });
+  $('gpAddBtn').addEventListener('click', function () {
+    var name = $('gpName').value.trim(), prefix = $('gpPrefix').value.trim().toUpperCase();
+    if (name.length < 2) { status('GP-র নাম লিখুন।', 'err'); return; }
+    if (!/^WB-\d{2}-\d{3}-\d{3}$/.test(prefix)) { status(errText({ code: 'BAD_PREFIX' }), 'err'); return; }
+    if (!confirm('নতুন GP: ' + name + ' (' + prefix + ')\nযোগ করবেন?')) return;
+    loading('GP যোগ হচ্ছে...');
+    SB.rpc('admin_add_gp', { p_jc_prefix: prefix, p_name: name }).then(function (g) {
+      status('✅ ' + g.name + ' (' + g.jc_prefix + ') যোগ হয়েছে। এবার উপরে GP বেছে এর data import করুন, তারপর Users tab থেকে supervisor বানান।', 'ok');
+      $('gpName').value = ''; $('gpPrefix').value = '';
+      return loadGps().then(function () { $('gpSelect').value = String(g.id); showGpStats(); });
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
   });
 
   // ---------- backup ----------

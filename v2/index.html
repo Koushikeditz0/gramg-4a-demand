@@ -680,7 +680,39 @@
     /* v2 additions */
     .v2-badge{font-size:10px;font-weight:800;background:#2563eb;color:#fff;border-radius:6px;padding:1px 6px;vertical-align:middle;}
     .user-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
-    .list-state-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-radius:10px;padding:9px 11px;margin:0 0 8px;font-size:13px;line-height:1.4;}
+    .list-state-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;border-radius:8px;padding:5px 8px;margin:6px 0 0;font-size:12px;line-height:1.35;}
+    .list-panel{background:#fff;border-radius:10px;padding:8px 9px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+    .lp-row{display:flex;gap:6px;align-items:center;}
+    .lp-row select{flex:1;min-width:0;border:1px solid #cbd5e1;border-radius:8px;padding:7px 8px;font-size:13px;font-weight:700;background:#fff;color:#172033;}
+    .lp-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;margin-top:6px;color:#334155;line-height:1.4;}
+    .lp-meta .sup-need{color:#b91c1c;font-weight:800;}
+    .lp-meta .sup-ok{color:#166534;font-weight:700;}
+    .lp-empty{font-size:13px;color:#1e3a8a;background:#eff6ff;border:1px dashed #93c5fd;border-radius:8px;padding:10px;margin-top:6px;}
+    .link-btn{background:none;border:0;color:#2563eb;font-weight:700;font-size:12px;padding:2px 4px;cursor:pointer;text-decoration:underline;}
+    .fam-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;}
+    .yn-head{display:flex;gap:2px;flex:0 0 auto;font-size:8px;font-weight:800;color:#475569;padding-top:1px;}
+    .yn-head span,.yn{width:26px;text-align:center;flex:0 0 26px;}
+    .yn-wrap{display:flex;gap:2px;flex:0 0 auto;}
+    .yn{font-size:13px;font-weight:900;line-height:1;}
+    .yn.y{color:#16a34a;} .yn.n{color:#dc2626;}
+    .member-sub{font-size:9px;color:#64748b;margin-top:1px;}
+    .member-taken{font-size:9px;color:#b45309;font-weight:700;margin-top:1px;}
+    .member.taken .member-name{color:#94a3b8;}
+    .columns > .panel.sel-panel{position:sticky;top:6px;}
+    .sel-panel .selected-scroll{max-height:calc(100vh - 60px);}
+    .action-bar .push-right{margin-left:auto;}
+    .install-btn{background:#0f172a;color:#fff;}
+    .gm-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;z-index:95;align-items:flex-start;justify-content:center;padding:14px 10px;overflow:auto;}
+    .gm-modal.show{display:flex;}
+    .gm-box{background:#fff;border-radius:12px;width:100%;max-width:440px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+    .gm-box h3{margin:0 0 8px;font-size:15px;}
+    .gm-box label{display:block;font-size:12px;font-weight:700;color:#475569;margin:8px 0 4px;}
+    .gm-box input[type=text]{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;font-size:14px;}
+    .gm-note{font-size:11px;color:#64748b;line-height:1.5;margin-top:4px;}
+    .gm-warn{font-size:12px;color:#b91c1c;font-weight:700;margin-top:6px;}
+    .gm-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;}
+    .sup-row{display:flex;gap:6px;margin-bottom:5px;}
+    @media(max-width:600px){ .yn-head span,.yn{width:20px;flex-basis:20px;} .yn{font-size:12px;} .yn-head{font-size:7px;} .member-sub,.member-taken{font-size:8px;} }
     .list-state-bar.draft{background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe;}
     .list-state-bar.submitted{background:#dcfce7;color:#166534;border:1px solid #86efac;}
     .list-state-bar.locked{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
@@ -1107,7 +1139,7 @@
             <h3>৮. PDF Download</h3><p>Download PDF চাপলে সরাসরি A4 PDF তৈরি হবে। একাধিক page হলে table header প্রতিটি page-এ থাকবে।</p>
             <h3>৯. Edit List</h3><p>Final Preview থেকে Edit List ব্যবহার করে আবার worker যোগ বা বাদ দিতে পারবেন।</p>
             <h3>১০. Clear Selected</h3><p>পুরো Selected List মুছতে Clear Selected ব্যবহার করুন। এতে saved selection-ও মুছে যাবে।</p>
-            <h3>১০ক. List জমা দেওয়া (Submit)</h3><p>বাছাই শেষ হলে উপরের নীল পট্টিতে <b>📤 Submit (জমা দিন)</b> চাপুন। জমা দেওয়ার পর list আর বদলানো যায় না; বদলাতে হলে <b>↩ ফেরত নিন</b> চেপে আবার খসড়া করুন, তারপর আবার Submit করুন। Admin list <b>Lock</b> করলে (সাধারণত K-Desk-এ demand দেওয়ার পর) আর ফেরত নেওয়া যাবে না। Admin নতুন দফা শুরু করলে আপনি একটা নতুন খালি list পাবেন।</p><h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
+            <h3>১০ক. প্রতি কাজে আলাদা list</h3><p>উপরে <b>➕ নতুন list</b> চেপে কাজের নাম (Work Name) দিন। একই গ্রামে ২–৩টা কাজ চললে প্রতি কাজের জন্য আলাদা list খুলুন (একসঙ্গে সর্বোচ্চ ৫টা), উপরের তালিকা থেকে list বদলান। একজন worker একসময়ে একটাই list-এ থাকতে পারেন — অন্য list-এ থাকলে পাশে 🔒 দেখাবে, বাছা যাবে না। Family card-এ ডানদিকে <b>eKYC</b> আর <b>ABPS</b> heading-এর নিচে সবুজ ✓ মানে YES, লাল ✗ মানে NO।</p><h3>১০খ. Supervisor-এর নাম ও Submit</h3><p><b>✏️ নাম/Supervisor</b> চেপে Supervisor-এর নাম দিন (ইংরেজিতে)। প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)। Work Name আর যথেষ্ট Supervisor না থাকলে <b>📤 Submit</b> হবে না। জমা দেওয়ার পর বদলাতে <b>↩ Edit</b> চাপুন, তারপর আবার Submit করুন। Admin list <b>Lock</b> করলে আর বদলানো যাবে না; কাজ শেষ হলে Admin list বন্ধ করবেন, তখন worker-রা আবার নতুন কাজে বাছাইযোগ্য হবেন।</p><h3>১০গ. Phone-এ app হিসেবে</h3><p>উপরে <b>📲 Install</b> দেখালে চাপুন, home screen-এ icon আসবে। iPhone-এ Safari-র Share → Add to Home Screen।</p><h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
             <h3>১২. Help &amp; Support</h3><p>সমস্যা হলে প্রথমে এই User Guide দেখুন। প্রয়োজন হলে administrator/VLE-এর সঙ্গে যোগাযোগ করুন।</p>
           </div>
         </div>
@@ -1154,6 +1186,7 @@
 
       <div class="user-actions">
         <span id="saveChip" class="save-chip" role="status" aria-live="polite"></span>
+        <button class="install-btn btn-small" id="installBtn" style="display:none;" onclick="installApp()" title="Phone-এ app হিসেবে রাখুন">📲 Install</button>
         <button
           class="btn-light btn-small"
           onclick="logout()">
@@ -1184,8 +1217,17 @@
 
 
 
-    <!-- CONTROL -->
+    <!-- LIST (one per work) -->
+    <div id="listPanel" class="list-panel" style="display:none;">
+      <div class="lp-row">
+        <select id="listSelect" aria-label="কোন কাজের list" onchange="listSelectChanged()"></select>
+        <button class="btn-light btn-small" id="newListBtn" onclick="openNewList()">➕ নতুন list</button>
+      </div>
+      <div class="lp-meta" id="lpMeta"></div>
+      <div id="listStateBar" class="list-state-bar" style="display:none;" role="status" aria-live="polite"></div>
+    </div>
 
+    <!-- CONTROL -->
     <div class="control-box">
 
 
@@ -1276,30 +1318,15 @@
       </button>
 
 
-      <button
-        class="btn-danger btn-small"
-        onclick="clearSelected()">
-
-        Clear Selected
-
-      </button>
-
-
-      <button
-        class="btn-success btn-small"
-        onclick="openFinalPreview()">
-
-        👀 Preview Final List
-
-      </button>
+      <button class="btn-success btn-small" onclick="openFinalPreview()">👀 Preview</button>
+      <button class="btn-primary btn-small" id="submitListBtn" onclick="submitMyList()" style="display:none;">📤 Submit</button>
+      <button class="btn-danger btn-small push-right" onclick="clearSelected()" title="Clear Selected">🗑 Clear</button>
 
 
     </div>
 
 
 
-    <!-- LIST STATE (draft / submitted / locked) -->
-    <div id="listStateBar" class="list-state-bar" style="display:none;" role="status" aria-live="polite"></div>
 
     <!-- TWO COLUMNS -->
 
@@ -1353,8 +1380,7 @@
 
 
       <!-- SELECTED -->
-
-      <div class="panel">
+      <div class="panel sel-panel">
 
 
         <div class="panel-header">
@@ -1413,6 +1439,48 @@
 
 
 
+  <!-- NEW LIST -->
+  <div class="gm-modal" id="newListModal" role="dialog" aria-modal="true" aria-labelledby="nlTitle">
+    <div class="gm-box">
+      <h3 id="nlTitle">➕ নতুন list (নতুন কাজ)</h3>
+      <label for="nlName">Work Name — কোন কাজের list?</label>
+      <input type="text" id="nlName" maxlength="200" placeholder="যেমন: Pukur Khanan, Village 002">
+      <div class="gm-note">একই গ্রামে একাধিক কাজ চললে প্রতি কাজের জন্য আলাদা list খুলুন (সর্বোচ্চ ৫টা)। একজন worker একসময়ে একটাই list-এ থাকতে পারেন।</div>
+      <div class="gm-actions">
+        <button class="btn-light" onclick="closeGm('newListModal')">বাতিল</button>
+        <button class="btn-primary" id="nlSave" onclick="saveNewList()">List খুলুন</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST DETAILS: Work Name + supervisors -->
+  <div class="gm-modal" id="metaModal" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
+    <div class="gm-box">
+      <h3 id="mmTitle">✏️ List-এর তথ্য</h3>
+      <div class="gm-warn" id="mmMsg" style="display:none;"></div>
+      <label for="mmName">Work Name</label>
+      <input type="text" id="mmName" maxlength="200">
+      <label>Supervisor-এর নাম <span id="mmNeed" style="font-weight:400;"></span></label>
+      <div id="mmSups"></div>
+      <button class="link-btn" type="button" onclick="addSupRow('')">+ আরেকজন Supervisor</button>
+      <div class="gm-note">নাম ইংরেজিতে লিখুন (PDF-এ বাংলা অক্ষর ঠিক দেখায় না)। নিয়ম: প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)।</div>
+      <div class="gm-actions">
+        <button class="btn-danger btn-small" id="mmDelete" onclick="deleteMyList()" style="margin-right:auto;display:none;">🗑 List মুছুন</button>
+        <button class="btn-light" onclick="closeGm('metaModal')">বাতিল</button>
+        <button class="btn-primary" id="mmSave" onclick="saveMeta()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTALL HELP (iPhone etc.) -->
+  <div class="gm-modal" id="installModal" role="dialog" aria-modal="true" aria-labelledby="imTitle">
+    <div class="gm-box">
+      <h3 id="imTitle">📲 Phone-এ app হিসেবে রাখুন</h3>
+      <div class="gm-note" style="font-size:13px;color:#334155;" id="installHelp"></div>
+      <div class="gm-actions"><button class="btn-primary" onclick="closeGm('installModal')">ঠিক আছে</button></div>
+    </div>
+  </div>
+
   <!-- FINAL PREVIEW -->
   <div id="previewOverlay" class="preview-overlay">
     <div class="preview-top">
@@ -1429,7 +1497,8 @@
     <div class="preview-body">
       <div class="pdf-header-fields">
         <div class="pdf-title-preview">VB-G RAM G DEMAND LIST</div>
-        <label>Work Name: <input id="workName" type="text" placeholder="Work Name (optional)"></label>
+        <label>Work Name: <input id="workName" type="text" readonly></label>
+        <div id="previewSup" style="font-size:12px;margin-top:4px;"></div>
       </div>
       <div class="preview-summary" id="previewSummary"></div>
       <div class="preview-tools">
@@ -1440,9 +1509,9 @@
     </div>
   </div>
 
-<script src="./js/config.js?v=20261019d"></script>
-<script src="./js/sb-client.js?v=20261019d"></script>
-<script src="./js/gramg-adapter.js?v=20261019d"></script>
+<script src="./js/config.js?v=20261020a"></script>
+<script src="./js/sb-client.js?v=20261020a"></script>
+<script src="./js/gramg-adapter.js?v=20261020a"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2180,28 +2249,16 @@
 
 
         familyHeader.innerHTML =
+          '<div class="fam-head-row"><div>' +
+          '<div class="family-title">' + escapeHtml(family.jobCard) + '</div>' +
+          '<div class="family-meta">' + family.members.length + ' members</div>' +
+          '</div><div class="yn-head" aria-hidden="true"><span>eKYC</span><span>ABPS</span></div></div>';
 
-          '<div class="family-title">' +
+        // App No is shown only when two members of the family have the same name
+        const nameCount = {};
+        family.members.forEach(function(m){ const k = String(m.name || '').trim().toUpperCase(); nameCount[k] = (nameCount[k] || 0) + 1; });
 
-          escapeHtml(
-            family.jobCard
-          ) +
-
-          '</div>' +
-
-
-          '<div class="family-meta">' +
-
-          family.members.length +
-
-          ' members' +
-
-          '</div>';
-
-
-        familyBox.appendChild(
-          familyHeader
-        );
+        familyBox.appendChild(familyHeader);
 
 
 
@@ -2215,109 +2272,24 @@
                 );
 
 
-            row.className =
-              'member';
-
-
-            const checked =
-              selected.has(
-                member.id
-              );
-
-
+            const checked = selected.has(member.id);
+            const taken = isTakenElsewhere(member);
+            const canPick = member.ekyc && member.abps && !taken;
+            row.className = 'member' + (taken ? ' taken' : '');
+            const dupName = nameCount[String(member.name || '').trim().toUpperCase()] > 1;
             row.innerHTML =
-
-              '<input ' +
-
-              'type="checkbox" ' +
-
-              'class="member-check" ' +
-
-              'data-id="' +
-
-              escapeAttr(
-                member.id
-              ) +
-
-              '" ' +
-
-              (
-                checked
-                  ? 'checked'
-                  : ''
-              ) +
-
-              (
-                (member.ekyc && member.abps)
-                  ? ''
-                  : 'disabled title="eKYC এবং ABPS দুটোই YES না হলে select করা যাবে না"'
-              ) +
-
-              '>' +
-
-
+              '<input type="checkbox" class="member-check" data-id="' + escapeAttr(member.id) + '" ' +
+              (checked ? 'checked ' : '') +
+              (canPick ? '' : 'disabled title="' + (taken ? 'এই worker অন্য list-এ আছেন' : 'eKYC এবং ABPS দুটোই YES না হলে select করা যাবে না') + '"') + '>' +
               '<div class="member-main">' +
-
-              '<div class="member-name">' +
-
-              escapeHtml(
-                member.name
-              ) +
-
+              '<div class="member-name">' + escapeHtml(member.name) + '</div>' +
+              (dupName ? '<div class="member-sub">App ' + escapeHtml(member.applicantNo) + '</div>' : '') +
+              (taken ? '<div class="member-taken">🔒 ' + escapeHtml(takenLabel(member)) + '</div>' : '') +
               '</div>' +
-
-
-              '<div class="member-reg">' +
-
-              escapeHtml(
-                member.jobCard
-              ) +
-
-              ' • App ' +
-
-              escapeHtml(
-                member.applicantNo
-              ) +
-
-              '</div>' +
-
-              '</div>' +
-
-
-              '<div class="status-wrap">' +
-
-              '<span class="badge ' +
-
-              (
-                member.ekyc
-                  ? 'badge-yes'
-                  : 'badge-no'
-              ) +
-
-              '">' +
-
-              'eKYC' +
-
-              '</span>' +
-
-
-              '<span class="badge ' +
-
-              (
-                member.abps
-                  ? 'badge-yes'
-                  : 'badge-no'
-              ) +
-
-              '">' +
-
-              'ABPS' +
-
-              '</span>' +
-
+              '<div class="yn-wrap">' +
+              '<span class="yn ' + (member.ekyc ? 'y' : 'n') + '" title="eKYC ' + (member.ekyc ? 'YES' : 'NO') + '">' + (member.ekyc ? '✓' : '✗') + '</span>' +
+              '<span class="yn ' + (member.abps ? 'y' : 'n') + '" title="ABPS ' + (member.abps ? 'YES' : 'NO') + '">' + (member.abps ? '✓' : '✗') + '</span>' +
               '</div>';
-
-
             const checkbox =
               row.querySelector(
                 '.member-check'
@@ -2511,6 +2483,7 @@
     const container=document.getElementById('selectedResults');
     container.innerHTML='';
     document.getElementById('selectedCount').textContent=selected.size;
+    if(typeof renderListMeta==='function') renderListMeta();
     if(!selected.size){container.innerHTML='<div class="selected-empty">এখনো কোনো worker select করা হয়নি।</div>';return;}
     let sl=1;
     selected.forEach(function(item){
@@ -2587,7 +2560,7 @@
           function(member){
 
             if(!member.ekyc || !member.abps) return;
-
+            if(isTakenElsewhere(member)) return;
             selected.set(
 
               member.id,
@@ -2651,11 +2624,7 @@
         family.members.forEach(
           function(member){
 
-            if(
-              member.ekyc &&
-              member.abps
-            ){
-
+            if(member.ekyc && member.abps && !isTakenElsewhere(member)){
               selected.set(
 
                 member.id,
@@ -2767,7 +2736,7 @@
 
   function selectionStorageKey(){
     return currentUser
-      ? 'GramG2_List_'+currentUser.username+'_'+currentUser.gp
+      ? 'GramG2_List_'+currentUser.username+'_'+currentUser.gp+'_'+(gramgAdapter.listId()||'none')
       : 'GramG2_List_unknown';
   }
 
@@ -2845,7 +2814,10 @@
           if(res && res.rejected && res.rejected.length){
             res.rejected.forEach(function(x){ selected.delete(x.id); });
             syncCurrentCheckboxes(); updateFamilyHeaders(); renderSelected(); localSaveSelection();
-            showStatus(res.rejected.length+' জন worker save করা যায়নি (eKYC/ABPS YES নয় অথবা data-তে নেই), তাদের তালিকা থেকে বাদ দেওয়া হয়েছে।','error');
+            const nOther=res.rejected.filter(function(x){return x.reason==='IN_OTHER_LIST';}).length;
+            const nBad=res.rejected.length-nOther;
+            showStatus((nOther? nOther+' জন worker ইতিমধ্যে অন্য list-এ আছেন। ':'')+(nBad? nBad+' জনের eKYC/ABPS YES নয় অথবা data-তে নেই। ':'')+'তাঁদের এই list থেকে বাদ দেওয়া হয়েছে।','error');
+            if(nOther && families.length) setTimeout(searchBeneficiary, 300);
           }
           if(res && res.serverChanged && mySeq===saveSeq) refreshSelectionFromServer(true);
         })
@@ -2925,7 +2897,8 @@
       const sel=document.getElementById('previewVillage'); sel.innerHTML='<option value="">All Villages</option>';
       Object.keys(vs).sort((a,b)=>Number(a)-Number(b)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent='Village '+String(v).padStart(3,'0');sel.appendChild(o);});
       document.getElementById('previewSearch').value='';
-      const wn=document.getElementById('workName'); if(wn && !wn.value) wn.value=gramgAdapter.workName()||'';
+      const wn=document.getElementById('workName'); if(wn) wn.value=gramgAdapter.workName()||'';
+      const sp=document.getElementById('previewSup'); if(sp){ const ss=gramgAdapter.supervisors(); sp.textContent=ss.length?('Supervisor: '+ss.join(', ')):'Supervisor: —'; }
       document.getElementById('previewOverlay').classList.add('show');
       document.body.style.overflow='hidden'; renderPreviewTable();
     }).withFailureHandler(function(err){hideLoading();showStatus(err.message||String(err),'error');}).getAccounts(token,ids);
@@ -3012,9 +2985,13 @@
       doc.setFontSize(10.5);
       doc.text('Work Name:',margin,27);
       if(workName){doc.setFont('helvetica','normal');doc.text(workName,margin+25,27);}
+      const sups=gramgAdapter.supervisors();
+      doc.setFont('helvetica','bold');
+      doc.text('Supervisor:',margin,33);
+      if(sups.length){doc.setFont('helvetica','normal');doc.text(doc.splitTextToSize(sups.join(', '),pageWidth-margin*2-25),margin+25,33);}
 
       doc.autoTable({
-        startY:34,
+        startY:40,
         margin:{left:margin,right:margin,top:10,bottom:10},
         head:[['SL No','Job Card No','Applicant Name','eKYC','ABPS','Account No','IFSC Code']],
         body:rows,
@@ -3067,6 +3044,12 @@
     }
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Final List');
+    // Work Name and supervisors on a separate sheet, so the list sheet stays unchanged
+    const sups=gramgAdapter.supervisors();
+    const info=[['Work Name',gramgAdapter.workName()||''],['Supervisor',sups.join(', ')],['Workers',sl-1]];
+    sups.forEach(function(n,i){ info.push(['Supervisor '+(i+1),n]); });
+    const wsInfo=XLSX.utils.aoa_to_sheet(info); wsInfo['!cols']=[{wch:14},{wch:50}];
+    XLSX.utils.book_append_sheet(wb,wsInfo,'Work Info');
     let gp=(currentUser&&currentUser.gp)||'GP'; gp=gp.replace(/[^a-zA-Z0-9_-]+/g,'_');
     const date=new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb,'GramG_'+gp+'_FinalList_'+date+'.xlsx');
@@ -3202,56 +3185,210 @@ GramgSB.onAuthLost=function(code){
   const lm=document.getElementById('loginMessage');
   if(lm) lm.textContent=(AUTH_LOST_MSG[code]||AUTH_LOST_MSG.NOT_LOGGED_IN)+(unsaved?' এই device-এর না-পাঠানো selection রাখা আছে, Login করলে ফিরে আসবে।':'');
 };
-/* ---------- list Submit / Lock ---------- */
-let listState={state:'draft',submittedAt:null};
+/* ---------- lists (one per work), Submit / Edit / Lock, supervisors ---------- */
+let listState={state:'draft',submittedAt:null,listId:null,workName:'',supervisors:[],lists:[],noList:false};
+const STATE_LABEL={draft:'খসড়া',submitted:'জমা দিয়েছে',locked:'Lock করা'};
+function requiredSupervisors(n){ return Math.max(1, Math.floor((n||0)/20)); }
+function isTakenElsewhere(m){
+  if(selected.has(m.id)) return false;
+  if(m.takenOther) return true;
+  return !!(m.takenListId && m.takenListId!==gramgAdapter.listId());
+}
+function takenLabel(m){ return m.takenOther ? 'অন্য supervisor-এর list-এ আছে' : ('আপনার "'+(m.takenWork||'অন্য')+'" list-এ আছে'); }
 function listLocked(showMsg){
+  if(currentUser && listState.noList){
+    if(showMsg){ showStatus('আগে একটা list খুলুন: উপরে "➕ নতুন list" চাপুন।','error'); openNewList(); }
+    return true;
+  }
   const locked=listState.state!=='draft';
   if(locked && showMsg){
     showStatus(listState.state==='locked'
       ? 'Admin এই list lock করেছেন, এখন বদলানো যাবে না।'
-      : 'List জমা দেওয়া আছে। বদলাতে চাইলে আগে "↩ ফেরত নিন" চাপুন।','error');
+      : 'List জমা দেওয়া আছে। বদলাতে চাইলে আগে "↩ Edit" চাপুন।','error');
   }
   return locked;
 }
 function fmtBnDate(s){ if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
-function renderListState(){
-  const bar=document.getElementById('listStateBar'); if(!bar) return;
-  if(!currentUser){ bar.style.display='none'; return; }
-  const st=listState.state;
-  document.body.classList.toggle('list-readonly', st!=='draft');
-  const wn=document.getElementById('workName'); if(wn) wn.disabled=(st!=='draft');
-  bar.className='list-state-bar '+st; bar.style.display='flex'; bar.innerHTML='';
-  const txt=document.createElement('div'); let btn=document.createElement('button');
-  if(st==='draft'){
-    txt.textContent='📝 খসড়া list — worker বাছাই শেষ হলে Admin-কে জমা দিন।';
-    btn.className='btn-success btn-small'; btn.textContent='📤 Submit (জমা দিন)'; btn.id='submitListBtn';
-    btn.onclick=submitMyList;
-  }else if(st==='submitted'){
-    txt.textContent='✅ জমা দেওয়া হয়েছে'+(listState.submittedAt?' ('+fmtBnDate(listState.submittedAt)+')':'')+'। Admin lock করার আগে পর্যন্ত ফেরত নিয়ে বদলাতে পারবেন।';
-    btn.className='btn-light btn-small'; btn.textContent='↩ ফেরত নিন'; btn.id='unsubmitListBtn';
-    btn.onclick=unsubmitMyList;
-  }else{
-    txt.textContent='🔒 Admin list lock করেছেন — এখন বদলানো যাবে না। নতুন দফা শুরু হলে খালি list পাবেন।';
-    btn=null;
+function renderListMeta(){
+  const box=document.getElementById('lpMeta'); if(!box) return;
+  box.innerHTML='';
+  if(!currentUser || listState.noList) return;
+  const sups=listState.supervisors||[], req=requiredSupervisors(selected.size);
+  const lab=document.createElement('span'); lab.textContent='👷 Supervisor: '+(sups.length?sups.join(', '):'—');
+  box.appendChild(lab);
+  const st=document.createElement('span');
+  if(sups.length<req){ st.className='sup-need'; st.textContent='⚠ '+selected.size+' জন worker → '+req+' জন লাগবে'; }
+  else { st.className='sup-ok'; st.textContent='✓'; }
+  box.appendChild(st);
+  if(listState.state==='draft'){
+    const b=document.createElement('button'); b.className='link-btn'; b.id='editMetaBtn'; b.textContent='✏️ নাম/Supervisor'; b.onclick=function(){ openMeta(''); };
+    box.appendChild(b);
   }
-  bar.appendChild(txt); if(btn) bar.appendChild(btn);
+  // keep the selector's worker count live
+  const opt=document.querySelector('#listSelect option[value="'+listState.listId+'"]');
+  if(opt) opt.textContent=optionLabel({work_name:listState.workName,submit_state:listState.state,workers:selected.size});
 }
-window.gramgOnListState=function(s){ listState=s||{state:'draft'}; renderListState(); };
+function optionLabel(l){ return (l.work_name||'(নাম নেই)')+' · '+(l.workers||0)+' জন · '+(STATE_LABEL[l.submit_state]||''); }
+function renderListState(){
+  const panel=document.getElementById('listPanel'), bar=document.getElementById('listStateBar');
+  const sbtn=document.getElementById('submitListBtn');
+  if(!panel) return;
+  if(!currentUser){ panel.style.display='none'; if(sbtn) sbtn.style.display='none'; document.body.classList.remove('list-readonly'); return; }
+  panel.style.display='block';
+  const sel=document.getElementById('listSelect'); sel.innerHTML='';
+  (listState.lists||[]).forEach(function(l){
+    const o=document.createElement('option'); o.value=l.list_id;
+    o.textContent=optionLabel(l.list_id===listState.listId?{work_name:listState.workName,submit_state:listState.state,workers:selected.size}:l);
+    sel.appendChild(o);
+  });
+  sel.style.display=(listState.lists||[]).length?'':'none';
+  if(listState.listId) sel.value=listState.listId;
+  document.getElementById('newListBtn').disabled=(listState.lists||[]).length>=5;
+  document.body.classList.toggle('list-readonly', !listState.noList && listState.state!=='draft');
+  const old=panel.querySelector('.lp-empty'); if(old) old.remove();
+  if(listState.noList){
+    const e=document.createElement('div'); e.className='lp-empty';
+    e.textContent='📝 শুরু করতে "➕ নতুন list" চাপুন আর কাজের নাম (Work Name) দিন। একই গ্রামে একাধিক কাজ থাকলে প্রতি কাজে আলাদা list।';
+    panel.appendChild(e);
+    bar.style.display='none'; if(sbtn) sbtn.style.display='none'; renderListMeta(); return;
+  }
+  const st=listState.state;
+  if(sbtn) sbtn.style.display=(st==='draft')?'':'none';
+  bar.className='list-state-bar '+st; bar.style.display='flex'; bar.innerHTML='';
+  const txt=document.createElement('div');
+  if(st==='draft'){
+    txt.textContent='📝 খসড়া — বাছাই শেষ হলে Submit চাপুন';
+    bar.appendChild(txt);
+  }else if(st==='submitted'){
+    txt.textContent='✅ জমা দেওয়া হয়েছে'+(listState.submittedAt?' ('+fmtBnDate(listState.submittedAt)+')':'');
+    const b=document.createElement('button'); b.className='btn-light btn-small'; b.textContent='↩ Edit'; b.id='unsubmitListBtn'; b.onclick=unsubmitMyList;
+    bar.appendChild(txt); bar.appendChild(b);
+  }else{
+    txt.textContent='🔒 Admin list lock করেছেন — বদলানো যাবে না';
+    bar.appendChild(txt);
+  }
+  renderListMeta();
+}
+window.gramgOnListState=function(s){ listState=Object.assign({state:'draft',lists:[],supervisors:[]}, s||{}); renderListState(); };
+
+function busySaving(){
+  if(saveTimer || isSelectionDirty()){
+    showStatus('পরিবর্তন এখনো save হচ্ছে। "Saved ✓" দেখালে আবার চেষ্টা করুন।','error');
+    if(!saveTimer && isSelectionDirty()) scheduleSaveSelection();
+    return true;
+  }
+  return false;
+}
+function afterListLoaded(items){
+  hideLoading(); applySelection(items||[]); localSaveSelection(); setSaveChip(items?'saved':'');
+  if(families.length && document.getElementById('searchInput').value.trim()) searchBeneficiary();
+}
+function listSelectChanged(){
+  const sel=document.getElementById('listSelect'), id=sel.value;
+  if(id===listState.listId) return;
+  if(busySaving()){ sel.value=listState.listId; return; }
+  showLoading('List খুলছে...');
+  gramgAdapter.switchList(id).then(afterListLoaded, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
+}
+function openGm(id){ document.getElementById(id).classList.add('show'); }
+function closeGm(id){ document.getElementById(id).classList.remove('show'); }
+function openNewList(){
+  if((listState.lists||[]).length>=5){ showStatus('একসঙ্গে সর্বোচ্চ ৫টা চলতি list রাখা যায়।','error'); return; }
+  document.getElementById('nlName').value=''; openGm('newListModal'); setTimeout(function(){ document.getElementById('nlName').focus(); },50);
+}
+function saveNewList(){
+  const name=document.getElementById('nlName').value.trim();
+  if(!name){ showStatus('Work Name লিখুন।','error'); return; }
+  if(busySaving()) return;
+  closeGm('newListModal'); showLoading('নতুন list খুলছে...');
+  gramgAdapter.createList(name).then(function(items){
+    afterListLoaded(items); showStatus('✅ "'+name+'" list খোলা হয়েছে। এবার worker বাছুন, তারপর Supervisor-এর নাম দিন।','success');
+  }, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
+}
+function addSupRow(v){
+  const box=document.getElementById('mmSups'), row=document.createElement('div'); row.className='sup-row';
+  const inp=document.createElement('input'); inp.type='text'; inp.maxLength=100; inp.value=v||''; inp.className='sup-input';
+  inp.placeholder='Supervisor '+(box.children.length+1)+'-এর নাম';
+  const del=document.createElement('button'); del.type='button'; del.className='btn-light btn-small'; del.textContent='✕'; del.title='বাদ দিন';
+  del.onclick=function(){ row.remove(); };
+  row.appendChild(inp); row.appendChild(del); box.appendChild(row);
+}
+function openMeta(msg){
+  if(listState.noList){ openNewList(); return; }
+  if(listState.state!=='draft'){ listLocked(true); return; }
+  const req=requiredSupervisors(selected.size), sups=listState.supervisors||[];
+  const m=document.getElementById('mmMsg'); m.textContent=msg||''; m.style.display=msg?'block':'none';
+  document.getElementById('mmName').value=listState.workName||'';
+  document.getElementById('mmNeed').textContent='— এখন '+selected.size+' জন worker, '+req+' জন লাগবে';
+  const box=document.getElementById('mmSups'); box.innerHTML='';
+  sups.forEach(addSupRow);
+  for(let i=sups.length;i<req;i++) addSupRow('');
+  document.getElementById('mmDelete').style.display=selected.size===0?'':'none';
+  openGm('metaModal');
+}
+function saveMeta(){
+  const name=document.getElementById('mmName').value.trim();
+  const sups=Array.prototype.map.call(document.querySelectorAll('#mmSups .sup-input'),function(i){return i.value.trim();}).filter(Boolean);
+  if(!name){ const m=document.getElementById('mmMsg'); m.textContent='Work Name লিখুন।'; m.style.display='block'; return; }
+  showLoading('Save হচ্ছে...');
+  gramgAdapter.setMeta(name,sups).then(function(r){
+    hideLoading(); closeGm('metaModal');
+    const req=requiredSupervisors(selected.size), have=(r.supervisors||[]).length;
+    showStatus(have<req?('Save হয়েছে। মনে রাখবেন: '+req+' জন Supervisor লাগবে, দেওয়া আছে '+have+' জন।'):'✅ List-এর তথ্য save হয়েছে।', have<req?'error':'success');
+  }, function(e){ hideLoading(); if(e&&e.authLost) return; const m=document.getElementById('mmMsg'); m.textContent=(e&&e.message)||String(e); m.style.display='block'; });
+}
+function deleteMyList(){
+  if(selected.size){ showStatus('List-এ worker আছে। মোছার আগে Clear Selected করুন।','error'); return; }
+  if(!confirm('"'+(listState.workName||'')+'" list মুছবেন?')) return;
+  closeGm('metaModal'); showLoading('List মোছা হচ্ছে...');
+  gramgAdapter.deleteList().then(function(items){ afterListLoaded(items); showStatus('List মোছা হয়েছে।','success'); },
+    function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
+}
 function submitMyList(){
+  if(listState.noList){ openNewList(); return; }
   if(!selected.size){ showStatus('খালি list জমা দেওয়া যায় না। আগে worker select করুন।','error'); return; }
-  if(saveTimer || isSelectionDirty()){ showStatus('পরিবর্তন এখনো save হচ্ছে। "Saved ✓" দেখালে আবার Submit চাপুন।','error'); if(!saveTimer) scheduleSaveSelection(); return; }
-  if(!confirm(selected.size+' জন worker সহ list Admin-কে জমা দেবেন?\nজমা দেওয়ার পর বদলাতে হলে আগে "ফেরত নিন" চাপতে হবে।')) return;
+  if(busySaving()) return;
+  const req=requiredSupervisors(selected.size), have=(listState.supervisors||[]).length;
+  if(!(listState.workName||'').trim()){ openMeta('Submit করার আগে Work Name লিখুন।'); return; }
+  if(have<req){ openMeta(selected.size+' জন worker-এর জন্য '+req+' জন Supervisor-এর নাম লাগবে (দেওয়া আছে '+have+' জন)।'); return; }
+  if(!confirm('"'+listState.workName+'" — '+selected.size+' জন worker সহ list Admin-কে জমা দেবেন?\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।')) return;
   showLoading('List জমা দেওয়া হচ্ছে...');
   gramgAdapter.submitList().then(function(r){
     hideLoading(); showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে।','success');
-  },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
+  },function(e){
+    hideLoading(); if(e && e.authLost) return;
+    if(e && (e.code==='NEED_SUPERVISORS' || e.code==='NEED_WORK_NAME')){ openMeta(e.message); return; }
+    showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true);
+  });
 }
 function unsubmitMyList(){
-  showLoading('List ফেরত নেওয়া হচ্ছে...');
+  showLoading('List খোলা হচ্ছে...');
   gramgAdapter.unsubmitList().then(function(){
-    hideLoading(); showStatus('List ফেরত নেওয়া হয়েছে, এখন বদলাতে পারবেন। শেষ হলে আবার Submit করুন।','success');
+    hideLoading(); showStatus('এখন list বদলাতে পারবেন। শেষ হলে আবার Submit করুন।','success');
   },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
 }
+document.getElementById('nlName').addEventListener('keydown',function(e){ if(e.key==='Enter') saveNewList(); });
+
+/* ---------- install as an app ---------- */
+let deferredInstall=null;
+function isStandalone(){ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true; }
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
+function updateInstallBtn(){ const b=document.getElementById('installBtn'); if(b) b.style.display=(!isStandalone() && (deferredInstall || isIOS()))?'':'none'; }
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredInstall=e; updateInstallBtn(); });
+window.addEventListener('appinstalled',function(){ deferredInstall=null; updateInstallBtn(); showStatus('✅ App home screen-এ যোগ হয়েছে। এরপর icon থেকে খুলুন।','success'); });
+function installApp(){
+  if(deferredInstall){
+    deferredInstall.prompt();
+    Promise.resolve(deferredInstall.userChoice).then(function(){ deferredInstall=null; updateInstallBtn(); });
+    return;
+  }
+  document.getElementById('installHelp').innerHTML = isIOS()
+    ? '১. নিচে বা উপরে <b>Share</b> বাটন (□↑) চাপুন।<br>২. <b>Add to Home Screen</b> বাছুন।<br>৩. ডানদিকে উপরে <b>Add</b> চাপুন।<br><br>Safari-তে খুললে তবেই এটা দেখা যায়।'
+    : 'Chrome-এ উপরে ডানদিকে <b>⋮</b> চাপুন → <b>Add to Home screen</b> বা <b>Install app</b>।';
+  openGm('installModal');
+}
+updateInstallBtn();
+
 window.addEventListener('online',function(){ if(currentUser && isSelectionDirty()) scheduleSaveSelection(); });
 document.getElementById('workName').addEventListener('change',function(e){ gramgAdapter.setWorkName(e.target.value); });
 (function restoreSession(){

@@ -81,6 +81,14 @@
     tr.flag-bad td{background:#fef2f2;} tr.flag-warn td{background:#fffbeb;}
     .mono{font-family:Consolas,monospace;}
     td.nw{white-space:nowrap;}
+    .lcard{border:1px solid #e2e8f0;border-radius:9px;padding:8px;background:#f8fafc;display:flex;flex-direction:column;gap:5px;}
+    .lcard.sel{border-color:#2563eb;box-shadow:0 0 0 2px #bfdbfe;background:#fff;}
+    .lhead{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;}
+    .lname{font-weight:800;font-size:13px;}
+    .warnline{color:#b91c1c;}
+    .addrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;padding:5px 0;border-top:1px solid #edf2f7;}
+    .pvedit{display:grid;grid-template-columns:1fr 2fr auto;gap:6px;align-items:end;margin:6px 0;}
+    @media (max-width:600px){ .pvedit{grid-template-columns:1fr;} }
     .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
     .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
   </style>
@@ -112,7 +120,8 @@
     <div class="card">
       <div class="row" style="justify-content:space-between;">
         <h2 style="margin:0;">Supervisor-দের list</h2>
-        <button class="btn-light btn-small" id="dashRefresh">🔄 Refresh</button>
+        <div class="row"><button class="btn-light btn-small" id="ekycBtn">📊 eKYC/ABPS হিসাব</button>
+        <button class="btn-light btn-small" id="dashRefresh">🔄 Refresh</button></div>
       </div>
       <label class="f" for="dashGp">Gram Panchayat</label>
       <select id="dashGp"></select>
@@ -149,6 +158,15 @@
 
   <!-- ============ IMPORT ============ -->
   <section id="tab-import" class="hidden">
+    <div class="card">
+      <h2>🏛 নতুন Gram Panchayat</h2>
+      <div class="muted">নতুন GP-র data import আর supervisor তৈরির আগে এখানে GP যোগ করুন। Job Card prefix = Job Card নম্বরের প্রথম ১৩ অক্ষর, যেমন <code>WB-08-005-014</code>।</div>
+      <div class="grid3" style="margin-top:6px;">
+        <div><label class="f" for="gpName">GP-র নাম</label><input type="text" id="gpName" maxlength="100" placeholder="যেমন Petla"></div>
+        <div><label class="f" for="gpPrefix">Job Card prefix</label><input type="text" id="gpPrefix" maxlength="13" placeholder="WB-08-005-014" autocapitalize="characters" class="mono"></div>
+      </div>
+      <div style="margin-top:8px;"><button class="btn-primary btn-small" id="gpAddBtn">➕ GP যোগ করুন</button></div>
+    </div>
     <div class="card">
       <h2>💾 Backup</h2>
       <div class="muted">উপরে বাছা GP-র সব worker (account সহ), সব list (পুরনো দফা সহ) আর user-তালিকা একটা Excel-এ নামবে। Workers sheet এই পাতাতেই আবার import করা যায়। <b>File-এ bank account নম্বর আছে — নিরাপদ জায়গায় রাখুন, কাউকে পাঠাবেন না।</b> মাসে অন্তত একবার নিন।</div>
@@ -250,17 +268,51 @@
         <button class="btn-light btn-small" id="pvClose">✕ বন্ধ</button>
       </div>
       <div class="stats" id="pvStats"></div>
+      <div class="pvedit">
+        <div><label class="f" for="pvWork">Work Name</label><input type="text" id="pvWork" maxlength="200"></div>
+        <div><label class="f" for="pvSups">Supervisor (কমা দিয়ে আলাদা করুন)</label><input type="text" id="pvSups" maxlength="1000"></div>
+        <div><button class="btn-light btn-small" id="pvMetaSave">💾 Save</button></div>
+      </div>
+      <details style="margin:4px 0 8px;">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;">➕ Worker যোগ করুন</summary>
+        <div class="row" style="margin-top:6px;">
+          <input type="text" id="pvAddInput" placeholder="Job Card: 002/012 2/15 বা পুরো নম্বর" style="flex:1 1 200px;">
+          <button class="btn-light btn-small" id="pvAddBtn">খুঁজুন</button>
+        </div>
+        <div id="pvAddResults"></div>
+      </details>
       <div class="row" style="margin:6px 0;">
         <input type="text" id="pvSearch" placeholder="নাম / Job Card খুঁজুন" style="flex:1 1 180px;">
         <select id="pvVillage" style="flex:0 1 160px;"></select>
       </div>
       <div class="table-wrap" style="max-height:60vh;"><table>
-        <thead><tr><th>SL</th><th>Job Card No</th><th>App</th><th>নাম</th><th>eKYC</th><th>ABPS</th><th>Account No</th><th>IFSC</th><th></th></tr></thead>
+        <thead><tr><th>SL</th><th>Job Card No</th><th>App</th><th>নাম</th><th>eKYC</th><th>ABPS</th><th>Account No</th><th>IFSC</th><th></th><th></th></tr></thead>
         <tbody id="pvBody"></tbody></table></div>
       <div class="row" style="margin-top:8px;">
         <button class="btn-light btn-small" id="pvExcel">⬇ এই list-এর Excel</button>
         <label class="check" style="margin:0;"><input type="checkbox" id="pvPick"><span>K-Desk export-এ নিন</span></label>
       </div>
+    </div>
+  </div>
+
+  <!-- submitted copies -->
+  <div class="modal" id="subModal" role="dialog" aria-modal="true" aria-labelledby="subTitle">
+    <div class="modal-box">
+      <div class="modal-head"><div><h2 id="subTitle">আগের জমা</h2><div class="muted">Supervisor প্রতিবার Submit করলে list-এর একটা কপি এখানে থাকে, পরে বদলালেও।</div></div>
+        <button class="btn-light btn-small" id="subClose">✕ বন্ধ</button></div>
+      <div id="subBody"></div>
+    </div>
+  </div>
+
+  <!-- eKYC / ABPS report -->
+  <div class="modal" id="ekModal" role="dialog" aria-modal="true" aria-labelledby="ekTitle">
+    <div class="modal-box">
+      <div class="modal-head"><div><h2 id="ekTitle">📊 গ্রাম অনুযায়ী eKYC / ABPS</h2><div class="muted" id="ekSub"></div></div>
+        <button class="btn-light btn-small" id="ekClose">✕ বন্ধ</button></div>
+      <div class="table-wrap" style="max-height:60vh;"><table>
+        <thead><tr><th>Village</th><th>মোট worker</th><th>eKYC+ABPS আছে</th><th>eKYC নেই</th><th>ABPS নেই</th><th>দুটোই নেই</th></tr></thead>
+        <tbody id="ekBody"></tbody></table></div>
+      <div class="row" style="margin-top:8px;"><button class="btn-success btn-small" id="ekExcel">⬇ Excel (গ্রাম অনুযায়ী + নাম-তালিকা)</button></div>
     </div>
   </div>
 
@@ -280,9 +332,9 @@
   <div class="muted" style="text-align:center;margin:14px 0;">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
 </div>
 
-<script src="./js/config.js?v=20261019d"></script>
-<script src="./js/sb-client.js?v=20261019d"></script>
-<script src="./js/import-map.js?v=20261019d"></script>
-<script src="./js/admin.js?v=20261019d"></script>
+<script src="./js/config.js?v=20261020a"></script>
+<script src="./js/sb-client.js?v=20261020a"></script>
+<script src="./js/import-map.js?v=20261020a"></script>
+<script src="./js/admin.js?v=20261020a"></script>
 </body>
 </html>

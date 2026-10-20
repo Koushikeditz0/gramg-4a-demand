@@ -1,5 +1,14 @@
-const CACHE_NAME = 'gramg-4a-demand-v1.2';
-const APP_SHELL = ['./', './index.html', './manifest.json'];
-self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim())); });
-self.addEventListener('fetch', event => { const req = event.request; const url = new URL(req.url); if (req.method !== 'GET' || url.origin !== self.location.origin) return; event.respondWith(fetch(req).then(response => { if (response && response.ok) { const copy=response.clone(); caches.open(CACHE_NAME).then(cache=>cache.put(req,copy)); } return response; }).catch(() => caches.match(req).then(cached => cached || caches.match('./index.html')))); });
+// The old app (v1) at this address has moved to ./v2/.
+// This replacement service worker removes the old offline cache, unregisters
+// itself and reloads open pages, so phones that still run the old version
+// switch to the new app automatically.
+self.addEventListener('install', function () { self.skipWaiting(); });
+self.addEventListener('activate', function (event) {
+  event.waitUntil((async function () {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(function (k) { return /^gramg-4a-demand-v1/.test(k); }).map(function (k) { return caches.delete(k); }));
+    await self.registration.unregister();
+    const clients = await self.clients.matchAll({ type: 'window' });
+    clients.forEach(function (c) { c.navigate(c.url); });
+  })());
+});

@@ -85,6 +85,7 @@
             location.href = './admin.html';
             return { ok: false, message: 'Admin panel খুলছে...' };
           }
+          if (ctx.role === 'kdesk') return SB.signOut().then(function () { return { ok: false, message: 'এটা K-Desk login, শুধু অফিসের K-Desk extension-এ চলে।' }; });
           if (ctx.role !== 'gp_user') return { ok: false, message: 'এই account-এর অনুমতি নেই।' };
           st.ctx = ctx;
           return {

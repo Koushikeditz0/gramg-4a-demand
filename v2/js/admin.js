@@ -287,7 +287,7 @@
       users.forEach(function (u) {
         var tr = document.createElement('tr');
         tr.appendChild(el('td', u.username)); tr.appendChild(el('td', u.full_name));
-        tr.appendChild(el('td', u.role === 'super_admin' ? 'Super Admin' : (u.gp_name || '')));
+        tr.appendChild(el('td', u.role === 'super_admin' ? 'Super Admin' : (u.gp_name || '') + (u.role === 'kdesk' ? ' · 🖥 K-Desk login' : '')));
         var st = el('td'); st.appendChild(el('span', u.active ? 'চালু' : 'বন্ধ', 'pill ' + (u.active ? 'on' : 'off'))); tr.appendChild(st);
         tr.appendChild(el('td', String(u.active_devices)));
         tr.appendChild(el('td', fmtDate(u.last_seen)));
@@ -304,6 +304,19 @@
           var pb = el('button', '🔑 PIN', 'btn-light btn-small'); pb.style.marginLeft = '4px';
           pb.addEventListener('click', function () { openPinModal(u); });
           act.appendChild(pb);
+          // K-Desk Suite login: may only read this GP's submitted lists and lock them (database: kdesk_*).
+          var kb = el('button', u.role === 'kdesk' ? '↩ Supervisor করুন' : '🖥 K-Desk login করুন', 'btn-light btn-small'); kb.style.marginLeft = '4px';
+          kb.addEventListener('click', function () {
+            var to = u.role === 'kdesk' ? 'gp_user' : 'kdesk';
+            var q = to === 'kdesk'
+              ? u.username + '-কে K-Desk login বানাবেন? এটা দিয়ে আর ফোনের app-এ list বানানো যাবে না, শুধু K-Desk extension জমা পড়া list আনতে আর lock করতে পারবে। সব device থেকে logout হবে।'
+              : u.username + '-কে আবার Supervisor বানাবেন? K-Desk আর এটা দিয়ে list আনতে পারবে না।';
+            if (!confirm(q)) return;
+            SB.rpc('admin_set_user_role', { p_user_id: u.user_id, p_role: to })
+              .then(function () { status(u.username + (to === 'kdesk' ? ' এখন K-Desk login।' : ' এখন Supervisor।'), 'ok'); return loadUsers(); })
+              .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
+          });
+          act.appendChild(kb);
           if (u.active_devices > 0) {
             var lo = el('button', 'সব device logout', 'btn-light btn-small'); lo.style.marginLeft = '4px';
             lo.addEventListener('click', function () {
@@ -912,7 +925,7 @@
         });
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(la), 'Lists');
         var ua = [['Username', 'নাম', 'Role', 'অবস্থা', 'শেষ login']];
-        users.forEach(function (x) { ua.push([x.username, x.full_name, x.role === 'super_admin' ? 'Super Admin' : 'Supervisor', x.active ? 'চালু' : 'বন্ধ', x.last_seen ? fmtDate(x.last_seen) : '']); });
+        users.forEach(function (x) { ua.push([x.username, x.full_name, x.role === 'super_admin' ? 'Super Admin' : x.role === 'kdesk' ? 'K-Desk' : 'Supervisor', x.active ? 'চালু' : 'বন্ধ', x.last_seen ? fmtDate(x.last_seen) : '']); });
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ua), 'Users');
         var d = new Date(), stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         XLSX.writeFile(wb, 'GramG_Backup_' + g.name.replace(/[^A-Za-z0-9_-]+/g, '_') + '_' + stamp + '.xlsx');

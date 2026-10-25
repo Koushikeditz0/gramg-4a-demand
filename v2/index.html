@@ -1473,6 +1473,18 @@
   </div>
 
   <!-- INSTALL HELP (iPhone etc.) -->
+  <div class="gm-modal" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
+    <div class="gm-box" style="max-width:680px;">
+      <h3 id="rsTitle">📋 K-Desk ফলাফল</h3>
+      <div class="gm-note" id="rsSub"></div>
+      <div style="overflow:auto;max-height:60vh;margin-top:8px;border:1px solid #e2e8f0;border-radius:8px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#e2e8f0;text-align:left;">
+          <th style="padding:5px;">SL</th><th style="padding:5px;">Job Card</th><th style="padding:5px;">নাম</th><th style="padding:5px;">Demand</th><th style="padding:5px;">Allocation</th></tr></thead>
+          <tbody id="rsBody"></tbody></table></div>
+      <div class="gm-actions"><button class="btn-primary" onclick="closeGm('resultsModal')">বন্ধ</button></div>
+    </div>
+  </div>
+
   <div class="gm-modal" id="installModal" role="dialog" aria-modal="true" aria-labelledby="imTitle">
     <div class="gm-box">
       <h3 id="imTitle">📲 Phone-এ app হিসেবে রাখুন</h3>
@@ -1511,7 +1523,7 @@
 
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
-<script src="./js/gramg-adapter.js?v=20261020a"></script>
+<script src="./js/gramg-adapter.js?v=20261025a"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3267,6 +3279,10 @@ function renderListState(){
     txt.textContent='🔒 Admin list lock করেছেন — বদলানো যাবে না';
     bar.appendChild(txt);
   }
+  if(st!=='draft'){
+    const rb=document.createElement('button'); rb.className='btn-light btn-small'; rb.textContent='📋 ফলাফল'; rb.id='resultsBtn'; rb.title='K-Desk-এ Demand / Allocation-এর ফলাফল'; rb.onclick=openResults;
+    bar.appendChild(rb);
+  }
   renderListMeta();
 }
 window.gramgOnListState=function(s){ listState=Object.assign({state:'draft',lists:[],supervisors:[]}, s||{}); renderListState(); };
@@ -3366,6 +3382,30 @@ function unsubmitMyList(){
   gramgAdapter.unsubmitList().then(function(){
     hideLoading(); showStatus('এখন list বদলাতে পারবেন। শেষ হলে আবার Submit করুন।','success');
   },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
+}
+/* ---------- K-Desk results (Demand / Allocation) of the current list ---------- */
+function openResults(){
+  showLoading('ফলাফল আনছি...');
+  gramgAdapter.listResults().then(function(rows){
+    hideLoading();
+    const L={done:'✓ সফল',error:'✕ Error',skipped:'⊘ বাদ'};
+    const tb=document.getElementById('rsBody'); tb.innerHTML='';
+    let dAll=0,dOk=0,aAll=0,aOk=0;
+    (rows||[]).forEach(function(r,i){
+      if(r.demand_status){dAll++; if(r.demand_status==='done') dOk++;}
+      if(r.alloc_status){aAll++; if(r.alloc_status==='done') aOk++;}
+      const tr=document.createElement('tr');
+      [i+1, r.job_card_no, r.applicant_name, L[r.demand_status]||'—', L[r.alloc_status]||'—'].forEach(function(v,ci){
+        const td=document.createElement('td'); td.style.cssText='padding:5px;border-top:1px solid #edf2f7;'+(ci>=3?'white-space:nowrap;font-weight:700;color:'+(v.indexOf('✓')===0?'#166534':v==='—'?'#64748b':'#991b1b'):'');
+        td.textContent=String(v);
+        const msg=ci===3?r.demand_msg:ci===4?r.alloc_msg:''; if(msg) td.title=msg;
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    document.getElementById('rsSub').textContent=(listState.workName||'')+' · '+(dAll?('Demand '+dOk+'/'+dAll+' সফল'+(aAll?(', Allocation '+aOk+'/'+aAll+' সফল'):'')):'এই list এখনো K-Desk-এ চালানো হয়নি।');
+    openGm('resultsModal');
+  },function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
 }
 document.getElementById('nlName').addEventListener('keydown',function(e){ if(e.key==='Enter') saveNewList(); });
 

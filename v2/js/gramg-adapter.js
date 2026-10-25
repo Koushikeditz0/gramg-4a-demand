@@ -344,6 +344,10 @@
     supervisors: function () { return st.supervisors.slice(); },
     lists: function () { return st.lists.slice(); },
     unsubmitList: function () { return changeSubmit('unsubmit_list'); },
+    listResults: function () {
+      if (!st.listId) return Promise.resolve([]);
+      return SB.rpc('get_list_results', { p_list_id: st.listId }, { retry: true }).catch(function (e) { throw bnError(e || {}); });
+    },
     listState: function () { return st.submitState; },
     workName: function () { return st.workName; },
     whenIdle: whenIdle

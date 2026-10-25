@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -66,6 +66,7 @@
     .pill.draft{background:#dbeafe;color:#1e40af;} .pill.submitted{background:#dcfce7;color:#166534;}
     .pill.locked{background:#fef3c7;color:#92400e;} .pill.empty{background:#f1f5f9;color:#64748b;}
     .pill.dup{background:#fee2e2;color:#991b1b;}
+    .res-ok{color:#166534;font-weight:700;} .res-bad{color:#991b1b;font-weight:700;} .kdline{color:#1e3a8a;}
     .filters{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;}
     .filters button{background:#e2e8f0;color:#334155;padding:6px 10px;font-size:12px;}
     .filters button.active{background:#0f172a;color:#fff;}
@@ -98,7 +99,7 @@
 <div class="app">
   <div class="header">
     <div class="header-title">📋 G RAM-G 4A/Demand List Builder <span class="badge badge-admin">Admin</span></div>
-    <div class="header-sub">শ্রমিক নির্বাচন, তালিকা প্রস্তুতি ও ডিমান্ড ব্যবস্থাপনা</div>
+    <div class="header-sub">Worker selection, list preparation and demand management</div>
   </div>
 
   <div class="bar">
@@ -119,8 +120,9 @@
   <section id="tab-dash">
     <div class="card">
       <div class="row" style="justify-content:space-between;">
-        <h2 style="margin:0;">Supervisor-দের list</h2>
-        <div class="row"><button class="btn-light btn-small" id="ekycBtn">📊 eKYC/ABPS হিসাব</button>
+        <h2 style="margin:0;">Supervisor lists</h2>
+        <div class="row"><button class="btn-light btn-small" id="kdActBtn">🖥 K-Desk activity</button>
+        <button class="btn-light btn-small" id="ekycBtn">📊 eKYC/ABPS summary</button>
         <button class="btn-light btn-small" id="dashRefresh">🔄 Refresh</button></div>
       </div>
       <label class="f" for="dashGp">Gram Panchayat</label>
@@ -128,11 +130,11 @@
       <div class="stats" id="dashStats"></div>
       <div id="dupBox" class="hidden"></div>
       <div class="filters" id="dashFilters">
-        <button data-f="all" class="active">সব</button>
-        <button data-f="submitted">জমা দিয়েছে</button>
-        <button data-f="draft">খসড়া</button>
-        <button data-f="empty">list নেই</button>
-        <button data-f="locked">Lock করা</button>
+        <button data-f="all" class="active">All</button>
+        <button data-f="submitted">Submitted</button>
+        <button data-f="draft">Draft</button>
+        <button data-f="empty">No list</button>
+        <button data-f="locked">Locked</button>
       </div>
       <div class="muted" id="dashUpdated"></div>
     </div>
@@ -140,18 +142,18 @@
 
     <div class="card" id="exportCard" style="margin-top:8px;">
       <h2>📥 K-Desk Demand file</h2>
-      <div class="muted">উপরে যে list-গুলোতে <b>"Export-এ নিন"</b> tick দেবেন, সেগুলো একটা Excel-এ যাবে। Column: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>। একই worker দুই list-এ থাকলে file-এ একবারই থাকবে।</div>
+      <div class="muted">The lists you tick with <b>"Add to K-Desk export"</b> above go into one Excel file. Columns: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>. A worker who is in two lists appears only once. A list that has its own Work Code uses it; the Work code below is for lists without one.</div>
       <div class="grid3" style="margin-top:6px;">
         <div><label class="f" for="expFrom">From (Work date)</label><input type="date" id="expFrom"></div>
-        <div><label class="f" for="expDays">Days</label><input type="number" id="expDays" min="1" max="366" inputmode="numeric" placeholder="যেমন 14"></div>
-        <div><label class="f" for="expWork">Work code</label><input type="text" id="expWork" maxlength="100" placeholder="Work code"></div>
+        <div><label class="f" for="expDays">Days</label><input type="number" id="expDays" min="1" max="366" inputmode="numeric" placeholder="e.g. 14"></div>
+        <div><label class="f" for="expWork">Work code (for lists without one)</label><input type="text" id="expWork" maxlength="100" placeholder="e.g. 3206003006/IF/93393042892327"></div>
       </div>
-      <label class="check"><input type="checkbox" id="expLock" checked><span>Export হয়ে গেলে এই list-গুলো <b>Lock</b> করুন (supervisor আর বদলাতে পারবেন না)।</span></label>
-      <div class="muted" id="expSummary">কোনো list বাছা হয়নি।</div>
+      <label class="check"><input type="checkbox" id="expLock" checked><span><b>Lock</b> these lists after the export (supervisors can no longer change them).</span></label>
+      <div class="muted" id="expSummary">No list selected.</div>
       <div class="row" style="margin-top:8px;">
-        <button class="btn-success" id="expBtn" disabled>📥 K-Desk Excel তৈরি করুন</button>
-        <button class="btn-light btn-small" id="pickSubmitted">জমা দেওয়া সব list বাছুন</button>
-        <button class="btn-light btn-small" id="pickNone">বাছাই মুছুন</button>
+        <button class="btn-success" id="expBtn" disabled>📥 Create K-Desk Excel</button>
+        <button class="btn-light btn-small" id="pickSubmitted">Select all submitted lists</button>
+        <button class="btn-light btn-small" id="pickNone">Clear selection</button>
       </div>
     </div>
   </section>
@@ -159,48 +161,48 @@
   <!-- ============ IMPORT ============ -->
   <section id="tab-import" class="hidden">
     <div class="card">
-      <h2>🏛 নতুন Gram Panchayat</h2>
-      <div class="muted">নতুন GP-র data import আর supervisor তৈরির আগে এখানে GP যোগ করুন। Job Card prefix = Job Card নম্বরের প্রথম ১৩ অক্ষর, যেমন <code>WB-08-005-014</code>।</div>
+      <h2>🏛 New Gram Panchayat</h2>
+      <div class="muted">Add the GP here before importing its data and creating supervisors. Job Card prefix = the first 13 characters of the Job Card number, e.g. <code>WB-08-005-014</code>.</div>
       <div class="grid3" style="margin-top:6px;">
-        <div><label class="f" for="gpName">GP-র নাম</label><input type="text" id="gpName" maxlength="100" placeholder="যেমন Petla"></div>
+        <div><label class="f" for="gpName">GP name</label><input type="text" id="gpName" maxlength="100" placeholder="e.g. Petla"></div>
         <div><label class="f" for="gpPrefix">Job Card prefix</label><input type="text" id="gpPrefix" maxlength="13" placeholder="WB-08-005-014" autocapitalize="characters" class="mono"></div>
       </div>
-      <div style="margin-top:8px;"><button class="btn-primary btn-small" id="gpAddBtn">➕ GP যোগ করুন</button></div>
+      <div style="margin-top:8px;"><button class="btn-primary btn-small" id="gpAddBtn">➕ Add GP</button></div>
     </div>
     <div class="card">
       <h2>💾 Backup</h2>
-      <div class="muted">উপরে বাছা GP-র সব worker (account সহ), সব list (পুরনো দফা সহ) আর user-তালিকা একটা Excel-এ নামবে। Workers sheet এই পাতাতেই আবার import করা যায়। <b>File-এ bank account নম্বর আছে — নিরাপদ জায়গায় রাখুন, কাউকে পাঠাবেন না।</b> মাসে অন্তত একবার নিন।</div>
+      <div class="muted">Downloads one Excel file with all workers of the GP selected below (with accounts), all lists (including past rounds) and the user list. The Workers sheet can be imported again on this page. <b>The file contains bank account numbers: keep it safe and do not send it to anyone.</b> Take a backup at least once a month.</div>
       <div style="margin-top:8px;"><button class="btn-success" id="backupBtn">💾 Backup Excel download</button></div>
       <div class="muted" id="backupInfo" style="margin-top:4px;"></div>
     </div>
     <div class="card">
-      <h2>Worker ও Account data import</h2>
-      <div class="muted">CSV বা Excel (.xlsx) file দিন। একটা file-এ worker আর account দুটোই থাকতে পারে (যেমন SmartDesk Master Data)।
-        শুধু দরকারি ৯টা column নেওয়া হয়: Job Card No, Applicant No, Applicant Name, Aadhaar Seeded, Authentication Done, ABPS, eKYC, Account No, IFSC। বাকি column (Caste, Gender, Age ইত্যাদি) নেওয়া হয় না।</div>
+      <h2>Worker and account data import</h2>
+      <div class="muted">Choose a CSV or Excel (.xlsx) file. One file can hold both workers and accounts (e.g. SmartDesk Master Data).
+        Only the 9 needed columns are taken: Job Card No, Applicant No, Applicant Name, Aadhaar Seeded, Authentication Done, ABPS, eKYC, Account No, IFSC. Other columns (Caste, Gender, Age, etc.) are ignored.</div>
       <label class="f" for="gpSelect">Gram Panchayat</label>
       <select id="gpSelect"></select>
       <div class="muted" id="gpStats" style="margin-top:4px;"></div>
       <label class="f" for="fileInput">File</label>
       <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
       <label class="check"><input type="checkbox" id="deactivateMissing">
-        <span>এই file-এ যাদের নাম <b>নেই</b>, তাদের <b>inactive</b> করুন (delete হবে না, পুরনো selection থাকবে)। পুরো GP-র সম্পূর্ণ file দিলে তবেই এটা tick করুন।</span></label>
-      <button class="btn-primary" id="previewBtn" disabled>🔍 যাচাই করুন (Preview)</button>
+        <span>Mark workers who are <b>not</b> in this file as <b>inactive</b> (nothing is deleted; old selections stay). Tick this only when the file covers the whole GP.</span></label>
+      <button class="btn-primary" id="previewBtn" disabled>🔍 Check (Preview)</button>
       <div class="progress hidden" id="progress"><div></div></div>
       <div class="muted" id="progressText"></div>
     </div>
 
     <div class="card hidden" id="previewCard">
-      <h2>Preview — এখনো কিছু save হয়নি</h2>
+      <h2>Preview — nothing has been saved yet</h2>
       <div id="mappingInfo" class="muted"></div>
       <div class="stats" id="stats"></div>
       <div id="problemsBox" class="hidden">
-        <h3>সমস্যা ও সতর্কতা (প্রথম ৩০০টি)</h3>
-        <div class="table-wrap"><table><thead><tr><th>Row</th><th>Job Card No</th><th>App</th><th>সমস্যা</th></tr></thead><tbody id="problems"></tbody></table></div>
-        <div class="row" style="margin-top:6px;"><button class="btn-light btn-small" id="problemsCsvBtn">⬇ সমস্যার তালিকা (CSV)</button></div>
+        <h3>Problems and warnings (first 300)</h3>
+        <div class="table-wrap"><table><thead><tr><th>Row</th><th>Job Card No</th><th>App</th><th>Problem</th></tr></thead><tbody id="problems"></tbody></table></div>
+        <div class="row" style="margin-top:6px;"><button class="btn-light btn-small" id="problemsCsvBtn">⬇ Problem list (CSV)</button></div>
       </div>
       <div class="row" style="margin-top:10px;">
         <button class="btn-success" id="commitBtn">✅ Confirm Import</button>
-        <button class="btn-light" id="cancelBtn">বাতিল</button>
+        <button class="btn-light" id="cancelBtn">Cancel</button>
       </div>
     </div>
   </section>
@@ -209,9 +211,9 @@
   <section id="tab-history" class="hidden">
     <div class="card">
       <h2>Import History</h2>
-      <div class="muted">শুধু সবচেয়ে শেষ import ফেরানো (Rollback) যায়। Rollback করলে সেই import-এর আগের অবস্থা ফিরে আসে; ওই import-এ নতুন আসা worker কেউ select না করে থাকলে মুছে যায়, করে থাকলে inactive হয়।</div>
+      <div class="muted">Only the latest import can be rolled back. A rollback restores the data as it was before that import; workers that the import added are deleted if nobody selected them, otherwise they become inactive.</div>
       <div class="table-wrap" style="margin-top:8px;"><table>
-        <thead><tr><th>তারিখ</th><th>File</th><th>অবস্থা</th><th>নতুন</th><th>পরিবর্তিত</th><th>Account</th><th>Inactive</th><th>কে</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>File</th><th>Status</th><th>New</th><th>Changed</th><th>Account</th><th>Inactive</th><th>By</th><th></th></tr></thead>
         <tbody id="history"></tbody></table></div>
     </div>
   </section>
@@ -221,40 +223,40 @@
     <div class="card">
       <h2>Users</h2>
       <div class="table-wrap"><table>
-        <thead><tr><th>Username</th><th>নাম</th><th>GP</th><th>অবস্থা</th><th>Device</th><th>শেষ ব্যবহার</th><th></th></tr></thead>
+        <thead><tr><th>Username</th><th>Name</th><th>GP</th><th>Status</th><th>Devices</th><th>Last used</th><th></th></tr></thead>
         <tbody id="users"></tbody></table></div>
     </div>
     <div class="card">
-      <h2>➕ নতুন supervisor</h2>
+      <h2>➕ New supervisor</h2>
       <div class="grid3">
-        <div><label class="f" for="nuName">পুরো নাম</label><input type="text" id="nuName" maxlength="100" placeholder="যেমন Ramesh Barman"></div>
-        <div><label class="f" for="nuUsername">Username</label><input type="text" id="nuUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="যেমন ramesh"></div>
+        <div><label class="f" for="nuName">Full name</label><input type="text" id="nuName" maxlength="100" placeholder="e.g. Ramesh Barman"></div>
+        <div><label class="f" for="nuUsername">Username</label><input type="text" id="nuUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. ramesh"></div>
         <div><label class="f" for="nuGp">GP</label><select id="nuGp"></select></div>
-        <div><label class="f" for="nuPin">PIN (৬–১২ সংখ্যা)</label>
+        <div><label class="f" for="nuPin">PIN (6–12 digits)</label>
           <div class="row" style="flex-wrap:nowrap;"><input type="text" id="nuPin" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
-          <button class="btn-light btn-small" id="nuPinGen" type="button" title="নতুন PIN বানান">🎲</button></div></div>
+          <button class="btn-light btn-small" id="nuPinGen" type="button" title="Make a new PIN">🎲</button></div></div>
       </div>
-      <div class="muted" style="margin-top:6px;">Username: ছোট হাতের ইংরেজি অক্ষর, সংখ্যা, <code>_ . -</code> (৩–৩২ অক্ষর)। সহজ PIN (111111, 123456) চলবে না। PIN-টা supervisor-কে নিজে জানিয়ে দিন।</div>
-      <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Supervisor তৈরি করুন</button></div>
+      <div class="muted" style="margin-top:6px;">Username: lowercase English letters, digits, <code>_ . -</code> (3–32 characters). Easy PINs (111111, 123456) are not allowed. Give the PIN to the supervisor yourself.</div>
+      <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Create supervisor</button></div>
     </div>
     <div class="card">
       <details>
-      <summary style="cursor:pointer;font-weight:700;font-size:13px;">পুরনো পদ্ধতি: Supabase dashboard দিয়ে (Super Admin বানাতে বা Edge Function না থাকলে)</summary>
+      <summary style="cursor:pointer;font-weight:700;font-size:13px;">Old method: through the Supabase dashboard (to make a Super Admin, or when the Edge Function is missing)</summary>
       <ol class="steps">
-        <li>Supabase Dashboard → <b>Authentication → Users → Add user → Create new user</b>।<br>
-            Email: <code>username@users.gramg.invalid</code> (যেমন <code>ramesh@users.gramg.invalid</code>), Password: কমপক্ষে ৬ সংখ্যার PIN, <b>Auto Confirm User ✅</b>।</li>
-        <li>এই পাতায় নিচে <b>তালিকা Refresh</b> করে user-কে বেছে নাম ও GP দিয়ে <b>Profile যোগ করুন</b>।</li>
+        <li>Supabase Dashboard → <b>Authentication → Users → Add user → Create new user</b>.<br>
+            Email: <code>username@users.gramg.invalid</code> (e.g. <code>ramesh@users.gramg.invalid</code>), Password: a PIN of at least 6 digits, <b>Auto Confirm User ✅</b>.</li>
+        <li>On this page press <b>Refresh list</b> below, pick the user, enter the name and GP and press <b>Add profile</b>.</li>
       </ol>
-      <div class="row"><button class="btn-light btn-small" id="refreshUnlinked">🔄 তালিকা Refresh</button></div>
+      <div class="row"><button class="btn-light btn-small" id="refreshUnlinked">🔄 Refresh list</button></div>
       <div id="unlinkedBox" class="muted" style="margin-top:6px;"></div>
       <div id="linkForm" class="hidden">
         <label class="f" for="linkUser">User (email)</label><select id="linkUser"></select>
         <label class="f" for="linkUsername">Username</label><input type="text" id="linkUsername" readonly>
-        <label class="f" for="linkName">পুরো নাম</label><input type="text" id="linkName" maxlength="100">
+        <label class="f" for="linkName">Full name</label><input type="text" id="linkName" maxlength="100">
         <label class="f" for="linkRole">Role</label>
         <select id="linkRole"><option value="gp_user">GP User</option><option value="super_admin">Super Admin</option></select>
         <label class="f" for="linkGp">GP</label><select id="linkGp"></select>
-        <div style="margin-top:10px;"><button class="btn-primary" id="linkBtn">➕ Profile যোগ করুন</button></div>
+        <div style="margin-top:10px;"><button class="btn-primary" id="linkBtn">➕ Add profile</button></div>
       </div>
       </details>
     </div>
@@ -265,32 +267,37 @@
     <div class="modal-box">
       <div class="modal-head">
         <div><h2 id="pvTitle">List</h2><div class="muted" id="pvSub"></div></div>
-        <button class="btn-light btn-small" id="pvClose">✕ বন্ধ</button>
+        <button class="btn-light btn-small" id="pvClose">✕ Close</button>
       </div>
       <div class="stats" id="pvStats"></div>
       <div class="pvedit">
         <div><label class="f" for="pvWork">Work Name</label><input type="text" id="pvWork" maxlength="200"></div>
-        <div><label class="f" for="pvSups">Supervisor (কমা দিয়ে আলাদা করুন)</label><input type="text" id="pvSups" maxlength="1000"></div>
+        <div><label class="f" for="pvSups">Supervisors (separate with commas)</label><input type="text" id="pvSups" maxlength="1000"></div>
         <div><button class="btn-light btn-small" id="pvMetaSave">💾 Save</button></div>
       </div>
+      <div class="pvedit">
+        <div style="grid-column:span 2;"><label class="f" for="pvCode">Work Code (K-Desk fills this in for Work Allocation)</label><input type="text" id="pvCode" maxlength="100" class="mono" spellcheck="false" autocomplete="off" placeholder="e.g. 3206003006/IF/93393042892327"></div>
+        <div><button class="btn-light btn-small" id="pvCodeSave">💾 Save code</button></div>
+      </div>
+      <div class="muted" id="pvKdesk" style="margin:2px 0 6px;"></div>
       <details style="margin:4px 0 8px;">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;">➕ Worker যোগ করুন</summary>
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;">➕ Add worker</summary>
         <div class="row" style="margin-top:6px;">
-          <input type="text" id="pvAddInput" placeholder="Job Card: 002/012 2/15 বা পুরো নম্বর" style="flex:1 1 200px;">
-          <button class="btn-light btn-small" id="pvAddBtn">খুঁজুন</button>
+          <input type="text" id="pvAddInput" placeholder="Job Card: 002/012 2/15 or the full number" style="flex:1 1 200px;">
+          <button class="btn-light btn-small" id="pvAddBtn">Search</button>
         </div>
         <div id="pvAddResults"></div>
       </details>
       <div class="row" style="margin:6px 0;">
-        <input type="text" id="pvSearch" placeholder="নাম / Job Card খুঁজুন" style="flex:1 1 180px;">
+        <input type="text" id="pvSearch" placeholder="Search name / Job Card" style="flex:1 1 180px;">
         <select id="pvVillage" style="flex:0 1 160px;"></select>
       </div>
       <div class="table-wrap" style="max-height:60vh;"><table>
-        <thead><tr><th>SL</th><th>Job Card No</th><th>App</th><th>নাম</th><th>eKYC</th><th>ABPS</th><th>Account No</th><th>IFSC</th><th></th><th></th></tr></thead>
+        <thead><tr><th>SL</th><th>Job Card No</th><th>App</th><th>Name</th><th>eKYC</th><th>ABPS</th><th>Account No</th><th>IFSC</th><th>Demand</th><th>Allocation</th><th></th><th></th></tr></thead>
         <tbody id="pvBody"></tbody></table></div>
       <div class="row" style="margin-top:8px;">
-        <button class="btn-light btn-small" id="pvExcel">⬇ এই list-এর Excel</button>
-        <label class="check" style="margin:0;"><input type="checkbox" id="pvPick"><span>K-Desk export-এ নিন</span></label>
+        <button class="btn-light btn-small" id="pvExcel">⬇ Excel of this list</button>
+        <label class="check" style="margin:0;"><input type="checkbox" id="pvPick"><span>Add to K-Desk export</span></label>
       </div>
     </div>
   </div>
@@ -298,8 +305,8 @@
   <!-- submitted copies -->
   <div class="modal" id="subModal" role="dialog" aria-modal="true" aria-labelledby="subTitle">
     <div class="modal-box">
-      <div class="modal-head"><div><h2 id="subTitle">আগের জমা</h2><div class="muted">Supervisor প্রতিবার Submit করলে list-এর একটা কপি এখানে থাকে, পরে বদলালেও।</div></div>
-        <button class="btn-light btn-small" id="subClose">✕ বন্ধ</button></div>
+      <div class="modal-head"><div><h2 id="subTitle">Past submissions</h2><div class="muted">Each time a supervisor submits, a copy of the list is kept here, even if it changes later.</div></div>
+        <button class="btn-light btn-small" id="subClose">✕ Close</button></div>
       <div id="subBody"></div>
     </div>
   </div>
@@ -307,25 +314,49 @@
   <!-- eKYC / ABPS report -->
   <div class="modal" id="ekModal" role="dialog" aria-modal="true" aria-labelledby="ekTitle">
     <div class="modal-box">
-      <div class="modal-head"><div><h2 id="ekTitle">📊 গ্রাম অনুযায়ী eKYC / ABPS</h2><div class="muted" id="ekSub"></div></div>
-        <button class="btn-light btn-small" id="ekClose">✕ বন্ধ</button></div>
+      <div class="modal-head"><div><h2 id="ekTitle">📊 eKYC / ABPS by village</h2><div class="muted" id="ekSub"></div></div>
+        <button class="btn-light btn-small" id="ekClose">✕ Close</button></div>
       <div class="table-wrap" style="max-height:60vh;"><table>
-        <thead><tr><th>Village</th><th>মোট worker</th><th>eKYC+ABPS আছে</th><th>eKYC নেই</th><th>ABPS নেই</th><th>দুটোই নেই</th></tr></thead>
+        <thead><tr><th>Village</th><th>Total workers</th><th>eKYC+ABPS done</th><th>No eKYC</th><th>No ABPS</th><th>Neither</th></tr></thead>
         <tbody id="ekBody"></tbody></table></div>
-      <div class="row" style="margin-top:8px;"><button class="btn-success btn-small" id="ekExcel">⬇ Excel (গ্রাম অনুযায়ী + নাম-তালিকা)</button></div>
+      <div class="row" style="margin-top:8px;"><button class="btn-success btn-small" id="ekExcel">⬇ Excel (by village + name list)</button></div>
+    </div>
+  </div>
+
+  <!-- K-Desk activity -->
+  <div class="modal" id="kdModal" role="dialog" aria-modal="true" aria-labelledby="kdTitle">
+    <div class="modal-box">
+      <div class="modal-head"><div><h2 id="kdTitle">🖥 K-Desk activity</h2><div class="muted" id="kdSub"></div></div>
+        <button class="btn-light btn-small" id="kdClose">✕ Close</button></div>
+      <div class="stats" id="kdStats"></div>
+      <div class="table-wrap" style="max-height:60vh;"><table>
+        <thead><tr><th>When</th><th>What</th><th>Lists</th><th>Details</th><th>Login</th></tr></thead>
+        <tbody id="kdBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- delete user -->
+  <div class="modal" id="delModal" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+    <div class="modal-box small">
+      <div class="modal-head"><h2 id="delTitle">🗑 Delete user</h2><button class="btn-light btn-small" id="delClose">✕</button></div>
+      <div class="muted" id="delWho"></div>
+      <div class="status show err" style="margin-top:8px;">This cannot be undone. The account, its login, its devices and <b>all of this user's lists</b> (with past submissions and K-Desk results) are deleted permanently. Workers are not deleted. To keep the lists, use <b>Disable</b> instead.</div>
+      <label class="f" for="delConfirm">Type the username to confirm</label>
+      <input type="text" id="delConfirm" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" class="mono">
+      <div style="margin-top:10px;"><button class="btn-danger" id="delSave" disabled>🗑 Delete permanently</button></div>
     </div>
   </div>
 
   <!-- PIN reset -->
   <div class="modal" id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
     <div class="modal-box small">
-      <div class="modal-head"><h2 id="pinTitle">🔑 নতুন PIN</h2><button class="btn-light btn-small" id="pinClose">✕</button></div>
+      <div class="modal-head"><h2 id="pinTitle">🔑 New PIN</h2><button class="btn-light btn-small" id="pinClose">✕</button></div>
       <div class="muted" id="pinWho"></div>
-      <label class="f" for="pinNew">নতুন PIN (৬–১২ সংখ্যা)</label>
+      <label class="f" for="pinNew">New PIN (6–12 digits)</label>
       <div class="row" style="flex-wrap:nowrap;"><input type="text" id="pinNew" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
-        <button class="btn-light btn-small" id="pinGen" type="button" title="নতুন PIN বানান">🎲</button></div>
-      <div class="muted" style="margin-top:6px;">PIN বদলালে ওই user সব device থেকে সঙ্গে সঙ্গে logout হবেন, তারপর নতুন PIN দিয়ে login করবেন।</div>
-      <div style="margin-top:10px;"><button class="btn-primary" id="pinSave">🔑 PIN বদলান</button></div>
+        <button class="btn-light btn-small" id="pinGen" type="button" title="Make a new PIN">🎲</button></div>
+      <div class="muted" style="margin-top:6px;">After a PIN change the user is logged out of every device at once and then logs in with the new PIN.</div>
+      <div style="margin-top:10px;"><button class="btn-primary" id="pinSave">🔑 Change PIN</button></div>
     </div>
   </div>
 
@@ -335,6 +366,6 @@
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261024a"></script>
+<script src="./js/admin.js?v=20261025a"></script>
 </body>
 </html>

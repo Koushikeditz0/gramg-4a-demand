@@ -22,27 +22,32 @@
   function bn(n) { return Number(n || 0).toLocaleString('en-IN'); }
   function errText(e) {
     var map = {
-      NOT_AUTHORIZED: 'এই কাজের অনুমতি নেই।', IMPORT_NOT_OPEN: 'এই import আর খোলা নেই। আবার file দিয়ে শুরু করুন।',
-      IMPORT_NOT_READY: 'আগে Preview করুন।', NOT_LATEST_IMPORT: 'শুধু সবচেয়ে শেষ import ফেরানো যায়।',
-      IMPORT_NOT_COMMITTED: 'এই import আগেই ফেরানো বা বাতিল হয়েছে।', FILE_TOO_LARGE: 'File অনেক বড় (১ লক্ষ row-এর বেশি)।',
-      NETWORK: 'Server-এর সঙ্গে যোগাযোগ হয়নি। Internet দেখুন।',
-      LIST_NOT_FOUND: 'List পাওয়া যায়নি (হয়তো নতুন দফা শুরু হয়েছে)। Refresh করুন।',
-      LIST_NOT_LOCKED: 'নতুন দফা শুরু করার আগে list Lock করুন।',
-      LIST_LOCKED: 'List lock করা আছে।',
-      BAD_PREFIX: 'Job Card prefix ঠিক নয়। যেমন: WB-08-005-014 (প্রথম ১৩ অক্ষর)।',
-      GP_EXISTS: 'এই prefix-এর GP আগে থেকেই আছে।',
-      NEED_WORK_NAME: 'Work Name লিখুন।',
-      BAD_USERNAME: 'Username ঠিক নয়: ৩–৩২ অক্ষর, শুধু ছোট হাতের ইংরেজি অক্ষর, সংখ্যা, _ . -',
-      BAD_NAME: 'পুরো নাম লিখুন (১০০ অক্ষরের মধ্যে)।', BAD_GP: 'GP বেছে নিন।',
-      PIN_FORMAT: 'PIN ৬ থেকে ১২ সংখ্যার হতে হবে, শুধু অঙ্ক।',
-      WEAK_PIN: 'PIN খুব সহজ (যেমন 111111 বা 123456)। অন্য PIN দিন।',
-      USERNAME_TAKEN: 'এই username আগে থেকেই আছে। অন্য username দিন।',
-      USER_NOT_FOUND: 'User পাওয়া যায়নি।', ONLY_SUPERVISORS: 'এখান থেকে শুধু supervisor-এর PIN বদলানো যায়।',
-      AUTH_ERROR: 'Supabase Auth-এ সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।',
-      SERVER_NOT_CONFIGURED: 'Edge Function-এর সেটিং ঠিক নেই (key পাওয়া যায়নি)।',
-      FUNCTION_JWT_SETTING: 'Edge Function-এ "Verify JWT" চালু আছে। Supabase → Edge Functions → admin-users → সেটিং থেকে সেটা বন্ধ করুন (নির্দেশিকা দেখুন)।',
-      FUNCTION_UNREACHABLE: 'Edge Function-এ পৌঁছানো যায়নি। Internet দেখুন; তারপর দেখুন "admin-users" deploy হয়েছে আর "Verify JWT" বন্ধ আছে কি না।',
-      FUNCTION_NOT_DEPLOYED: '"admin-users" Edge Function এখনো deploy করা হয়নি। নির্দেশিকা দেখে deploy করুন, অথবা পুরনো পদ্ধতি ব্যবহার করুন।'
+      NOT_AUTHORIZED: 'You are not allowed to do this.', IMPORT_NOT_OPEN: 'This import is no longer open. Start again with the file.',
+      IMPORT_NOT_READY: 'Run the Preview first.', NOT_LATEST_IMPORT: 'Only the latest import can be rolled back.',
+      IMPORT_NOT_COMMITTED: 'This import was already rolled back or cancelled.', FILE_TOO_LARGE: 'The file is too large (more than 100,000 rows).',
+      NETWORK: 'Could not reach the server. Check the internet connection.',
+      LIST_NOT_FOUND: 'List not found (perhaps a new round has started). Please refresh.',
+      LIST_NOT_LOCKED: 'Lock the list before starting a new round.',
+      LIST_LOCKED: 'The list is locked.',
+      BAD_PREFIX: 'The Job Card prefix is not valid. Example: WB-08-005-014 (the first 13 characters).',
+      GP_EXISTS: 'A GP with this prefix already exists.',
+      NEED_WORK_NAME: 'Enter the Work Name.',
+      BAD_USERNAME: 'Invalid username: 3–32 characters, only lowercase English letters, digits, _ . -',
+      BAD_NAME: 'Enter the full name (up to 100 characters).', BAD_GP: 'Choose a GP.',
+      PIN_FORMAT: 'The PIN must be 6 to 12 digits, numbers only.',
+      WEAK_PIN: 'The PIN is too easy (like 111111 or 123456). Choose another PIN.',
+      USERNAME_TAKEN: 'This username already exists. Choose another one.',
+      USER_NOT_FOUND: 'User not found.', ONLY_SUPERVISORS: 'Only a supervisor\'s PIN can be changed here. For a K-Desk login, switch it back to Supervisor first, change the PIN, then make it a K-Desk login again.',
+      BAD_WORK_CODE: 'The Work Code format does not match (e.g. 3206003006/IF/93393042892327).',
+      CONFIRM_MISMATCH: 'The username you typed does not match.', CANNOT_DELETE_ADMIN: 'A Super Admin cannot be deleted.',
+      USER_HAS_IMPORTS: 'This user started data imports, so the account is kept for the import history. Disable it instead.',
+      BAD_INPUT: 'The input is not valid.', SESSION_REVOKED: 'This device was logged out. Please log in again.',
+      USER_DISABLED: 'This account is disabled.', NOT_LOGGED_IN: 'Please log in again.',
+      AUTH_ERROR: 'Supabase Auth had a problem. Try again in a little while.',
+      SERVER_NOT_CONFIGURED: 'The Edge Function is not set up correctly (key not found).',
+      FUNCTION_JWT_SETTING: '"Verify JWT" is on for the Edge Function. Turn it off in Supabase → Edge Functions → admin-users → settings (see the guide).',
+      FUNCTION_UNREACHABLE: 'Could not reach the Edge Function. Check the internet, then check that "admin-users" is deployed and "Verify JWT" is off.',
+      FUNCTION_NOT_DEPLOYED: 'The "admin-users" Edge Function is not deployed yet. Deploy it using the guide, or use the old method.'
     };
     return map[e.code] || (e.hint ? e.hint : 'Error: ' + (e.message || e));
   }
@@ -52,7 +57,7 @@
   // ---------- boot ----------
   function boot() {
     if (!SB.hasSession()) { location.replace('./index.html'); return; }
-    loading('Admin panel খুলছে...');
+    loading('Opening the admin panel...');
     SB.rpc('register_session', { p_user_agent: String(navigator.userAgent).slice(0, 300) })
       .then(function () { return SB.rpc('get_my_context'); })
       .then(function (ctx) {
@@ -77,7 +82,7 @@
   }
   function showGpStats() {
     var g = state.gps.filter(function (x) { return String(x.id) === $('gpSelect').value; })[0];
-    $('gpStats').textContent = g ? 'এখন database-এ: ' + bn(g.workers) + ' জন worker (' + bn(g.active_workers) + ' active), ' + bn(g.accounts) + ' জনের account' : '';
+    $('gpStats').textContent = g ? 'In the database now: ' + bn(g.workers) + ' workers (' + bn(g.active_workers) + ' active), ' + bn(g.accounts) + ' with an account' : '';
   }
 
   // ---------- tabs ----------
@@ -97,7 +102,7 @@
     if (window.XLSX) return Promise.resolve();
     if (!xlsxLoading) xlsxLoading = new Promise(function (res, rej) {
       var s = document.createElement('script'); s.src = XLSX_URL; s.onload = res;
-      s.onerror = function () { xlsxLoading = null; rej(new Error('Excel library load হয়নি। Internet দেখুন।')); };
+      s.onerror = function () { xlsxLoading = null; rej(new Error('The Excel library did not load. Check the internet.')); };
       document.head.appendChild(s);
     });
     return xlsxLoading;
@@ -117,7 +122,7 @@
           if (!m.missing.length) return { sheet: wb.SheetNames[s], headerRow: h, aoa: aoa, mapping: m };
         }
       }
-      throw new Error('File-এ "Job Card No" আর "Applicant No" column পাওয়া যায়নি।');
+      throw new Error('The file has no "Job Card No" and "Applicant No" columns.');
     });
   }
   function sha256(file) {
@@ -142,11 +147,11 @@
     state.busy = true; $('previewBtn').disabled = true; status('');
     $('previewCard').classList.add('hidden');
     var parsed, rows;
-    progress(0.02, 'File পড়া হচ্ছে...');
+    progress(0.02, 'Reading the file...');
     readFile(file).then(function (p) {
       parsed = p;
       rows = MAP.toRaw(p.aoa.slice(p.headerRow + 1), p.mapping.map, p.headerRow + 2);
-      if (!rows.length) throw new Error('File-এ কোনো data row নেই।');
+      if (!rows.length) throw new Error('The file has no data rows.');
       return sha256(file);
     }).then(function (hash) {
       return SB.rpc('admin_create_import', { p_gp_id: Number($('gpSelect').value), p_file_name: file.name,
@@ -159,13 +164,13 @@
         var part = rows.slice(i, i + STAGE_CHUNK);
         return SB.rpc('admin_stage_rows', { p_job_id: jobId, p_rows: part }, { retry: true }).then(function () {
           i += part.length;
-          progress(0.05 + 0.75 * i / rows.length, bn(i) + ' / ' + bn(rows.length) + ' row পাঠানো হয়েছে...');
+          progress(0.05 + 0.75 * i / rows.length, bn(i) + ' / ' + bn(rows.length) + ' rows sent...');
           return next();
         });
       }
       return next();
     }).then(function () {
-      progress(0.85, 'যাচাই হচ্ছে (নতুন / পরিবর্তিত / duplicate)...');
+      progress(0.85, 'Checking (new / changed / duplicate)...');
       return SB.rpc('admin_classify_import', { p_job_id: state.jobId }, { timeout: 180000 });
     }).then(function (res) {
       progress(null);
@@ -184,20 +189,20 @@
     parsed.mapping.found.forEach(function (k) { chips.appendChild(el('span', '✓ ' + MAP.LABELS[k], 'chip')); });
     parsed.mapping.ignored.forEach(function (h) { chips.appendChild(el('span', h, 'chip ign')); });
     info.appendChild(chips);
-    if (parsed.mapping.ignored.length) info.appendChild(el('div', parsed.mapping.ignored.length + 'টা column নেওয়া হয়নি (কাটা দাগ দেওয়া)।'));
+    if (parsed.mapping.ignored.length) info.appendChild(el('div', parsed.mapping.ignored.length + ' column(s) not taken (struck through).'));
 
     var S = $('stats'); S.innerHTML = '';
     function stat(n, label, cls) { var d = el('div', null, 'stat ' + (cls || '')); d.appendChild(el('div', bn(n), 'n')); d.appendChild(el('div', label, 'l')); S.appendChild(d); }
-    stat(c.total_rows, 'File-এ মোট row');
-    stat(c.workers_in_file, 'আলাদা worker');
-    stat(c.new, 'নতুন worker', 'good');
-    stat(c.updated, 'তথ্য পরিবর্তিত', c.updated ? 'warn' : '');
-    stat(c.unchanged, 'অপরিবর্তিত');
-    stat(c.with_account, 'Account সহ');
-    stat(c.merged_repeats, 'একই worker-এর পুনরাবৃত্ত row (মেলানো হয়েছে)');
-    stat(c.conflicting_repeats + c.invalid, 'বাদ পড়বে (ভুল/অমিল)', (c.conflicting_repeats + c.invalid) ? 'bad' : '');
-    stat(c.account_warnings, 'Account বাদ (ভুল Account/IFSC)', c.account_warnings ? 'warn' : '');
-    stat(c.missing_from_file, c.deactivate_missing ? 'File-এ নেই → inactive হবে' : 'File-এ নেই (কিছু হবে না)', c.deactivate_missing && c.missing_from_file ? 'bad' : '');
+    stat(c.total_rows, 'Rows in file');
+    stat(c.workers_in_file, 'Distinct workers');
+    stat(c.new, 'New workers', 'good');
+    stat(c.updated, 'Changed', c.updated ? 'warn' : '');
+    stat(c.unchanged, 'Unchanged');
+    stat(c.with_account, 'With account');
+    stat(c.merged_repeats, 'Repeated rows of one worker (merged)');
+    stat(c.conflicting_repeats + c.invalid, 'Will be skipped (invalid / conflicting)', (c.conflicting_repeats + c.invalid) ? 'bad' : '');
+    stat(c.account_warnings, 'Account skipped (bad Account/IFSC)', c.account_warnings ? 'warn' : '');
+    stat(c.missing_from_file, c.deactivate_missing ? 'Not in file → will become inactive' : 'Not in file (nothing happens)', c.deactivate_missing && c.missing_from_file ? 'bad' : '');
 
     var tb = $('problems'); tb.innerHTML = '';
     problems.forEach(function (p) {
@@ -210,7 +215,7 @@
     });
     $('problemsBox').classList.toggle('hidden', !problems.length);
     $('commitBtn').disabled = !(c.new + c.updated + (c.deactivate_missing ? c.missing_from_file : 0));
-    $('commitBtn').textContent = $('commitBtn').disabled ? 'কোনো পরিবর্তন নেই' : '✅ Confirm Import';
+    $('commitBtn').textContent = $('commitBtn').disabled ? 'No changes' : '✅ Confirm Import';
     $('previewCard').classList.remove('hidden');
     $('previewCard').scrollIntoView({ behavior: 'smooth' });
   }
@@ -227,14 +232,14 @@
 
   $('commitBtn').addEventListener('click', function () {
     var c = state.counts; if (!c || state.busy) return;
-    var msg = 'Import নিশ্চিত করবেন?\n\nনতুন: ' + bn(c.new) + '\nপরিবর্তিত: ' + bn(c.updated) +
-              (c.deactivate_missing ? '\nInactive হবে: ' + bn(c.missing_from_file) : '') +
-              '\nবাদ পড়বে: ' + bn(c.invalid + c.conflicting_repeats) + '\n\nভুল হলে Import History থেকে ফেরানো যাবে।';
+    var msg = 'Confirm the import?\n\nNew: ' + bn(c.new) + '\nChanged: ' + bn(c.updated) +
+              (c.deactivate_missing ? '\nWill become inactive: ' + bn(c.missing_from_file) : '') +
+              '\nSkipped: ' + bn(c.invalid + c.conflicting_repeats) + '\n\nIf it is wrong you can roll it back from Import History.';
     if (!confirm(msg)) return;
-    state.busy = true; loading('Import হচ্ছে... (বন্ধ করবেন না)');
+    state.busy = true; loading('Importing... (do not close the page)');
     SB.rpc('admin_commit_import', { p_job_id: state.jobId }, { timeout: 180000 }).then(function (r) {
-      status('✅ Import সম্পন্ন: নতুন ' + bn(r.new) + ', পরিবর্তিত ' + bn(r.updated) + ', account ' + bn(r.accounts) +
-             (r.deactivated ? ', inactive ' + bn(r.deactivated) : '') + '।', 'ok');
+      status('✅ Import done: new ' + bn(r.new) + ', changed ' + bn(r.updated) + ', accounts ' + bn(r.accounts) +
+             (r.deactivated ? ', inactive ' + bn(r.deactivated) : '') + '.', 'ok');
       $('previewCard').classList.add('hidden'); $('fileInput').value = ''; $('previewBtn').disabled = true; state.jobId = null;
       return loadGps().then(loadHistory);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
@@ -244,7 +249,7 @@
   $('cancelBtn').addEventListener('click', function () {
     if (!state.jobId) return;
     SB.rpc('admin_cancel_import', { p_job_id: state.jobId }).catch(function () {});
-    state.jobId = null; $('previewCard').classList.add('hidden'); status('Import বাতিল করা হয়েছে। কিছু পরিবর্তন হয়নি।', 'info');
+    state.jobId = null; $('previewCard').classList.add('hidden'); status('Import cancelled. Nothing was changed.', 'info');
   });
 
   // ---------- history ----------
@@ -252,8 +257,8 @@
     var gp = Number($('gpSelect').value); if (!gp) return Promise.resolve();
     return SB.rpc('admin_import_history', { p_gp_id: gp }).then(function (rows) {
       var tb = $('history'); tb.innerHTML = '';
-      var label = { committed: 'সম্পন্ন', staged: 'Preview-তে', rolled_back: 'ফেরানো হয়েছে', failed: 'ব্যর্থ' };
-      if (!rows.length) { var tr0 = document.createElement('tr'); var td0 = el('td', 'এখনো কোনো import হয়নি।'); td0.colSpan = 9; tr0.appendChild(td0); tb.appendChild(tr0); }
+      var label = { committed: 'Done', staged: 'In preview', rolled_back: 'Rolled back', failed: 'Failed' };
+      if (!rows.length) { var tr0 = document.createElement('tr'); var td0 = el('td', 'No imports yet.'); td0.colSpan = 9; tr0.appendChild(td0); tb.appendChild(tr0); }
       rows.forEach(function (j) {
         var c = j.counts || {}, tr = document.createElement('tr');
         [fmtDate(j.committed_at || j.created_at), j.file_name].forEach(function (v) { tr.appendChild(el('td', v)); });
@@ -264,11 +269,11 @@
         if (j.can_rollback) {
           var b = el('button', '↩ Rollback', 'btn-danger btn-small');
           b.addEventListener('click', function () {
-            if (!confirm('এই import ফেরাবেন? এর আগের অবস্থায় data ফিরে যাবে।')) return;
-            loading('Rollback হচ্ছে...');
+            if (!confirm('Roll back this import? The data goes back to how it was before it.')) return;
+            loading('Rolling back...');
             SB.rpc('admin_rollback_import', { p_job_id: j.id }, { timeout: 180000 }).then(function (r) {
-              status('↩ Rollback সম্পন্ন: ' + bn(r.restored) + ' জনের তথ্য ফেরানো, ' + bn(r.deleted_new) + ' জন নতুন worker মোছা' +
-                     (r.deactivated_new_in_lists ? ', ' + bn(r.deactivated_new_in_lists) + ' জন (list-এ থাকায়) inactive' : '') + '।', 'ok');
+              status('↩ Rollback done: ' + bn(r.restored) + ' worker(s) restored, ' + bn(r.deleted_new) + ' new worker(s) deleted' +
+                     (r.deactivated_new_in_lists ? ', ' + bn(r.deactivated_new_in_lists) + ' made inactive (they are in a list)' : '') + '.', 'ok');
               return loadGps().then(loadHistory);
             }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); }).then(function () { loading(''); });
           });
@@ -281,6 +286,7 @@
   }
 
   // ---------- users ----------
+  var ROLE_LABEL = { super_admin: 'Super Admin', gp_user: 'Supervisor', kdesk: '🖥 K-Desk login' };
   function loadUsers() {
     return SB.rpc('admin_list_users').then(function (users) {
       var tb = $('users'); tb.innerHTML = '';
@@ -288,16 +294,16 @@
         var tr = document.createElement('tr');
         tr.appendChild(el('td', u.username)); tr.appendChild(el('td', u.full_name));
         tr.appendChild(el('td', u.role === 'super_admin' ? 'Super Admin' : (u.gp_name || '') + (u.role === 'kdesk' ? ' · 🖥 K-Desk login' : '')));
-        var st = el('td'); st.appendChild(el('span', u.active ? 'চালু' : 'বন্ধ', 'pill ' + (u.active ? 'on' : 'off'))); tr.appendChild(st);
+        var st = el('td'); st.appendChild(el('span', u.active ? 'Active' : 'Disabled', 'pill ' + (u.active ? 'on' : 'off'))); tr.appendChild(st);
         tr.appendChild(el('td', String(u.active_devices)));
         tr.appendChild(el('td', fmtDate(u.last_seen)));
         var act = el('td');
         if (u.role !== 'super_admin') {
-          var t = el('button', u.active ? 'বন্ধ করুন' : 'চালু করুন', (u.active ? 'btn-danger' : 'btn-success') + ' btn-small');
+          var t = el('button', u.active ? 'Disable' : 'Enable', (u.active ? 'btn-danger' : 'btn-success') + ' btn-small');
           t.addEventListener('click', function () {
-            if (u.active && !confirm(u.username + '-এর account বন্ধ করবেন? সব device থেকে সঙ্গে সঙ্গে logout হবে।')) return;
+            if (u.active && !confirm('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
             SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
-              .then(function () { status(u.username + ' ' + (u.active ? 'বন্ধ' : 'চালু') + ' করা হয়েছে।', 'ok'); return loadUsers(); })
+              .then(function () { status(u.username + ' ' + (u.active ? 'disabled' : 'enabled') + '.', 'ok'); return loadUsers(); })
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
           });
           act.appendChild(t);
@@ -305,27 +311,30 @@
           pb.addEventListener('click', function () { openPinModal(u); });
           act.appendChild(pb);
           // K-Desk Suite login: may only read this GP's submitted lists and lock them (database: kdesk_*).
-          var kb = el('button', u.role === 'kdesk' ? '↩ Supervisor করুন' : '🖥 K-Desk login করুন', 'btn-light btn-small'); kb.style.marginLeft = '4px';
+          var kb = el('button', u.role === 'kdesk' ? '↩ Make Supervisor' : '🖥 Make K-Desk login', 'btn-light btn-small'); kb.style.marginLeft = '4px';
           kb.addEventListener('click', function () {
             var to = u.role === 'kdesk' ? 'gp_user' : 'kdesk';
             var q = to === 'kdesk'
-              ? u.username + '-কে K-Desk login বানাবেন? এটা দিয়ে আর ফোনের app-এ list বানানো যাবে না, শুধু K-Desk extension জমা পড়া list আনতে আর lock করতে পারবে। সব device থেকে logout হবে।'
-              : u.username + '-কে আবার Supervisor বানাবেন? K-Desk আর এটা দিয়ে list আনতে পারবে না।';
+              ? 'Make ' + u.username + ' a K-Desk login? It can no longer build lists in the phone app; the K-Desk extension can only fetch and lock submitted lists with it. It is logged out of every device.'
+              : 'Make ' + u.username + ' a Supervisor again? K-Desk can no longer fetch lists with it.';
             if (!confirm(q)) return;
             SB.rpc('admin_set_user_role', { p_user_id: u.user_id, p_role: to })
-              .then(function () { status(u.username + (to === 'kdesk' ? ' এখন K-Desk login।' : ' এখন Supervisor।'), 'ok'); return loadUsers(); })
+              .then(function () { status(u.username + (to === 'kdesk' ? ' is now a K-Desk login.' : ' is now a Supervisor.'), 'ok'); return loadUsers(); })
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
           });
           act.appendChild(kb);
           if (u.active_devices > 0) {
-            var lo = el('button', 'সব device logout', 'btn-light btn-small'); lo.style.marginLeft = '4px';
+            var lo = el('button', 'Log out all devices', 'btn-light btn-small'); lo.style.marginLeft = '4px';
             lo.addEventListener('click', function () {
               SB.rpc('admin_logout_user_everywhere', { p_user_id: u.user_id })
-                .then(function (r) { status(u.username + ': ' + r.sessions_revoked + 'টা device logout করা হয়েছে।', 'ok'); return loadUsers(); })
+                .then(function (r) { status(u.username + ': ' + r.sessions_revoked + ' device(s) logged out.', 'ok'); return loadUsers(); })
                 .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
             });
             act.appendChild(lo);
           }
+          var db = el('button', '🗑 Delete', 'btn-danger btn-small'); db.style.marginLeft = '4px';
+          db.addEventListener('click', function () { openDelModal(u); });
+          act.appendChild(db);
         }
         tr.appendChild(act);
         tb.appendChild(tr);
@@ -333,11 +342,36 @@
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
   }
 
+  // ---------- delete user (database: admin_delete_user) ----------
+  var delTarget = null;
+  function openDelModal(u) {
+    delTarget = u;
+    $('delWho').textContent = (u.full_name || u.username) + ' (@' + u.username + ') · ' + (ROLE_LABEL[u.role] || u.role) + (u.gp_name ? ' · ' + u.gp_name : '');
+    $('delConfirm').value = ''; $('delSave').disabled = true;
+    $('delModal').classList.add('show'); $('delConfirm').focus();
+  }
+  function closeDel() { $('delModal').classList.remove('show'); delTarget = null; }
+  $('delClose').addEventListener('click', closeDel);
+  $('delConfirm').addEventListener('input', function () {
+    $('delSave').disabled = !delTarget || this.value.trim().toLowerCase() !== delTarget.username;
+  });
+  $('delSave').addEventListener('click', function () {
+    var u = delTarget; if (!u) return;
+    loading('Deleting ' + u.username + '...');
+    SB.rpc('admin_delete_user', { p_user_id: u.user_id, p_confirm_username: $('delConfirm').value.trim().toLowerCase() })
+      .then(function (r) {
+        closeDel();
+        status('🗑 ' + r.username + ' deleted' + (r.lists_deleted ? ' (with ' + r.lists_deleted + ' list(s))' : '') + '.', 'ok');
+        return Promise.all([loadUsers(), loadDashboard()]);
+      }).catch(function (e) { if (!e.authLost) { closeDel(); status(errText(e), 'err'); } })
+      .then(function () { loading(''); });
+  });
+
   $('refreshUnlinked').addEventListener('click', function () {
     SB.rpc('admin_unlinked_auth_users').then(function (list) {
       var sel = $('linkUser'); sel.innerHTML = '';
-      if (!list.length) { $('unlinkedBox').textContent = 'Profile ছাড়া কোনো নতুন user নেই। আগে Supabase-এ user তৈরি করুন।'; $('linkForm').classList.add('hidden'); return; }
-      $('unlinkedBox').textContent = list.length + ' জন নতুন user পাওয়া গেছে।';
+      if (!list.length) { $('unlinkedBox').textContent = 'No new user without a profile. Create the user in Supabase first.'; $('linkForm').classList.add('hidden'); return; }
+      $('unlinkedBox').textContent = list.length + ' new user(s) found.';
       list.forEach(function (u) { var o = el('option', u.email); o.value = u.user_id; o.dataset.email = u.email; sel.appendChild(o); });
       $('linkForm').classList.remove('hidden'); fillUsername();
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
@@ -347,17 +381,17 @@
     var m = /^([a-z0-9_.-]{3,32})@users\.gramg\.invalid$/i.exec(email || '');
     $('linkUsername').value = m ? m[1].toLowerCase() : '';
     $('linkBtn').disabled = !m;
-    $('unlinkedBox').textContent = m ? '' : 'এই email-এর format ঠিক নয়: হতে হবে username@users.gramg.invalid';
+    $('unlinkedBox').textContent = m ? '' : 'This email has the wrong format: it must be username@users.gramg.invalid';
   }
   $('linkUser').addEventListener('change', fillUsername);
   $('linkRole').addEventListener('change', function () { $('linkGp').disabled = this.value !== 'gp_user'; });
   $('linkBtn').addEventListener('click', function () {
     var name = $('linkName').value.trim();
-    if (!name) { status('পুরো নাম লিখুন।', 'err'); return; }
+    if (!name) { status('Enter the full name.', 'err'); return; }
     SB.rpc('admin_link_profile', { p_user_id: $('linkUser').value, p_username: $('linkUsername').value, p_full_name: name,
                                     p_role: $('linkRole').value, p_gp_id: Number($('linkGp').value) })
       .then(function () {
-        status('✅ ' + $('linkUsername').value + '-এর profile যোগ হয়েছে। এখন সে Login করতে পারবে।', 'ok');
+        status('✅ Profile added for ' + $('linkUsername').value + '. They can log in now.', 'ok');
         $('linkName').value = ''; $('linkForm').classList.add('hidden'); $('unlinkedBox').textContent = '';
         return loadUsers();
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
@@ -365,7 +399,7 @@
 
   // ---------- dashboard (one card per supervisor, one sub-card per list/work) ----------
   var dash = { users: [], rows: [], dups: [], filter: 'all', picked: new Set(), loading: false };
-  var STATE_BN = { draft: 'খসড়া', submitted: 'জমা দিয়েছে', locked: 'Lock করা', empty: 'list নেই' };
+  var STATE_BN = { draft: 'Draft', submitted: 'Submitted', locked: 'Locked', empty: 'No list' };
   function rowState(r) { return !r.list_id ? 'empty' : r.submit_state; }
   function vno(v) { return String(v).padStart(3, '0'); }
   function reqSup(n) { return Math.max(1, Math.floor((Number(n) || 0) / 20)); }
@@ -389,7 +423,7 @@
       var ids = new Set(dash.rows.map(function (r) { return r.list_id; }));
       dash.picked.forEach(function (id) { if (!ids.has(id)) dash.picked.delete(id); });
       renderDashboard();
-      $('dashUpdated').textContent = 'শেষ update: ' + fmtDate(new Date().toISOString());
+      $('dashUpdated').textContent = 'Last updated: ' + fmtDate(new Date().toISOString());
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { dash.loading = false; });
   }
@@ -400,18 +434,18 @@
     dash.rows.forEach(function (r) { c[r.submit_state]++; if ((r.supervisors || []).length < reqSup(r.workers)) c.short++; });
     var noList = dash.users.filter(function (u) { return !(u.lists || []).length; }).length;
     function stat(n, label, cls) { var d = el('div', null, 'stat ' + (cls || '')); d.appendChild(el('div', bn(n), 'n')); d.appendChild(el('div', label, 'l')); S.appendChild(d); }
-    stat(dash.users.length, 'মোট supervisor'); stat(dash.rows.length, 'চলতি list (কাজ)');
-    stat(c.submitted, 'জমা দিয়েছে', 'good'); stat(c.draft, 'খসড়া (জমা দেয়নি)', 'warn'); stat(c.locked, 'Lock করা');
-    stat(noList, 'list নেই'); stat(c.short, 'Supervisor-এর নাম কম', c.short ? 'bad' : '');
-    if (dash.dups.length) stat(dash.dups.length, 'দুই list-এ একই worker (পুরনো)', 'bad');
+    stat(dash.users.length, 'Supervisors'); stat(dash.rows.length, 'Current lists (works)');
+    stat(c.submitted, 'Submitted', 'good'); stat(c.draft, 'Draft (not submitted)', 'warn'); stat(c.locked, 'Locked');
+    stat(noList, 'No list'); stat(c.short, 'Too few supervisor names', c.short ? 'bad' : '');
+    if (dash.dups.length) stat(dash.dups.length, 'Same worker in two lists (old)', 'bad');
 
     var D = $('dupBox'); D.innerHTML = '';
     D.classList.toggle('hidden', !dash.dups.length);
     if (dash.dups.length) {
-      var det = el('details', null, 'dups'); det.appendChild(el('summary', '⚠ ' + dash.dups.length + ' জন worker একাধিক list-এ আছেন (নতুন নিয়মের আগের) — দেখুন'));
+      var det = el('details', null, 'dups'); det.appendChild(el('summary', '⚠ ' + dash.dups.length + ' worker(s) are in more than one list (from before the new rule) — show'));
       var wrap = el('div', null, 'table-wrap'); wrap.style.marginTop = '6px';
       var t = el('table'); var th = el('tr');
-      ['Job Card No', 'App', 'নাম', 'কার কার list-এ'].forEach(function (h) { th.appendChild(el('th', h)); });
+      ['Job Card No', 'App', 'Name', 'In the lists of'].forEach(function (h) { th.appendChild(el('th', h)); });
       var thead = el('thead'); thead.appendChild(th); t.appendChild(thead);
       var tb = el('tbody');
       dash.dups.forEach(function (d) {
@@ -430,20 +464,20 @@
       if (dash.filter === 'empty' ? (u.lists || []).length : (dash.filter !== 'all' && !lists.length)) return;
       C.appendChild(userCard(u, lists)); shown++;
     });
-    if (!shown) C.appendChild(el('div', dash.users.length ? 'এই ভাগে কিছু নেই।' : 'এই GP-তে এখনো কোনো supervisor নেই। Users tab থেকে যোগ করুন।', 'card muted'));
+    if (!shown) C.appendChild(el('div', dash.users.length ? 'Nothing in this group.' : 'This GP has no supervisors yet. Add them from the Users tab.', 'card muted'));
     updateExportSummary();
   }
 
   function userCard(u, lists) {
     var card = el('div', null, 'ucard');
     var top = el('div', null, 'top');
-    var who = el('div'); who.appendChild(el('div', u.full_name || u.username, 'nm')); who.appendChild(el('div', '@' + u.username + (u.active ? '' : ' · বন্ধ'), 'un'));
+    var who = el('div'); who.appendChild(el('div', u.full_name || u.username, 'nm')); who.appendChild(el('div', '@' + u.username + (u.active ? '' : ' · disabled'), 'un'));
     var pills = el('div'); pills.style.textAlign = 'right';
-    pills.appendChild(el('span', (u.lists || []).length + 'টা list', 'pill neutral'));
-    if (!u.active) { pills.appendChild(document.createTextNode(' ')); pills.appendChild(el('span', 'User বন্ধ', 'pill off')); }
+    pills.appendChild(el('span', (u.lists || []).length + ' list(s)', 'pill neutral'));
+    if (!u.active) { pills.appendChild(document.createTextNode(' ')); pills.appendChild(el('span', 'User disabled', 'pill off')); }
     top.appendChild(who); top.appendChild(pills); card.appendChild(top);
-    card.appendChild(el('div', 'Device: ' + u.active_devices + ' চালু · শেষ login ' + fmtDate(u.last_seen), 'meta'));
-    if (!(u.lists || []).length) card.appendChild(el('div', 'কোনো চলতি list নেই।', 'muted'));
+    card.appendChild(el('div', 'Devices: ' + u.active_devices + ' active · last login ' + fmtDate(u.last_seen), 'meta'));
+    if (!(u.lists || []).length) card.appendChild(el('div', 'No current list.', 'muted'));
     lists.forEach(function (l) {
       var r = dash.rows.filter(function (x) { return x.list_id === l.list_id; })[0];
       card.appendChild(listCard(r));
@@ -451,30 +485,41 @@
     var acts = el('div', null, 'acts');
     function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
     act('🔑 PIN', 'btn-light', function () { openPinModal(u); });
-    act(u.active ? 'User বন্ধ' : 'User চালু', u.active ? 'btn-danger' : 'btn-success', function () {
-      if (u.active && !confirm(u.username + '-এর account বন্ধ করবেন? সব device থেকে সঙ্গে সঙ্গে logout হবে।')) return;
+    act(u.active ? 'Disable user' : 'Enable user', u.active ? 'btn-danger' : 'btn-success', function () {
+      if (u.active && !confirm('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
       SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
-        .then(function () { status(u.username + ' ' + (u.active ? 'বন্ধ' : 'চালু') + ' করা হয়েছে।', 'ok'); return loadDashboard(); })
+        .then(function () { status(u.username + ' ' + (u.active ? 'disabled' : 'enabled') + '.', 'ok'); return loadDashboard(); })
         .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
     });
     card.appendChild(acts);
     return card;
   }
 
+  // "Demand 8/10 ✓ · Allocation 7/8 ✓" from the results K-Desk wrote back
+  function resultsText(res, n) {
+    if (!res || !(res.demand_ok + res.demand_err + res.alloc_ok + res.alloc_err)) return '';
+    var t = 'Demand ' + res.demand_ok + '/' + (res.demand_ok + res.demand_err);
+    if (res.alloc_ok + res.alloc_err) t += ' · Allocation ' + res.alloc_ok + '/' + (res.alloc_ok + res.alloc_err);
+    return t + (res.at ? ' (' + fmtDate(res.at) + ')' : '');
+  }
   function listCard(r) {
     var st = r.submit_state, n = Number(r.workers || 0), sups = r.supervisors || [], need = reqSup(n);
     var box = el('div', null, 'lcard' + (dash.picked.has(r.list_id) ? ' sel' : ''));
     box.dataset.list = r.list_id;
     var head = el('div', null, 'lhead');
-    head.appendChild(el('div', r.work_name || '(Work Name নেই)', 'lname'));
+    head.appendChild(el('div', r.work_name || '(no Work Name)', 'lname'));
     head.appendChild(el('span', STATE_BN[st], 'pill ' + st));
     box.appendChild(head);
     var meta = el('div', null, 'meta');
-    function line(label, value, cls) { var d = el('div', null, cls || ''); d.appendChild(el('b', label + ': ')); d.appendChild(document.createTextNode(value)); meta.appendChild(d); }
-    line('Worker', bn(n) + ' জন' + (r.villages && r.villages.length ? ' · গ্রাম ' + r.villages.map(vno).join(', ') : ''));
-    line('Supervisor', (sups.length ? sups.join(', ') : '—') + (sups.length < need ? '  ⚠ ' + need + ' জন লাগবে' : ''), sups.length < need ? 'warnline' : '');
-    if (r.submitted_at) line('জমা', fmtDate(r.submitted_at));
-    if (r.exported_at) line('Export', fmtDate(r.exported_at) + (r.export_count > 1 ? ' (' + r.export_count + ' বার)' : ''));
+    function line(label, value, cls) { var d = el('div', null, cls || ''); d.appendChild(el('b', label + ': ')); d.appendChild(document.createTextNode(value)); meta.appendChild(d); return d; }
+    line('Workers', bn(n) + (r.villages && r.villages.length ? ' · village ' + r.villages.map(vno).join(', ') : ''));
+    line('Supervisors', (sups.length ? sups.join(', ') : '—') + (sups.length < need ? '  ⚠ ' + need + ' needed' : ''), sups.length < need ? 'warnline' : '');
+    line('Work Code', r.work_code || '— (not set)', r.work_code ? 'mono' : 'muted');
+    if (r.submitted_at) line('Submitted', fmtDate(r.submitted_at));
+    if (r.kdesk_loaded_at) line('🖥 K-Desk', 'loaded ' + fmtDate(r.kdesk_loaded_at) + (r.export_count > 1 ? ' (' + r.export_count + ' times in all)' : ''), 'kdline');
+    else if (r.exported_at) line('Exported', fmtDate(r.exported_at) + (r.export_count > 1 ? ' (' + r.export_count + ' times)' : ''));
+    var rt = resultsText(r.results, n);
+    if (rt) line('Results', rt, (r.results.demand_err || r.results.alloc_err) ? 'warnline' : 'kdline');
     box.appendChild(meta);
     if (n > 0) {
       var pick = el('label', null, 'pick'); var cb = document.createElement('input'); cb.type = 'checkbox';
@@ -483,28 +528,28 @@
         if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id);
         box.classList.toggle('sel', cb.checked); updateExportSummary();
       });
-      pick.appendChild(cb); pick.appendChild(document.createTextNode('K-Desk export-এ নিন')); box.appendChild(pick);
+      pick.appendChild(cb); pick.appendChild(document.createTextNode('Add to K-Desk export')); box.appendChild(pick);
     }
     var acts = el('div', null, 'acts');
     function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
-    act('👁 দেখুন', 'btn-primary', function () { openPreview(r); });
+    act('👁 View', 'btn-primary', function () { openPreview(r); });
     if ((st === 'submitted' || st === 'draft') && n > 0) act('🔒 Lock', 'btn-light', function () { listAction(r, 'lock'); });
-    if (st === 'submitted' || st === 'locked') act('↩ ফেরত দিন', 'btn-light', function () {
-      if (confirm('"' + r.work_name + '" (' + r.username + ') আবার খসড়া করবেন? Supervisor তখন বদলাতে পারবেন।')) listAction(r, 'reopen');
+    if (st === 'submitted' || st === 'locked') act('↩ Send back', 'btn-light', function () {
+      if (confirm('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.')) listAction(r, 'reopen');
     });
-    if (st === 'locked') act('✔ কাজ শেষ', 'btn-success', function () {
-      if (confirm('"' + r.work_name + '" (' + r.username + ') — কাজ শেষ?\nList বন্ধ হবে (history-তে থাকবে), আর এর ' + n + ' জন worker আবার নতুন কাজে বাছাইযোগ্য হবেন।')) listAction(r, 'complete');
+    if (st === 'locked') act('✔ Work complete', 'btn-success', function () {
+      if (confirm('"' + r.work_name + '" (' + r.username + ') — work complete?\nThe list is closed (it stays in the history) and its ' + n + ' workers can be picked for new work again.')) listAction(r, 'complete');
     });
-    if (Number(r.submissions)) act('🕘 আগের জমা (' + r.submissions + ')', 'btn-light', function () { openSubmissions(r); });
+    if (Number(r.submissions)) act('🕘 Past submissions (' + r.submissions + ')', 'btn-light', function () { openSubmissions(r); });
     box.appendChild(acts);
     return box;
   }
 
   function listAction(r, action) {
-    loading('অপেক্ষা করুন...');
+    loading('Please wait...');
     return SB.rpc('admin_set_list_state', { p_list_id: r.list_id, p_action: action })
       .then(function () {
-        var msg = { lock: 'lock করা হয়েছে।', reopen: 'আবার খসড়া করা হয়েছে।', complete: 'কাজ শেষ — list বন্ধ হয়েছে, worker-রা আবার বাছাইযোগ্য।' }[action];
+        var msg = { lock: 'locked.', reopen: 'back to draft.', complete: 'work complete — the list is closed and its workers can be picked again.' }[action];
         status('"' + r.work_name + '" (' + r.username + '): ' + msg, 'ok');
         if (action === 'complete') dash.picked.delete(r.list_id);
         return loadDashboard();
@@ -514,14 +559,13 @@
 
   function pickedRows() { return dash.rows.filter(function (r) { return dash.picked.has(r.list_id); }); }
   function updateExportSummary() {
-    var rows = pickedRows(), n = 0, notSub = 0;
-    rows.forEach(function (r) { n += Number(r.workers || 0); if (r.submit_state === 'draft') notSub++; });
-    var works = {}; rows.forEach(function (r) { works[(r.work_name || '').toLowerCase()] = true; });
+    var rows = pickedRows(), n = 0, notSub = 0, noCode = 0;
+    rows.forEach(function (r) { n += Number(r.workers || 0); if (r.submit_state === 'draft') notSub++; if (!r.work_code) noCode++; });
     $('expSummary').textContent = rows.length
-      ? rows.length + 'টা list বাছা হয়েছে (' + rows.map(function (r) { return (r.work_name || '—') + ' / ' + r.username; }).join(', ') + '), মোট ' + bn(n) + ' জন worker।' +
-        (notSub ? ' ⚠ ' + notSub + 'টা list এখনো জমা দেওয়া হয়নি।' : '') +
-        (Object.keys(works).length > 1 ? ' ⚠ আলাদা আলাদা কাজের list একসঙ্গে বাছা হয়েছে — একটা file-এ একটাই Work code থাকবে।' : '')
-      : 'কোনো list বাছা হয়নি।';
+      ? rows.length + ' list(s) selected (' + rows.map(function (r) { return (r.work_name || '—') + ' / ' + r.username; }).join(', ') + '), ' + bn(n) + ' workers in all.' +
+        (notSub ? ' ⚠ ' + notSub + ' list(s) not submitted yet.' : '') +
+        (noCode ? ' ' + noCode + ' list(s) have no Work Code of their own: the Work code below is used for them.' : ' Every selected list has its own Work Code.')
+      : 'No list selected.';
     $('expBtn').disabled = !rows.length;
   }
 
@@ -542,17 +586,17 @@
 
   // ---------- submitted copies ----------
   function openSubmissions(r) {
-    loading('আগের জমা খুলছে...');
+    loading('Opening past submissions...');
     SB.rpc('admin_list_submissions', { p_list_id: r.list_id }).then(function (subs) {
-      $('subTitle').textContent = 'আগের জমা — ' + (r.work_name || '') + ' (@' + r.username + ')';
+      $('subTitle').textContent = 'Past submissions — ' + (r.work_name || '') + ' (@' + r.username + ')';
       var box = $('subBody'); box.innerHTML = '';
       (subs || []).forEach(function (s, i) {
         var det = el('details'); if (i === 0) det.open = true;
-        det.appendChild(el('summary', fmtDate(s.submitted_at) + ' · ' + bn(s.worker_count) + ' জন · ' + (s.work_name || '') +
+        det.appendChild(el('summary', fmtDate(s.submitted_at) + ' · ' + bn(s.worker_count) + ' workers · ' + (s.work_name || '') +
           ((s.supervisors || []).length ? ' · Supervisor: ' + s.supervisors.join(', ') : '')));
         var wrap = el('div', null, 'table-wrap'); wrap.style.margin = '6px 0 10px';
         var t = el('table'), thead = el('thead'), th = el('tr');
-        ['SL', 'Job Card No', 'App', 'নাম'].forEach(function (h) { th.appendChild(el('th', h)); });
+        ['SL', 'Job Card No', 'App', 'Name'].forEach(function (h) { th.appendChild(el('th', h)); });
         thead.appendChild(th); t.appendChild(thead);
         var tb = el('tbody');
         (s.workers || []).forEach(function (w, k) {
@@ -562,7 +606,7 @@
         });
         t.appendChild(tb); wrap.appendChild(t); det.appendChild(wrap); box.appendChild(det);
       });
-      if (!(subs || []).length) box.appendChild(el('div', 'কোনো জমা নেই।', 'muted'));
+      if (!(subs || []).length) box.appendChild(el('div', 'No submissions.', 'muted'));
       $('subModal').classList.add('show');
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -572,7 +616,7 @@
   // ---------- eKYC / ABPS report ----------
   $('ekycBtn').addEventListener('click', function () {
     var gp = Number($('dashGp').value); if (!gp) return;
-    loading('হিসাব হচ্ছে...');
+    loading('Counting...');
     SB.rpc('admin_ekyc_report', { p_gp_id: gp }, { retry: true }).then(function (rep) {
       dash.ekyc = rep;
       var tb = $('ekBody'); tb.innerHTML = '';
@@ -584,9 +628,9 @@
         Object.keys(tot).forEach(function (k) { tot[k] += Number(v[k]) || 0; });
       });
       var tr = el('tr', null, 'flag-warn');
-      ['মোট', bn(tot.workers), bn(tot.eligible), bn(tot.no_ekyc), bn(tot.no_abps), bn(tot.no_both)].forEach(function (x) { var td = el('td', x); td.style.fontWeight = '800'; tr.appendChild(td); });
+      ['Total', bn(tot.workers), bn(tot.eligible), bn(tot.no_ekyc), bn(tot.no_abps), bn(tot.no_both)].forEach(function (x) { var td = el('td', x); td.style.fontWeight = '800'; tr.appendChild(td); });
       tb.appendChild(tr);
-      $('ekSub').textContent = bn((rep.missing || []).length) + ' জন active worker-এর eKYC বা ABPS নেই (তাঁরা list-এ বাছা যান না)।';
+      $('ekSub').textContent = bn((rep.missing || []).length) + ' active worker(s) have no eKYC or ABPS (they cannot be picked for a list).';
       $('ekModal').classList.add('show');
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -597,13 +641,13 @@
     var g = state.gps.filter(function (x) { return String(x.id) === $('dashGp').value; })[0] || { name: 'GP' };
     loadXlsx().then(function () {
       var wb = XLSX.utils.book_new();
-      var va = [['Village', 'মোট worker', 'eKYC+ABPS আছে', 'eKYC নেই', 'ABPS নেই', 'দুটোই নেই']];
+      var va = [['Village', 'Total workers', 'eKYC+ABPS done', 'No eKYC', 'No ABPS', 'Neither']];
       (rep.villages || []).forEach(function (v) { va.push([vno(v.village_no), v.workers, v.eligible, v.no_ekyc, v.no_abps, v.no_both]); });
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(va), 'গ্রাম অনুযায়ী');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(va), 'By village');
       var ma = [['Village', 'Job Card No', 'Applicant No', 'Applicant Name', 'eKYC', 'ABPS', 'Aadhaar Seeded', 'Authentication Done']];
       (rep.missing || []).forEach(function (w) { ma.push([vno(w.village_no), w.job_card_no, String(w.applicant_no), w.applicant_name, yn(w.ekyc), yn(w.abps), yn(w.aadhaar_seeded), yn(w.authentication_done)]); });
       var ws = XLSX.utils.aoa_to_sheet(ma); ws['!cols'] = [{ wch: 7 }, { wch: 26 }, { wch: 8 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 10 }, { wch: 12 }];
-      XLSX.utils.book_append_sheet(wb, ws, 'eKYC-ABPS নেই');
+      XLSX.utils.book_append_sheet(wb, ws, 'No eKYC-ABPS');
       XLSX.writeFile(wb, 'eKYC_ABPS_' + g.name.replace(/[^A-Za-z0-9_-]+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
     }).catch(function (e) { status(errText(e), 'err'); });
   });
@@ -611,7 +655,8 @@
   // ---------- K-Desk export ----------
   function ddmmyyyy(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
   // Pure function (also used by tests): API rows -> K-Desk sheet rows + report.
-  function buildKdeskRows(apiRows, from, days, workCode) {
+  // codeByList (optional): list_id -> that list's own Work Code; workCode is used for the rest.
+  function buildKdeskRows(apiRows, from, days, workCode, codeByList) {
     var seen = new Set(), out = [], skipped = [], dupes = 0;
     apiRows.forEach(function (r) {
       if (seen.has(r.worker_id)) { dupes++; return; }
@@ -624,7 +669,7 @@
              (a.job_card_no < b.job_card_no ? -1 : a.job_card_no > b.job_card_no ? 1 : 0) || a.applicant_no - b.applicant_no;
     });
     var aoa = [['#', 'Reg', 'Applicant', 'From', 'Days', 'Work code']];
-    out.forEach(function (r, i) { aoa.push([i + 1, r.job_card_no, r.applicant_name, from, days, workCode]); });
+    out.forEach(function (r, i) { aoa.push([i + 1, r.job_card_no, r.applicant_name, from, days, (codeByList && codeByList[r.list_id]) || workCode]); });
     return { aoa: aoa, count: out.length, skipped: skipped, dupes: dupes };
   }
   window.GramgKdesk = { buildKdeskRows: buildKdeskRows, ddmmyyyy: ddmmyyyy };
@@ -632,40 +677,75 @@
   $('expBtn').addEventListener('click', function () {
     var rows = pickedRows();
     var from = ddmmyyyy($('expFrom').value), days = parseInt($('expDays').value, 10), work = $('expWork').value.trim();
-    if (!rows.length) { status('আগে list বাছুন।', 'err'); return; }
-    if (!from) { status('From (Work date) দিন।', 'err'); return; }
-    if (!(days >= 1 && days <= 366)) { status('Days ঠিক দিন (১ থেকে ৩৬৬)।', 'err'); return; }
-    if (!work) { status('Work code দিন।', 'err'); return; }
+    var codeByList = {}; rows.forEach(function (r) { if (r.work_code) codeByList[r.list_id] = r.work_code; });
+    var needCode = rows.some(function (r) { return !r.work_code; });
+    if (!rows.length) { status('Select lists first.', 'err'); return; }
+    if (!from) { status('Enter From (work date).', 'err'); return; }
+    if (!(days >= 1 && days <= 366)) { status('Enter valid Days (1 to 366).', 'err'); return; }
+    if (needCode && !work) { status('Enter the Work code (some selected lists have no Work Code of their own).', 'err'); return; }
     var notSub = rows.filter(function (r) { return r.submit_state === 'draft'; });
-    if (notSub.length && !confirm(notSub.map(function (r) { return r.username; }).join(', ') + ' এখনো list জমা দেননি। তবুও export করবেন?')) return;
+    if (notSub.length && !confirm(notSub.map(function (r) { return r.username; }).join(', ') + ' has not submitted the list yet. Export anyway?')) return;
     var doLock = $('expLock').checked;
-    loading('K-Desk file তৈরি হচ্ছে...');
+    loading('Creating the K-Desk file...');
     var report;
     loadXlsx().then(function () {
       return SB.rpc('admin_export_lists', { p_list_ids: rows.map(function (r) { return r.list_id; }) });
     }).then(function (apiRows) {
-      report = buildKdeskRows(apiRows || [], from, days, work);
-      if (!report.count) throw { hint: 'Export করার মতো কোনো worker নেই।' };
+      report = buildKdeskRows(apiRows || [], from, days, work, codeByList);
+      if (!report.count) throw { hint: 'There are no workers to export.' };
       var ws = XLSX.utils.aoa_to_sheet(report.aoa);
-      ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 12 }, { wch: 6 }, { wch: 22 }];
+      ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 12 }, { wch: 6 }, { wch: 30 }];
       var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Demand');
-      var safe = work.replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 40);
+      var safe = (work || rows[0].work_code || 'list').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 40);
       XLSX.writeFile(wb, 'KDesk_Demand_' + safe + '_' + from.replace(/\//g, '-') + '.xlsx');
       if (!doLock) return null;
       return rows.filter(function (r) { return r.submit_state !== 'locked'; }).reduce(function (p, r) {
         return p.then(function () { return SB.rpc('admin_set_list_state', { p_list_id: r.list_id, p_action: 'lock' }); });
       }, Promise.resolve());
     }).then(function () {
-      var msg = '✅ K-Desk file তৈরি হয়েছে: ' + bn(report.count) + ' জন worker।';
-      if (report.dupes) msg += ' ' + report.dupes + ' জন একাধিক list-এ ছিল, file-এ একবারই রাখা হয়েছে।';
-      if (report.skipped.length) msg += ' ⚠ ' + report.skipped.length + ' জন বাদ গেছে (এখন inactive বা eKYC/ABPS নেই): ' +
+      var msg = '✅ K-Desk file created: ' + bn(report.count) + ' workers.';
+      if (report.dupes) msg += ' ' + report.dupes + ' worker(s) were in more than one list and appear once.';
+      if (report.skipped.length) msg += ' ⚠ ' + report.skipped.length + ' skipped (now inactive or no eKYC/ABPS): ' +
         report.skipped.slice(0, 10).map(function (r) { return r.job_card_no + ' ' + r.applicant_name; }).join('; ') + (report.skipped.length > 10 ? ' …' : '');
-      if (doLock) msg += ' List-গুলো lock করা হয়েছে।';
+      if (doLock) msg += ' The lists were locked.';
       status(msg, report.skipped.length ? 'info' : 'ok');
       return loadDashboard();
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   });
+
+  // ---------- K-Desk activity (database: admin_kdesk_activity) ----------
+  var KD_ACTION = { lists_loaded_kdesk: '⭳ Lists loaded', lists_locked_kdesk: '🔒 Lists locked', flags_synced_kdesk: '🔄 ABPS Sync', results_reported_kdesk: '📋 Results written back' };
+  function kdDetails(a) {
+    var d = a.details || {};
+    if (a.action === 'flags_synced_kdesk') return bn(d.rows_in) + ' rows in report, ' + bn(d.matched) + ' matched, ' + bn(d.changed) + ' changed';
+    if (a.action === 'results_reported_kdesk') return (d.demand ? 'Demand: ' + bn(d.demand_ok) + ' ok of ' + bn(d.demand) : '') + (d.alloc ? (d.demand ? ' · ' : '') + 'Allocation: ' + bn(d.alloc_ok) + ' ok of ' + bn(d.alloc) : '') || '—';
+    if (a.action === 'lists_locked_kdesk') return bn(d.locked) + ' locked';
+    return '';
+  }
+  $('kdActBtn').addEventListener('click', function () {
+    var gp = Number($('dashGp').value); if (!gp) return;
+    loading('Loading K-Desk activity...');
+    SB.rpc('admin_kdesk_activity', { p_gp_id: gp, p_limit: 30 }, { retry: true }).then(function (rep) {
+      var g = state.gps.filter(function (x) { return x.id === gp; })[0];
+      $('kdSub').textContent = (g ? g.name + ' · ' : '') + 'what the K-Desk extension did for this GP (latest first).';
+      var S = $('kdStats'); S.innerHTML = '';
+      function stat(n, label, cls) { var d = el('div', null, 'stat ' + (cls || '')); d.appendChild(el('div', n, 'n')); d.appendChild(el('div', label, 'l')); S.appendChild(d); }
+      var ls = rep.last_sync;
+      stat(ls ? fmtDate(ls.at) : 'never', 'Last ABPS Sync', ls ? '' : 'warn');
+      if (ls) { stat(bn(ls.matched), 'Workers matched'); stat(bn(ls.changed), 'eKYC/ABPS changed', ls.changed ? 'good' : ''); }
+      var tb = $('kdBody'); tb.innerHTML = '';
+      (rep.events || []).forEach(function (a) {
+        var tr = el('tr');
+        [fmtDate(a.at), KD_ACTION[a.action] || a.action, (a.lists || []).join(', '), kdDetails(a), a.username || '—'].forEach(function (v) { tr.appendChild(el('td', v)); });
+        tb.appendChild(tr);
+      });
+      if (!(rep.events || []).length) { var tr = el('tr'); var td = el('td', 'No K-Desk activity yet.'); td.colSpan = 5; tr.appendChild(td); tb.appendChild(tr); }
+      $('kdModal').classList.add('show');
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+  $('kdClose').addEventListener('click', function () { $('kdModal').classList.remove('show'); });
 
   // ---------- PIN helpers ----------
   function weakPin(p) {
@@ -693,10 +773,10 @@
     var gp = Number($('nuGp').value);
     var bad = !name ? 'BAD_NAME' : !/^[a-z0-9_.-]{3,32}$/.test(un) ? 'BAD_USERNAME' : weakPin(pin) || (!gp ? 'BAD_GP' : null);
     if (bad) { status(errText({ code: bad }), 'err'); return; }
-    loading('Supervisor তৈরি হচ্ছে...');
+    loading('Creating the supervisor...');
     SB.callFunction('admin-users', { action: 'create_user', username: un, full_name: name, pin: pin, gp_id: gp })
       .then(function (r) {
-        status('✅ ' + r.username + ' তৈরি হয়েছে। Login: username "' + r.username + '", PIN "' + pin + '"। PIN-টা supervisor-কে জানিয়ে দিন।', 'ok');
+        status('✅ ' + r.username + ' created. Login: username "' + r.username + '", PIN "' + pin + '". Give the PIN to the supervisor.', 'ok');
         $('nuName').value = ''; $('nuUsername').value = ''; $('nuPin').value = '';
         return Promise.all([loadUsers(), loadDashboard()]);
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
@@ -715,11 +795,11 @@
     var pin = $('pinNew').value.trim(), bad = weakPin(pin);
     if (bad) { status(errText({ code: bad }), 'err'); return; }
     var u = pinTarget; if (!u) return;
-    loading('PIN বদলানো হচ্ছে...');
+    loading('Changing the PIN...');
     SB.callFunction('admin-users', { action: 'reset_pin', user_id: u.user_id, pin: pin })
       .then(function (r) {
         closePin();
-        status('✅ ' + r.username + '-এর নতুন PIN: "' + pin + '"। সব device থেকে logout করানো হয়েছে।', 'ok');
+        status('✅ New PIN for ' + r.username + ': "' + pin + '". They were logged out of every device.', 'ok');
         return Promise.all([loadUsers(), loadDashboard()]);
       }).catch(function (e) { if (!e.authLost) { closePin(); status(errText(e), 'err'); } })
       .then(function () { loading(''); });
@@ -734,26 +814,32 @@
   }
   function loadPreview(first) {
     var r = pv.row; if (!r) return Promise.resolve();
-    loading('List খুলছে...');
+    loading('Opening the list...');
     return SB.rpc('admin_list_items', { p_list_id: r.list_id }).then(function (d) {
       pv.data = d;
-      $('pvTitle').textContent = (d.work_name || '(Work Name নেই)') + ' — ' + (d.full_name || d.username) + ' (@' + d.username + ')';
-      $('pvSub').textContent = STATE_BN[d.submit_state] + (d.submitted_at ? ' · জমা: ' + fmtDate(d.submitted_at) : '') +
-        (Number(d.submissions) ? ' · আগের জমা: ' + d.submissions + 'টা' : '');
+      $('pvTitle').textContent = (d.work_name || '(no Work Name)') + ' — ' + (d.full_name || d.username) + ' (@' + d.username + ')';
+      $('pvSub').textContent = STATE_BN[d.submit_state] + (d.submitted_at ? ' · submitted: ' + fmtDate(d.submitted_at) : '') +
+        (Number(d.submissions) ? ' · past submissions: ' + d.submissions : '');
       var items = d.items || [], noAcc = 0, dup = 0, bad = 0, vs = {};
       items.forEach(function (x) { if (!x.account_no) noAcc++; if (x.in_other_lists > 0) dup++; if (!x.active || !x.eligible) bad++; vs[x.village_no] = true; });
       var need = Number(d.required_supervisors) || 1, have = (d.supervisors || []).length;
       var S = $('pvStats'); S.innerHTML = '';
-      function stat(n, label, cls) { var e = el('div', null, 'stat ' + (cls || '')); e.appendChild(el('div', bn(n), 'n')); e.appendChild(el('div', label, 'l')); S.appendChild(e); }
-      stat(items.length, 'মোট worker'); stat(Object.keys(vs).length, 'গ্রাম');
-      stat(have + '/' + need, 'Supervisor (দেওয়া/লাগবে)', have < need ? 'bad' : 'good');
-      stat(noAcc, 'Account নেই', noAcc ? 'warn' : ''); if (dup) stat(dup, 'অন্য list-এও আছে', 'bad');
-      stat(bad, 'এখন inactive / eKYC-ABPS নেই', bad ? 'bad' : '');
+      function stat(n, label, cls) { var e = el('div', null, 'stat ' + (cls || '')); e.appendChild(el('div', typeof n === 'string' ? n : bn(n), 'n')); e.appendChild(el('div', label, 'l')); S.appendChild(e); }
+      stat(items.length, 'Workers'); stat(Object.keys(vs).length, 'Villages');
+      stat(have + '/' + need, 'Supervisors (given/needed)', have < need ? 'bad' : 'good');
+      stat(noAcc, 'No account', noAcc ? 'warn' : ''); if (dup) stat(dup, 'Also in another list', 'bad');
+      stat(bad, 'Now inactive / no eKYC-ABPS', bad ? 'bad' : '');
       $('pvWork').value = d.work_name || '';
+      $('pvCode').value = d.work_code || '';
+      var dOk = 0, dAll = 0, aOk = 0, aAll = 0;
+      items.forEach(function (x) { if (x.demand_status) { dAll++; if (x.demand_status === 'done') dOk++; } if (x.alloc_status) { aAll++; if (x.alloc_status === 'done') aOk++; } });
+      if (dAll) { stat(dOk + '/' + dAll, 'Demand done (K-Desk)', dOk < dAll ? 'warn' : 'good'); }
+      if (aAll) { stat(aOk + '/' + aAll, 'Allocation done (K-Desk)', aOk < aAll ? 'warn' : 'good'); }
+      $('pvKdesk').textContent = d.exported_at ? '🖥 Last taken to K-Desk / exported: ' + fmtDate(d.exported_at) + (d.export_count > 1 ? ' (' + d.export_count + ' times)' : '') : 'Not taken to K-Desk yet.';
       $('pvSups').value = (d.supervisors || []).join(', ');
       if (first) {
         var sel = $('pvVillage'); sel.innerHTML = '';
-        var o = el('option', 'সব গ্রাম'); o.value = ''; sel.appendChild(o);
+        var o = el('option', 'All villages'); o.value = ''; sel.appendChild(o);
         Object.keys(vs).map(Number).sort(function (a, b) { return a - b; }).forEach(function (v) { var oo = el('option', 'Village ' + vno(v)); oo.value = v; sel.appendChild(oo); });
         $('pvSearch').value = ''; $('pvAddInput').value = ''; $('pvAddResults').innerHTML = '';
       }
@@ -761,6 +847,12 @@
       renderListPreview(); $('pvModal').classList.add('show');
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
+  }
+  var RES = { done: 'Success', error: 'Error', skipped: 'Skipped' };
+  function resCell(s, msg, at) {
+    var td = el('td', s ? (s === 'done' ? '✓ ' : '✕ ') + RES[s] : '—', s ? (s === 'done' ? 'res-ok' : 'res-bad') : 'muted');
+    td.title = (msg || '') + (at ? (msg ? ' · ' : '') + fmtDate(at) : ''); td.style.whiteSpace = 'nowrap';
+    return td;
   }
   function renderListPreview() {
     var q = $('pvSearch').value.trim().toLowerCase(), v = $('pvVillage').value, tb = $('pvBody'); tb.innerHTML = '';
@@ -772,27 +864,28 @@
       [++sl, x.job_card_no, x.applicant_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '—', x.ifsc || '—'].forEach(function (c, i) {
         var td = el('td', String(c)); if (i === 1 || i === 6 || i === 7) td.className = 'mono nw'; tr.appendChild(td);
       });
+      tr.appendChild(resCell(x.demand_status, x.demand_msg, x.demand_at)); tr.appendChild(resCell(x.alloc_status, x.alloc_msg, x.alloc_at));
       var notes = [];
-      if (!x.active) notes.push('inactive'); else if (!x.eligible) notes.push('eKYC/ABPS নেই');
-      if (x.in_other_lists > 0) notes.push('অন্য list-এও');
-      if (!x.account_no) notes.push('account নেই');
+      if (!x.active) notes.push('inactive'); else if (!x.eligible) notes.push('no eKYC/ABPS');
+      if (x.in_other_lists > 0) notes.push('also in another list');
+      if (!x.account_no) notes.push('no account');
       tr.appendChild(el('td', notes.join(', ')));
-      var tdx = el('td'); var rb = el('button', '✕', 'btn-light btn-small'); rb.title = 'এই list থেকে বাদ দিন';
+      var tdx = el('td'); var rb = el('button', '✕', 'btn-light btn-small'); rb.title = 'Remove from this list';
       rb.addEventListener('click', function () {
-        if (!confirm(x.applicant_name + ' (' + x.job_card_no + ')-কে এই list থেকে বাদ দেবেন?')) return;
-        editList([], [x.worker_id], x.applicant_name + ' বাদ দেওয়া হয়েছে।');
+        if (!confirm('Remove ' + x.applicant_name + ' (' + x.job_card_no + ') from this list?')) return;
+        editList([], [x.worker_id], x.applicant_name + ' removed.');
       });
       tdx.appendChild(rb); tr.appendChild(tdx);
       tb.appendChild(tr);
     });
-    if (!sl) { var tr = el('tr'); var td = el('td', 'কিছু পাওয়া যায়নি।'); td.colSpan = 10; tr.appendChild(td); tb.appendChild(tr); }
+    if (!sl) { var tr = el('tr'); var td = el('td', 'Nothing found.'); td.colSpan = 12; tr.appendChild(td); tb.appendChild(tr); }
   }
   function editList(add, remove, okMsg) {
-    loading('List বদলানো হচ্ছে...');
+    loading('Changing the list...');
     return SB.rpc('admin_edit_list', { p_list_id: pv.row.list_id, p_add: add, p_remove: remove }).then(function (r) {
       var rej = r.rejected || [];
-      var why = { IN_OTHER_LIST: 'অন্য list-এ আছেন', NOT_ELIGIBLE: 'eKYC/ABPS নেই', INACTIVE: 'inactive', NOT_FOUND: 'এই GP-র নন' };
-      status(rej.length ? ('⚠ যোগ হয়নি: ' + rej.map(function (x) { return why[x.reason] || x.reason; }).join(', ')) : ('✅ ' + okMsg), rej.length ? 'err' : 'ok');
+      var why = { IN_OTHER_LIST: 'in another list', NOT_ELIGIBLE: 'no eKYC/ABPS', INACTIVE: 'inactive', NOT_FOUND: 'not in this GP' };
+      status(rej.length ? ('⚠ Not added: ' + rej.map(function (x) { return why[x.reason] || x.reason; }).join(', ')) : ('✅ ' + okMsg), rej.length ? 'err' : 'ok');
       return Promise.all([loadPreview(false), loadDashboard()]);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -800,10 +893,20 @@
   $('pvMetaSave').addEventListener('click', function () {
     var name = $('pvWork').value.trim();
     var sups = $('pvSups').value.split(/[,\n]/).map(function (x) { return x.trim(); }).filter(Boolean);
-    if (!name) { status('Work Name লিখুন।', 'err'); return; }
-    loading('Save হচ্ছে...');
+    if (!name) { status('Enter the Work Name.', 'err'); return; }
+    loading('Saving...');
     SB.rpc('admin_set_list_meta', { p_list_id: pv.row.list_id, p_work_name: name, p_supervisors: sups }).then(function () {
-      status('✅ Work Name / Supervisor save হয়েছে।', 'ok');
+      status('✅ Work Name / supervisors saved.', 'ok');
+      return Promise.all([loadPreview(false), loadDashboard()]);
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+  $('pvCodeSave').addEventListener('click', function () {
+    var code = $('pvCode').value.replace(/\s+/g, '');
+    if (code && !/^[^\/]+\/[A-Za-z]{2,3}\/[^\/]+/.test(code)) { status(errText({ code: 'BAD_WORK_CODE' }), 'err'); return; }
+    loading('Saving...');
+    SB.rpc('admin_set_list_work_code', { p_list_id: pv.row.list_id, p_work_code: code }).then(function (r) {
+      status(r.work_code ? '✅ Work Code saved: ' + r.work_code + '. K-Desk fills it in when this list is loaded.' : '✅ Work Code removed.', 'ok');
       return Promise.all([loadPreview(false), loadDashboard()]);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -820,19 +923,19 @@
   $('pvAddBtn').addEventListener('click', function () {
     var pairs = parsePairs($('pvAddInput').value);
     var box = $('pvAddResults'); box.innerHTML = '';
-    if (!pairs.length) { box.appendChild(el('div', 'Job Card লিখুন, যেমন 002/012 (গ্রাম/household) বা পুরো নম্বর।', 'muted')); return; }
+    if (!pairs.length) { box.appendChild(el('div', 'Enter a Job Card, e.g. 002/012 (village/household) or the full number.', 'muted')); return; }
     SB.rpc('admin_search_households', { p_gp_id: pv.data.gp_id, p_villages: pairs.map(function (p) { return p.v; }), p_households: pairs.map(function (p) { return p.h; }) })
       .then(function (rows) {
-        if (!(rows || []).length) { box.appendChild(el('div', 'কাউকে পাওয়া যায়নি।', 'muted')); return; }
+        if (!(rows || []).length) { box.appendChild(el('div', 'Nobody found.', 'muted')); return; }
         rows.forEach(function (w) {
           var row = el('div', null, 'addrow');
           row.appendChild(el('span', w.job_card_no + ' · ' + w.applicant_name + ' · eKYC ' + (w.ekyc ? '✓' : '✗') + ' ABPS ' + (w.abps ? '✓' : '✗'), 'mono'));
-          if (w.taken_list_id === pv.row.list_id) row.appendChild(el('span', 'এই list-এ আছেন', 'pill on'));
-          else if (w.taken_list_id) row.appendChild(el('span', '"' + w.taken_work + '" (' + w.taken_username + ')-এ আছেন', 'pill off'));
-          else if (!w.eligible) row.appendChild(el('span', 'eKYC/ABPS নেই', 'pill off'));
+          if (w.taken_list_id === pv.row.list_id) row.appendChild(el('span', 'in this list', 'pill on'));
+          else if (w.taken_list_id) row.appendChild(el('span', 'in "' + w.taken_work + '" (' + w.taken_username + ')', 'pill off'));
+          else if (!w.eligible) row.appendChild(el('span', 'no eKYC/ABPS', 'pill off'));
           else {
-            var b = el('button', '➕ যোগ', 'btn-success btn-small');
-            b.addEventListener('click', function () { editList([w.id], [], w.applicant_name + ' যোগ হয়েছে।').then(function () { $('pvAddBtn').click(); }); });
+            var b = el('button', '➕ Add', 'btn-success btn-small');
+            b.addEventListener('click', function () { editList([w.id], [], w.applicant_name + ' added.').then(function () { $('pvAddBtn').click(); }); });
             row.appendChild(b);
           }
           box.appendChild(row);
@@ -851,30 +954,31 @@
   $('pvExcel').addEventListener('click', function () {
     if (!pv.data) return;
     loadXlsx().then(function () {
-      var aoa = [['SL No', 'Job Card No', 'Applicant Name', 'eKYC', 'ABPS', 'Account No', 'IFSC Code']];
-      (pv.data.items || []).forEach(function (x, i) { aoa.push([i + 1, x.job_card_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '', x.ifsc || '']); });
+      var aoa = [['SL No', 'Job Card No', 'Applicant Name', 'eKYC', 'ABPS', 'Account No', 'IFSC Code', 'Demand', 'Demand result', 'Allocation', 'Allocation result']];
+      (pv.data.items || []).forEach(function (x, i) { aoa.push([i + 1, x.job_card_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '', x.ifsc || '',
+        RES[x.demand_status] || '', x.demand_msg || '', RES[x.alloc_status] || '', x.alloc_msg || '']); });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }];
+      ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }, { wch: 9 }, { wch: 28 }, { wch: 10 }, { wch: 28 }];
       var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'List');
-      var info = [['Work Name', pv.data.work_name || ''], ['Supervisor', (pv.data.supervisors || []).join(', ')], ['Workers', (pv.data.items || []).length], ['Username', pv.data.username]];
+      var info = [['Work Name', pv.data.work_name || ''], ['Work Code', pv.data.work_code || ''], ['Supervisor', (pv.data.supervisors || []).join(', ')], ['Workers', (pv.data.items || []).length], ['Username', pv.data.username]];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), 'Work Info');
       XLSX.writeFile(wb, 'List_' + pv.data.username + '_' + String(pv.data.work_name || '').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 30) + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
     }).catch(function (e) { status(errText(e), 'err'); });
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { ['pvModal', 'subModal', 'ekModal'].forEach(function (m) { $(m).classList.remove('show'); }); closePin(); }
+    if (e.key === 'Escape') { ['pvModal', 'subModal', 'ekModal', 'kdModal'].forEach(function (m) { $(m).classList.remove('show'); }); closePin(); closeDel(); }
   });
 
   // ---------- add a GP ----------
   $('gpPrefix').addEventListener('input', function () { var v = this.value.toUpperCase(); if (v !== this.value) this.value = v; });
   $('gpAddBtn').addEventListener('click', function () {
     var name = $('gpName').value.trim(), prefix = $('gpPrefix').value.trim().toUpperCase();
-    if (name.length < 2) { status('GP-র নাম লিখুন।', 'err'); return; }
+    if (name.length < 2) { status('Enter the GP name.', 'err'); return; }
     if (!/^WB-\d{2}-\d{3}-\d{3}$/.test(prefix)) { status(errText({ code: 'BAD_PREFIX' }), 'err'); return; }
-    if (!confirm('নতুন GP: ' + name + ' (' + prefix + ')\nযোগ করবেন?')) return;
-    loading('GP যোগ হচ্ছে...');
+    if (!confirm('New GP: ' + name + ' (' + prefix + ')\nAdd it?')) return;
+    loading('Adding the GP...');
     SB.rpc('admin_add_gp', { p_jc_prefix: prefix, p_name: name }).then(function (g) {
-      status('✅ ' + g.name + ' (' + g.jc_prefix + ') যোগ হয়েছে। এবার উপরে GP বেছে এর data import করুন, তারপর Users tab থেকে supervisor বানান।', 'ok');
+      status('✅ ' + g.name + ' (' + g.jc_prefix + ') added. Now pick the GP below and import its data, then create supervisors in the Users tab.', 'ok');
       $('gpName').value = ''; $('gpPrefix').value = '';
       return loadGps().then(function () { $('gpSelect').value = String(g.id); showGpStats(); });
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
@@ -886,12 +990,12 @@
     var gp = Number($('gpSelect').value); if (!gp) return;
     var g = state.gps.filter(function (x) { return x.id === gp; })[0] || { name: 'GP' + gp };
     var workers = [], lists = [], users = [];
-    loading('Backup তৈরি হচ্ছে... (workers)');
+    loading('Making the backup... (workers)');
     function pageWorkers(after) {
       return SB.rpc('admin_backup_workers', { p_gp_id: gp, p_after_id: after, p_limit: 5000 }, { retry: true }).then(function (r) {
         var rows = (r && r.rows) || [];
         workers = workers.concat(rows);
-        $('loadingText').textContent = 'Backup তৈরি হচ্ছে... ' + bn(workers.length) + ' worker';
+        $('loadingText').textContent = 'Making the backup... ' + bn(workers.length) + ' workers';
         return rows.length ? pageWorkers(r.next_after_id) : null;
       });
     }
@@ -917,19 +1021,19 @@
         var ws = XLSX.utils.aoa_to_sheet(wa);
         ws['!cols'] = [{ wch: 26 }, { wch: 8 }, { wch: 30 }, { wch: 8 }, { wch: 8 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }, { wch: 6 }];
         XLSX.utils.book_append_sheet(wb, ws, 'Workers');
-        var la = [['Username', 'List অবস্থা', 'Submit অবস্থা', 'Work Name', 'তৈরি', 'জমা', 'Lock', 'Export', 'Job Card No', 'Applicant No', 'Applicant Name']];
+        var la = [['Username', 'List status', 'Submit status', 'Work Name', 'Created', 'Submitted', 'Locked', 'Exported', 'Job Card No', 'Applicant No', 'Applicant Name']];
         lists.forEach(function (x) {
-          la.push([x.username, x.status === 'active' ? 'চলতি' : 'পুরনো দফা', STATE_BN[x.submit_state] || x.submit_state, x.work_name || '',
+          la.push([x.username, x.status === 'active' ? 'Current' : 'Past round', STATE_BN[x.submit_state] || x.submit_state, x.work_name || '',
                    fmtDate(x.created_at), x.submitted_at ? fmtDate(x.submitted_at) : '', x.locked_at ? fmtDate(x.locked_at) : '',
                    x.exported_at ? fmtDate(x.exported_at) : '', x.job_card_no, String(x.applicant_no), x.applicant_name]);
         });
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(la), 'Lists');
-        var ua = [['Username', 'নাম', 'Role', 'অবস্থা', 'শেষ login']];
-        users.forEach(function (x) { ua.push([x.username, x.full_name, x.role === 'super_admin' ? 'Super Admin' : x.role === 'kdesk' ? 'K-Desk' : 'Supervisor', x.active ? 'চালু' : 'বন্ধ', x.last_seen ? fmtDate(x.last_seen) : '']); });
+        var ua = [['Username', 'Name', 'Role', 'Status', 'Last login']];
+        users.forEach(function (x) { ua.push([x.username, x.full_name, x.role === 'super_admin' ? 'Super Admin' : x.role === 'kdesk' ? 'K-Desk' : 'Supervisor', x.active ? 'Active' : 'Disabled', x.last_seen ? fmtDate(x.last_seen) : '']); });
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ua), 'Users');
         var d = new Date(), stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         XLSX.writeFile(wb, 'GramG_Backup_' + g.name.replace(/[^A-Za-z0-9_-]+/g, '_') + '_' + stamp + '.xlsx');
-        var msg = '✅ Backup নেমেছে: ' + bn(workers.length) + ' worker, ' + bn(lists.length) + ' list-row, ' + bn(users.length) + ' user।';
+        var msg = '✅ Backup downloaded: ' + bn(workers.length) + ' workers, ' + bn(lists.length) + ' list rows, ' + bn(users.length) + ' users.';
         $('backupInfo').textContent = msg + ' (' + fmtDate(d.toISOString()) + ')';
         status(msg, 'ok');
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })

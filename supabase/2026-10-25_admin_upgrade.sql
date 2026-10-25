@@ -4,6 +4,7 @@
 --   2) K-Desk status per list + K-Desk activity (last ABPS Sync etc.)
 --   3) Demand / Allocation results written back from K-Desk
 --   4) Delete user (admin)
+--   5) "Last data" line: last Excel import and last ABPS Sync (admin + supervisor app)
 -- Run once in Supabase → SQL Editor. Safe to run again.
 -- =====================================================================
 
@@ -294,6 +295,35 @@ begin
   return jsonb_build_object('username', v_p.username, 'lists_deleted', v_lists);
 end $function$;
 
+-- ---------- 5) "Last data": when and from where the worker data was last updated ----------
+create or replace function private.data_status(p_gp smallint)
+returns jsonb language sql stable security definer set search_path to '' as $function$
+  select jsonb_build_object(
+    'last_import', (select jsonb_build_object('at', j.committed_at, 'file', j.file_name,
+                       'new', j.counts->'committed_new', 'updated', j.counts->'committed_updated')
+                      from public.import_jobs j where j.gp_id = p_gp and j.status = 'committed'
+                     order by j.committed_at desc nulls last limit 1),
+    'last_sync', (select jsonb_build_object('at', a.at, 'matched', a.details->'matched', 'changed', a.details->'changed')
+                    from public.audit_logs a where a.gp_id = p_gp and a.action = 'flags_synced_kdesk'
+                   order by a.at desc limit 1),
+    'last_change', (select max(w.updated_at) from public.workers w where w.gp_id = p_gp))
+$function$;
+revoke all on function private.data_status(smallint) from public, anon, authenticated;
+
+create or replace function public.admin_data_status(p_gp_id smallint)
+returns jsonb language plpgsql stable security definer set search_path to '' as $function$
+declare v_uid uuid := private.require_super_admin();
+begin
+  return private.data_status(p_gp_id);
+end $function$;
+
+create or replace function public.get_data_status()
+returns jsonb language plpgsql stable security definer set search_path to '' as $function$
+declare v_gp smallint := private.require_gp_user();
+begin
+  return private.data_status(v_gp);
+end $function$;
+
 -- ---------- permissions ----------
 revoke all on function public.admin_set_list_work_code(uuid, text) from public, anon;
 revoke all on function public.kdesk_report_results(jsonb) from public, anon;
@@ -305,5 +335,9 @@ grant execute on function public.kdesk_report_results(jsonb) to authenticated;
 grant execute on function public.get_list_results(uuid) to authenticated;
 grant execute on function public.admin_kdesk_activity(smallint, integer) to authenticated;
 grant execute on function public.admin_delete_user(uuid, text) to authenticated;
+revoke all on function public.admin_data_status(smallint) from public, anon;
+revoke all on function public.get_data_status() from public, anon;
+grant execute on function public.admin_data_status(smallint) to authenticated;
+grant execute on function public.get_data_status() to authenticated;
 
 select 'OK: List Builder admin upgrade installed' as result;

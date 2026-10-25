@@ -424,10 +424,24 @@
       dash.picked.forEach(function (id) { if (!ids.has(id)) dash.picked.delete(id); });
       renderDashboard();
       $('dashUpdated').textContent = 'Last updated: ' + fmtDate(new Date().toISOString());
+      loadDataLine(gp);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { dash.loading = false; });
   }
 
+  // "Last data" line: when and from where this GP's worker data was last updated
+  var STALE_DAYS = 7;
+  function loadDataLine(gp) {
+    return SB.rpc('admin_data_status', { p_gp_id: gp }).then(function (d) {
+      var box = $('dataLine'), parts = [], newest = 0;
+      if (d.last_sync) { parts.push('ABPS Sync (K-Desk) ' + fmtDate(d.last_sync.at) + ', ' + bn(d.last_sync.changed) + ' changed'); newest = Math.max(newest, Date.parse(d.last_sync.at)); }
+      if (d.last_import) { parts.push('Excel import ' + fmtDate(d.last_import.at) + ' (' + d.last_import.file + ')'); newest = Math.max(newest, Date.parse(d.last_import.at)); }
+      var old = !newest || Date.now() - newest > STALE_DAYS * 86400000;
+      box.className = 'dataline' + (old ? ' old' : '');
+      box.textContent = parts.length ? '📅 Last data: ' + parts.join(' · ') + (old ? ' — older than ' + STALE_DAYS + ' days, run an ABPS Sync in K-Desk.' : '')
+                                     : '📅 Last data: no import or ABPS Sync yet.';
+    }).catch(function () { $('dataLine').textContent = ''; });   // older database without admin_data_status
+  }
   function renderDashboard() {
     var S = $('dashStats'); S.innerHTML = '';
     var c = { submitted: 0, draft: 0, locked: 0, short: 0 };

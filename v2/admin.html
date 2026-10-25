@@ -66,6 +66,7 @@
     .pill.draft{background:#dbeafe;color:#1e40af;} .pill.submitted{background:#dcfce7;color:#166534;}
     .pill.locked{background:#fef3c7;color:#92400e;} .pill.empty{background:#f1f5f9;color:#64748b;}
     .pill.dup{background:#fee2e2;color:#991b1b;}
+    .dataline{font-size:12px;border-radius:8px;padding:6px 9px;margin:6px 0;background:#eff6ff;color:#1e3a8a;} .dataline:empty{display:none;} .dataline.old{background:#fee2e2;color:#991b1b;}
     .res-ok{color:#166534;font-weight:700;} .res-bad{color:#991b1b;font-weight:700;} .kdline{color:#1e3a8a;}
     .filters{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;}
     .filters button{background:#e2e8f0;color:#334155;padding:6px 10px;font-size:12px;}
@@ -136,6 +137,7 @@
         <button data-f="empty">No list</button>
         <button data-f="locked">Locked</button>
       </div>
+      <div class="dataline" id="dataLine"></div>
       <div class="muted" id="dashUpdated"></div>
     </div>
     <div class="ucards" id="dashCards"></div>
@@ -366,6 +368,6 @@
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261025a"></script>
+<script src="./js/admin.js?v=20261025b"></script>
 </body>
 </html>

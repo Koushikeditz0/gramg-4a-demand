@@ -344,6 +344,7 @@
     supervisors: function () { return st.supervisors.slice(); },
     lists: function () { return st.lists.slice(); },
     unsubmitList: function () { return changeSubmit('unsubmit_list'); },
+    dataStatus: function () { return SB.rpc('get_data_status', {}, { retry: true }); },
     listResults: function () {
       if (!st.listId) return Promise.resolve([]);
       return SB.rpc('get_list_results', { p_list_id: st.listId }, { retry: true }).catch(function (e) { throw bnError(e || {}); });

@@ -1179,6 +1179,7 @@
           id="userGp">
 
         </div>
+        <div class="user-gp" id="dataStatus" style="display:none;"></div>
 
 
       </div>
@@ -1523,7 +1524,7 @@
 
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
-<script src="./js/gramg-adapter.js?v=20261025a"></script>
+<script src="./js/gramg-adapter.js?v=20261025b"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3181,7 +3182,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillages(); loadSavedSelection(); afterLogin(res);
+  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus();
 }
 const AUTH_LOST_MSG={
   SESSION_REVOKED:'এই account-এ অন্য একটি device-এ নতুন Login হয়েছে। একটি account সর্বোচ্চ ২টি device-এ চালু থাকতে পারে, তাই এই device-এর session বন্ধ করা হয়েছে। আবার Login করুন।',
@@ -3382,6 +3383,20 @@ function unsubmitMyList(){
   gramgAdapter.unsubmitList().then(function(){
     hideLoading(); showStatus('এখন list বদলাতে পারবেন। শেষ হলে আবার Submit করুন।','success');
   },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
+}
+/* ---------- "শেষ data": worker-দের eKYC/ABPS তথ্য কবে, কোথা থেকে update হয়েছে ---------- */
+function loadDataStatus(){
+  const box=document.getElementById('dataStatus'); if(!box) return;
+  gramgAdapter.dataStatus().then(function(d){
+    if(!d){ box.style.display='none'; return; }
+    let at=0, txt='';
+    const s=d.last_sync&&Date.parse(d.last_sync.at), m=d.last_import&&Date.parse(d.last_import.at);
+    if(s&&(!m||s>=m)){ at=s; txt='ABPS Sync '+fmtBnDate(d.last_sync.at); }
+    else if(m){ at=m; txt='Excel import '+fmtBnDate(d.last_import.at); }
+    const old=!at||Date.now()-at>7*86400000;
+    box.textContent='📅 শেষ data: '+(txt||'নেই')+(old?' (পুরনো)':'');
+    box.style.color=old?'#b91c1c':''; box.style.display='';
+  },function(){ box.style.display='none'; });
 }
 /* ---------- K-Desk results (Demand / Allocation) of the current list ---------- */
 function openResults(){

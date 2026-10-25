@@ -233,7 +233,10 @@
   <!-- ============ USERS ============ -->
   <section id="tab-users" class="hidden">
     <div class="card">
-      <h2>Users</h2>
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">Users</h2>
+        <button class="btn-primary btn-small super-only" id="gaJump">🛡 New GP Admin</button>
+      </div>
       <div class="table-wrap"><table>
         <thead><tr><th>Username</th><th>Name</th><th>GP</th><th>Status</th><th>Devices</th><th>Last used</th><th></th></tr></thead>
         <tbody id="users"></tbody></table></div>
@@ -253,7 +256,7 @@
       <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Create user</button></div>
     </div>
     <div class="card super-only" id="gaCard">
-      <h2>🛡 New GP Admin (with K-Desk login)</h2>
+      <h2>🛡 New GP Admin (K-Desk login is made automatically)</h2>
       <div class="muted">A GP Admin opens this Admin panel but sees and controls only their own GP: lists, data import, supervisors, K-Desk login. They cannot see other GPs, add a GP or make another GP Admin. Give them the username and PIN below.</div>
       <div class="grid3" style="margin-top:6px;">
         <div><label class="f" for="gaGp">GP</label><select id="gaGp"></select></div>
@@ -263,7 +266,7 @@
           <div class="row" style="flex-wrap:nowrap;"><input type="text" id="gaPin" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
           <button class="btn-light btn-small" id="gaPinGen" type="button" title="Make a new PIN">🎲</button></div></div>
       </div>
-      <label class="row" style="margin-top:8px;gap:6px;font-size:13px;"><input type="checkbox" id="gaKd" checked style="width:auto;"> Also create the K-Desk login for this GP</label>
+      <div class="muted" id="gaKdNote" style="margin-top:8px;">The GP's K-Desk login is created automatically with it (username and PIN are filled in for you; change them if you like).</div>
       <div class="grid3" id="gaKdBox">
         <div><label class="f" for="gaKdUsername">K-Desk username</label><input type="text" id="gaKdUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. petla.kdesk"></div>
         <div><label class="f" for="gaKdPin">K-Desk PIN</label>
@@ -400,6 +403,6 @@
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261025c"></script>
+<script src="./js/admin.js?v=20261025d"></script>
 </body>
 </html>

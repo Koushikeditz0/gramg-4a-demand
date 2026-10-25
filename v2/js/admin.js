@@ -11,7 +11,7 @@
   var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   var STAGE_CHUNK = 1000;
   var $ = function (id) { return document.getElementById(id); };
-  var state = { gps: [], jobId: null, problems: [], counts: null, busy: false };
+  var state = { users: [], gps: [], jobId: null, problems: [], counts: null, busy: false };
   var me = { role: null, gp: null, gpName: '' };       // who is logged in
   var view = { gp: null };                             // Super Admin viewing as GP Admin of this GP
   var VIEW_KEY = 'gramg2.adminView';
@@ -123,8 +123,8 @@
   $('viewSel').addEventListener('change', function () {
     view.gp = Number(this.value) || null;
     try { if (view.gp) localStorage.setItem(VIEW_KEY, String(view.gp)); else localStorage.removeItem(VIEW_KEY); } catch (_e) { /* per-device convenience only */ }
-    status('');
-    applyView(true);
+    // reload the page so every tab starts clean in the new view
+    location.reload();
   });
   function showGpStats() {
     var g = state.gps.filter(function (x) { return String(x.id) === $('gpSelect').value; })[0];
@@ -335,6 +335,7 @@
   var ROLE_LABEL = { super_admin: 'Super Admin', gp_admin: '🛡 GP Admin', gp_user: 'Supervisor', kdesk: '🖥 K-Desk login' };
   function loadUsers() {
     return SB.rpc('admin_list_users').then(function (users) {
+      state.users = users || []; gaPrefill();
       var tb = $('users'); tb.innerHTML = '';
       var lim = gpView();
       if (lim) users = users.filter(function (u) { return u.gp_id === lim; });
@@ -373,6 +374,12 @@
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
           });
           if (kb) act.appendChild(kb);
+          // Super Admin only: Supervisor <-> GP Admin
+          if (!lim && (u.role === 'gp_user' || u.role === 'gp_admin')) {
+            var gb = el('button', u.role === 'gp_admin' ? '↩ Make Supervisor' : '🛡 Make GP Admin', 'btn-light btn-small'); gb.style.marginLeft = '4px';
+            gb.addEventListener('click', function () { toggleGpAdmin(u); });
+            act.appendChild(gb);
+          }
           if (u.active_devices > 0) {
             var lo = el('button', 'Log out all devices', 'btn-light btn-small'); lo.style.marginLeft = '4px';
             lo.addEventListener('click', function () {
@@ -855,16 +862,58 @@
   });
   $('gaPinGen').addEventListener('click', function () { $('gaPin').value = randomPin(); });
   $('gaKdPinGen').addEventListener('click', function () { $('gaKdPin').value = randomPin(); });
-  $('gaKd').addEventListener('change', function () { $('gaKdBox').classList.toggle('hidden', !this.checked); });
-  $('gaUsername').addEventListener('change', function () {
-    // suggest "<gp>.kdesk" from "<gp>.admin"
-    var m = /^(.+?)[._-]?admin$/.exec(this.value);
-    if (m && !$('gaKdUsername').value) $('gaKdUsername').value = m[1] + '.kdesk';
-  });
+  $('gaJump').addEventListener('click', function () { $('gaCard').scrollIntoView({ behavior: 'smooth' }); $('gaName').focus(); });
+  function gpSlug(g) { return (String(g.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 20)) || ('gp' + g.id); }
+  function gpOf(id) { return state.gps.filter(function (x) { return x.id === id; })[0] || { id: id, name: 'GP' + id }; }
+  function kdeskOf(gp) { return state.users.filter(function (u) { return u.role === 'kdesk' && u.gp_id === gp; })[0]; }
+  // Fill the form for the chosen GP: suggested usernames and fresh PINs; K-Desk only if the GP has none yet.
+  var gaAuto = { un: '', kun: '' };
+  function gaPrefill() {
+    var gp = Number($('gaGp').value); if (!gp) return;
+    var g = gpOf(gp), slug = gpSlug(g), kd = kdeskOf(gp);
+    if (!$('gaUsername').value || $('gaUsername').value === gaAuto.un) $('gaUsername').value = gaAuto.un = slug + '.admin';
+    if (!$('gaPin').value) $('gaPin').value = randomPin();
+    if (!$('gaKdUsername').value || $('gaKdUsername').value === gaAuto.kun) $('gaKdUsername').value = gaAuto.kun = slug + '.kdesk';
+    if (!$('gaKdPin').value) $('gaKdPin').value = randomPin();
+    $('gaKdBox').classList.toggle('hidden', !!kd);
+    $('gaKdNote').textContent = kd ? g.name + ' already has a K-Desk login (' + kd.username + '), so no new one is made.'
+      : 'The GP\'s K-Desk login is created automatically with it (username and PIN are filled in for you; change them if you like).';
+  }
+  $('gaGp').addEventListener('change', gaPrefill);
+  // Make the GP's K-Desk login if it has none. Resolves to a text line for the login details.
+  function ensureKdesk(gp, kun, kpin) {
+    if (kdeskOf(gp)) return Promise.resolve('K-Desk extension login: already exists (' + kdeskOf(gp).username + ')');
+    var g = gpOf(gp);
+    kun = kun || gpSlug(g) + '.kdesk'; kpin = kpin || randomPin();
+    loading('Creating the K-Desk login...');
+    return SB.callFunction('admin-users', { action: 'create_user', username: kun, full_name: g.name + ' K-Desk', pin: kpin, gp_id: gp, role: 'kdesk' })
+      .then(function () { return 'K-Desk extension login\n  Username: ' + kun + '\n  PIN: ' + kpin; })
+      .catch(function (e) { if (e.authLost) throw e; return '⚠ K-Desk login NOT created: ' + errText(e) + ' Create it with "New user" (Type: K-Desk login).'; });
+  }
+  function showCreds(lines) { $('gaCreds').textContent = lines.join('\n'); $('gaCreds').classList.remove('hidden'); }
+  function toggleGpAdmin(u) {
+    var to = u.role === 'gp_admin' ? 'gp_user' : 'gp_admin';
+    var q = to === 'gp_admin'
+      ? 'Make ' + u.username + ' the GP Admin of ' + (u.gp_name || 'this GP') + '? They open the Admin panel for this GP only (no phone list building). Their PIN stays the same; they are logged out of every device.' + (kdeskOf(u.gp_id) ? '' : ' A K-Desk login for the GP is made too.')
+      : 'Make ' + u.username + ' a Supervisor again? They lose the Admin panel.';
+    if (!confirm(q)) return;
+    loading('Changing the role...');
+    SB.rpc('admin_set_user_role', { p_user_id: u.user_id, p_role: to })
+      .then(function () {
+        if (to !== 'gp_admin') { status(u.username + ' is now a Supervisor.', 'ok'); return null; }
+        return ensureKdesk(u.gp_id).then(function (kdLine) {
+          showCreds(['GP: ' + (u.gp_name || ''), '', 'Admin panel login (GP Admin)', '  Username: ' + u.username, '  PIN: (their current PIN)', '', kdLine]);
+          status('✅ ' + u.username + ' is now GP Admin of ' + (u.gp_name || 'the GP') + '. Login details are in the "New GP Admin" box below.', 'ok');
+        });
+      })
+      .then(function () { return loadUsers(); })
+      .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
   $('gaBtn').addEventListener('click', function () {
     var gp = Number($('gaGp').value), name = $('gaName').value.trim();
     var un = $('gaUsername').value.trim(), pin = $('gaPin').value.trim();
-    var withKd = $('gaKd').checked, kun = $('gaKdUsername').value.trim(), kpin = $('gaKdPin').value.trim();
+    var withKd = !kdeskOf(gp), kun = $('gaKdUsername').value.trim(), kpin = $('gaKdPin').value.trim();
     var bad = !gp ? 'BAD_GP' : !name ? 'BAD_NAME' : !/^[a-z0-9_.-]{3,32}$/.test(un) ? 'BAD_USERNAME' : weakPin(pin);
     if (!bad && withKd) bad = !/^[a-z0-9_.-]{3,32}$/.test(kun) || kun === un ? 'BAD_USERNAME' : weakPin(kpin);
     if (bad) { status(errText({ code: bad }), 'err'); return; }
@@ -875,17 +924,13 @@
     SB.callFunction('admin-users', { action: 'create_user', username: un, full_name: name, pin: pin, gp_id: gp, role: 'gp_admin' })
       .then(function () {
         lines.push('', 'Admin panel login (GP Admin)', '  Username: ' + un, '  PIN: ' + pin);
-        if (!withKd) return null;
-        loading('Creating the K-Desk login...');
-        return SB.callFunction('admin-users', { action: 'create_user', username: kun, full_name: g.name + ' K-Desk', pin: kpin, gp_id: gp, role: 'kdesk' })
-          .then(function () { lines.push('', 'K-Desk extension login', '  Username: ' + kun, '  PIN: ' + kpin); })
-          .catch(function (e) { if (e.authLost) throw e; lines.push('', '⚠ K-Desk login NOT created: ' + errText(e) + ' Create it with "New user" above.'); });
+        return ensureKdesk(gp, kun, kpin).then(function (kdLine) { lines.push('', kdLine); });
       })
       .then(function () {
-        $('gaCreds').textContent = lines.join('\n'); $('gaCreds').classList.remove('hidden');
+        showCreds(lines);
         status('✅ GP Admin for ' + g.name + ' created. Login details are below the form: give them to the GP yourself.', 'ok');
         ['gaName', 'gaUsername', 'gaPin', 'gaKdUsername', 'gaKdPin'].forEach(function (id) { $(id).value = ''; });
-        return loadUsers();
+        return loadUsers();   // refills the form with fresh suggestions
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   });

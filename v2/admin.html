@@ -47,6 +47,9 @@
     .status{display:none;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
     .status.show{display:block;} .status.ok{background:#dcfce7;color:#166534;} .status.err{background:#fee2e2;color:#991b1b;} .status.info{background:#e0e7ff;color:#3730a3;}
     .hidden{display:none!important;}
+    .viewbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#ede9fe;color:#4c1d95;border-radius:10px;padding:7px 10px;margin-bottom:8px;font-size:12.5px;}
+    .viewbar select{width:auto;min-width:160px;padding:5px 8px;font-size:12.5px;}
+    .creds{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:#f1f5f9;border:1px dashed #94a3b8;border-radius:9px;padding:9px;margin-top:8px;}
     .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
     .chip{font-size:11px;background:#dcfce7;color:#166534;border-radius:6px;padding:2px 6px;}
     .chip.ign{background:#f1f5f9;color:#64748b;text-decoration:line-through;}
@@ -104,8 +107,15 @@
   </div>
 
   <div class="bar">
-    <div><div class="who" id="who">…</div><div class="role">Super Admin</div></div>
+    <div><div class="who" id="who">…</div><div class="role" id="roleLbl">Admin</div></div>
     <button class="btn-light btn-small" id="logoutBtn">Logout</button>
+  </div>
+
+  <!-- Super Admin only: see the panel exactly as a GP Admin of one GP sees it -->
+  <div class="viewbar hidden" id="viewBar">
+    <b>View:</b>
+    <select id="viewSel"><option value="">👑 Super Admin (all GPs)</option></select>
+    <span id="viewNote"></span>
   </div>
 
   <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -162,7 +172,7 @@
 
   <!-- ============ IMPORT ============ -->
   <section id="tab-import" class="hidden">
-    <div class="card">
+    <div class="card super-only">
       <h2>🏛 New Gram Panchayat</h2>
       <div class="muted">Add the GP here before importing its data and creating supervisors. Job Card prefix = the first 13 characters of the Job Card number, e.g. <code>WB-08-005-014</code>.</div>
       <div class="grid3" style="margin-top:6px;">
@@ -229,8 +239,9 @@
         <tbody id="users"></tbody></table></div>
     </div>
     <div class="card">
-      <h2>➕ New supervisor</h2>
+      <h2>➕ New user</h2>
       <div class="grid3">
+        <div><label class="f" for="nuRole">Type</label><select id="nuRole"><option value="gp_user">Supervisor (phone app)</option><option value="kdesk">🖥 K-Desk login (extension)</option></select></div>
         <div><label class="f" for="nuName">Full name</label><input type="text" id="nuName" maxlength="100" placeholder="e.g. Ramesh Barman"></div>
         <div><label class="f" for="nuUsername">Username</label><input type="text" id="nuUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. ramesh"></div>
         <div><label class="f" for="nuGp">GP</label><select id="nuGp"></select></div>
@@ -239,9 +250,30 @@
           <button class="btn-light btn-small" id="nuPinGen" type="button" title="Make a new PIN">🎲</button></div></div>
       </div>
       <div class="muted" style="margin-top:6px;">Username: lowercase English letters, digits, <code>_ . -</code> (3–32 characters). Easy PINs (111111, 123456) are not allowed. Give the PIN to the supervisor yourself.</div>
-      <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Create supervisor</button></div>
+      <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Create user</button></div>
     </div>
-    <div class="card">
+    <div class="card super-only" id="gaCard">
+      <h2>🛡 New GP Admin (with K-Desk login)</h2>
+      <div class="muted">A GP Admin opens this Admin panel but sees and controls only their own GP: lists, data import, supervisors, K-Desk login. They cannot see other GPs, add a GP or make another GP Admin. Give them the username and PIN below.</div>
+      <div class="grid3" style="margin-top:6px;">
+        <div><label class="f" for="gaGp">GP</label><select id="gaGp"></select></div>
+        <div><label class="f" for="gaName">GP Admin full name</label><input type="text" id="gaName" maxlength="100" placeholder="e.g. Petla GP Office"></div>
+        <div><label class="f" for="gaUsername">GP Admin username</label><input type="text" id="gaUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. petla.admin"></div>
+        <div><label class="f" for="gaPin">GP Admin PIN</label>
+          <div class="row" style="flex-wrap:nowrap;"><input type="text" id="gaPin" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
+          <button class="btn-light btn-small" id="gaPinGen" type="button" title="Make a new PIN">🎲</button></div></div>
+      </div>
+      <label class="row" style="margin-top:8px;gap:6px;font-size:13px;"><input type="checkbox" id="gaKd" checked style="width:auto;"> Also create the K-Desk login for this GP</label>
+      <div class="grid3" id="gaKdBox">
+        <div><label class="f" for="gaKdUsername">K-Desk username</label><input type="text" id="gaKdUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. petla.kdesk"></div>
+        <div><label class="f" for="gaKdPin">K-Desk PIN</label>
+          <div class="row" style="flex-wrap:nowrap;"><input type="text" id="gaKdPin" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
+          <button class="btn-light btn-small" id="gaKdPinGen" type="button" title="Make a new PIN">🎲</button></div></div>
+      </div>
+      <div style="margin-top:10px;"><button class="btn-primary" id="gaBtn">🛡 Create GP Admin</button></div>
+      <div class="creds hidden" id="gaCreds"></div>
+    </div>
+    <div class="card super-only">
       <details>
       <summary style="cursor:pointer;font-weight:700;font-size:13px;">Old method: through the Supabase dashboard (to make a Super Admin, or when the Edge Function is missing)</summary>
       <ol class="steps">
@@ -368,6 +400,6 @@
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261025b"></script>
+<script src="./js/admin.js?v=20261025c"></script>
 </body>
 </html>

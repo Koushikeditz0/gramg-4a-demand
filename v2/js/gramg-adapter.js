@@ -81,7 +81,7 @@
     return SB.rpc('register_session', { p_user_agent: String(navigator.userAgent || '').slice(0, 300) })
       .then(function (reg) {
         return SB.rpc('get_my_context').then(function (ctx) {
-          if (ctx.role === 'super_admin') {
+          if (ctx.role === 'super_admin' || ctx.role === 'gp_admin') {
             location.href = './admin.html';
             return { ok: false, message: 'Admin panel খুলছে...' };
           }

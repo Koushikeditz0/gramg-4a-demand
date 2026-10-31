@@ -306,7 +306,7 @@
     }).then(function (r) {
       st.submitState = r.submit_state; st.submittedAt = r.submitted_at || null;
       if (r.version) st.version = r.version;
-      st.lists.forEach(function (l) { if (l.list_id === st.listId) l.submit_state = st.submitState; });
+      st.lists.forEach(function (l) { if (l.list_id === st.listId) { l.submit_state = st.submitState; l.workers = st.server.size; } });
       notifyState();
       return r;
     }, function (e) { throw bnError(e || {}); });

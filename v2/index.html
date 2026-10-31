@@ -1526,7 +1526,7 @@
 
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
-<script src="./js/gramg-adapter.js?v=20261025c"></script>
+<script src="./js/gramg-adapter.js?v=20261031a"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3389,7 +3389,9 @@ function submitMyList(){
   showLoading('List জমা দেওয়া হচ্ছে...');
   gramgAdapter.submitList().then(function(r){
     // blank screen for the next work; the submitted list stays in the list picker above
-    return gramgAdapter.closeList().then(afterListLoaded, function(){ hideLoading(); }).then(function(){
+    document.getElementById('searchInput').value=''; clearSearchResults();   // fresh screen for the next work
+    const blank=gramgAdapter.closeList ? gramgAdapter.closeList().then(afterListLoaded) : Promise.resolve();
+    return blank.catch(function(){ hideLoading(); }).then(function(){
       showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে। নতুন কাজের জন্য "➕ নতুন list" চাপুন।','success');
     });
   },function(e){

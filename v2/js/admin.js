@@ -24,6 +24,17 @@
     if (msg) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function loading(text) { $('loadingText').textContent = text || 'Loading...'; $('loading').classList.toggle('show', !!text); }
+  // own Yes/No box: browser confirm() can be blocked silently on phones
+  function ask(msg, yes, kind) {
+    return new Promise(function (res) {
+      var box = $('askBox'), y = $('askYes'), n = $('askNo');
+      $('askMsg').textContent = msg; y.textContent = yes || 'Yes'; y.className = kind === 'ok' ? 'btn-success' : 'btn-danger';
+      function done(v) { box.classList.remove('show'); y.onclick = n.onclick = box.onclick = null; res(v); }
+      y.onclick = function () { done(true); }; n.onclick = function () { done(false); };
+      box.onclick = function (e) { if (e.target === box) done(false); };
+      box.classList.add('show'); y.focus();
+    });
+  }
   function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
   function fmtDate(s) { if (!s) return '—'; var d = new Date(s); return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
   function bn(n) { return Number(n || 0).toLocaleString('en-IN'); }
@@ -276,12 +287,12 @@
     document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   });
 
-  $('commitBtn').addEventListener('click', function () {
+  $('commitBtn').addEventListener('click', async function () {
     var c = state.counts; if (!c || state.busy) return;
     var msg = 'Confirm the import?\n\nNew: ' + bn(c.new) + '\nChanged: ' + bn(c.updated) +
               (c.deactivate_missing ? '\nWill become inactive: ' + bn(c.missing_from_file) : '') +
               '\nSkipped: ' + bn(c.invalid + c.conflicting_repeats) + '\n\nIf it is wrong you can roll it back from Import History.';
-    if (!confirm(msg)) return;
+    if (!await ask(msg)) return;
     state.busy = true; loading('Importing... (do not close the page)');
     SB.rpc('admin_commit_import', { p_job_id: state.jobId }, { timeout: 180000 }).then(function (r) {
       status('✅ Import done: new ' + bn(r.new) + ', changed ' + bn(r.updated) + ', accounts ' + bn(r.accounts) +
@@ -314,8 +325,8 @@
         var act = el('td');
         if (j.can_rollback) {
           var b = el('button', '↩ Rollback', 'btn-danger btn-small');
-          b.addEventListener('click', function () {
-            if (!confirm('Roll back this import? The data goes back to how it was before it.')) return;
+          b.addEventListener('click', async function () {
+            if (!await ask('Roll back this import? The data goes back to how it was before it.')) return;
             loading('Rolling back...');
             SB.rpc('admin_rollback_import', { p_job_id: j.id }, { timeout: 180000 }).then(function (r) {
               status('↩ Rollback done: ' + bn(r.restored) + ' worker(s) restored, ' + bn(r.deleted_new) + ' new worker(s) deleted' +
@@ -351,8 +362,8 @@
         var canManage = u.role === 'gp_user' || u.role === 'kdesk' || (u.role === 'gp_admin' && !lim);
         if (canManage) {
           var t = el('button', u.active ? 'Disable' : 'Enable', (u.active ? 'btn-danger' : 'btn-success') + ' btn-small');
-          t.addEventListener('click', function () {
-            if (u.active && !confirm('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
+          t.addEventListener('click', async function () {
+            if (u.active && !await ask('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
             SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
               .then(function () { status(u.username + ' ' + (u.active ? 'disabled' : 'enabled') + '.', 'ok'); return loadUsers(); })
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
@@ -363,12 +374,12 @@
           act.appendChild(pb);
           // K-Desk Suite login: may only read this GP's submitted lists and lock them (database: kdesk_*).
           var kb = u.role === 'gp_admin' ? null : el('button', u.role === 'kdesk' ? '↩ Make Supervisor' : '🖥 Make K-Desk login', 'btn-light btn-small'); if (kb) kb.style.marginLeft = '4px';
-          if (kb) kb.addEventListener('click', function () {
+          if (kb) kb.addEventListener('click', async function () {
             var to = u.role === 'kdesk' ? 'gp_user' : 'kdesk';
             var q = to === 'kdesk'
               ? 'Make ' + u.username + ' a K-Desk login? It can no longer build lists in the phone app; the K-Desk extension can only fetch and lock submitted lists with it. It is logged out of every device.'
               : 'Make ' + u.username + ' a Supervisor again? K-Desk can no longer fetch lists with it.';
-            if (!confirm(q)) return;
+            if (!await ask(q)) return;
             SB.rpc('admin_set_user_role', { p_user_id: u.user_id, p_role: to })
               .then(function () { status(u.username + (to === 'kdesk' ? ' is now a K-Desk login.' : ' is now a Supervisor.'), 'ok'); return loadUsers(); })
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
@@ -556,8 +567,8 @@
     var acts = el('div', null, 'acts');
     function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
     act('🔑 PIN', 'btn-light', function () { openPinModal(u); });
-    act(u.active ? 'Disable user' : 'Enable user', u.active ? 'btn-danger' : 'btn-success', function () {
-      if (u.active && !confirm('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
+    act(u.active ? 'Disable user' : 'Enable user', u.active ? 'btn-danger' : 'btn-success', async function () {
+      if (u.active && !await ask('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
       SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
         .then(function () { status(u.username + ' ' + (u.active ? 'disabled' : 'enabled') + '.', 'ok'); return loadDashboard(); })
         .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
@@ -606,10 +617,10 @@
     act('👁 View', 'btn-primary', function () { openPreview(r); });
     if ((st === 'submitted' || st === 'draft') && n > 0) act('🔒 Lock', 'btn-light', function () { listAction(r, 'lock'); });
     if (st === 'submitted' || st === 'locked') act('↩ Send back', 'btn-light', function () {
-      if (confirm('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.')) listAction(r, 'reopen');
+      ask('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.').then(function (ok) { if (ok) listAction(r, 'reopen'); });
     });
     if (st === 'locked') act('✔ Work complete', 'btn-success', function () {
-      if (confirm('"' + r.work_name + '" (' + r.username + ') — work complete?\nThe list is closed (it stays in the history) and its ' + n + ' workers can be picked for new work again.')) listAction(r, 'complete');
+      ask('"' + r.work_name + '" (' + r.username + ') — work complete?\nThe list is closed (it stays in the history) and its ' + n + ' workers can be picked for new work again.', 'Yes, complete', 'ok').then(function (ok) { if (ok) listAction(r, 'complete'); });
     });
     if (Number(r.submissions)) act('🕘 Past submissions (' + r.submissions + ')', 'btn-light', function () { openSubmissions(r); });
     act('🗑 Delete', 'btn-danger', function () { deleteList(r); });
@@ -630,9 +641,9 @@
   }
 
   // ---------- delete list (database: admin_delete_list; soft delete, kept in Backup) ----------
-  function deleteList(r) {
+  async function deleteList(r) {
     var n = Number(r.workers || 0);
-    if (!confirm('Delete "' + (r.work_name || '(no Work Name)') + '" (' + r.username + ', ' + (STATE_BN[r.submit_state] || r.submit_state) + ', ' + n + ' workers)?\n' +
+    if (!await ask('Delete "' + (r.work_name || '(no Work Name)') + '" (' + r.username + ', ' + (STATE_BN[r.submit_state] || r.submit_state) + ', ' + n + ' workers)?\n' +
       'The list disappears from the panel and the supervisor app, and its workers can be picked for a new list again.\n' +
       'It stays in the database (Backup) with its K-Desk results.' +
       (r.submit_state === 'locked' ? '\n\n⚠ This list is Locked (it may be in K-Desk now).' : ''))) return;
@@ -656,7 +667,17 @@
         (noCode ? ' ' + noCode + ' list(s) have no Work Code of their own: the Work code below is used for them.' : ' Every selected list has its own Work Code.')
       : 'No list selected.';
     $('expBtn').disabled = !rows.length;
+    $('expFloatN').textContent = rows.length; $('expFloat').classList.toggle('hidden', !rows.length);
   }
+  $('expFloat').addEventListener('click', function () { $('exportCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  // phone: tables become cards, each cell shows its column name
+  function labelTable(tbody) {
+    var tbl = tbody.closest('table'), heads = tbl ? Array.prototype.map.call(tbl.querySelectorAll('thead th'), function (h) { return h.textContent.trim(); }) : [];
+    Array.prototype.forEach.call(tbody.rows, function (tr) { Array.prototype.forEach.call(tr.cells, function (td, i) { if (td.colSpan > 1) return; td.setAttribute('data-label', heads[i] || ''); }); });
+  }
+  if (window.MutationObserver) ['users', 'history'].forEach(function (id) {
+    new MutationObserver(function () { labelTable($(id)); }).observe($(id), { childList: true });
+  });
 
   $('dashGp').addEventListener('change', function () { dash.picked.clear(); loadDashboard(); });
   $('dashRefresh').addEventListener('click', loadDashboard);
@@ -763,7 +784,7 @@
   }
   window.GramgKdesk = { buildKdeskRows: buildKdeskRows, ddmmyyyy: ddmmyyyy };
 
-  $('expBtn').addEventListener('click', function () {
+  $('expBtn').addEventListener('click', async function () {
     var rows = pickedRows();
     var from = ddmmyyyy($('expFrom').value), days = parseInt($('expDays').value, 10), work = $('expWork').value.trim();
     var codeByList = {}; rows.forEach(function (r) { if (r.work_code) codeByList[r.list_id] = r.work_code; });
@@ -773,7 +794,7 @@
     if (!(days >= 1 && days <= 366)) { status('Enter valid Days (1 to 366).', 'err'); return; }
     if (needCode && !work) { status('Enter the Work code (some selected lists have no Work Code of their own).', 'err'); return; }
     var notSub = rows.filter(function (r) { return r.submit_state === 'draft'; });
-    if (notSub.length && !confirm(notSub.map(function (r) { return r.username; }).join(', ') + ' has not submitted the list yet. Export anyway?')) return;
+    if (notSub.length && !await ask(notSub.map(function (r) { return r.username; }).join(', ') + ' has not submitted the list yet. Export anyway?')) return;
     var doLock = $('expLock').checked;
     loading('Creating the K-Desk file...');
     var report;
@@ -909,12 +930,12 @@
       .catch(function (e) { if (e.authLost) throw e; return '⚠ K-Desk login NOT created: ' + errText(e) + ' Create it with "New user" (Type: K-Desk login).'; });
   }
   function showCreds(lines) { $('gaCreds').textContent = lines.join('\n'); $('gaCreds').classList.remove('hidden'); }
-  function toggleGpAdmin(u) {
+  async function toggleGpAdmin(u) {
     var to = u.role === 'gp_admin' ? 'gp_user' : 'gp_admin';
     var q = to === 'gp_admin'
       ? 'Make ' + u.username + ' the GP Admin of ' + (u.gp_name || 'this GP') + '? They open the Admin panel for this GP only (no phone list building). Their PIN stays the same; they are logged out of every device.' + (kdeskOf(u.gp_id) ? '' : ' A K-Desk login for the GP is made too.')
       : 'Make ' + u.username + ' a Supervisor again? They lose the Admin panel.';
-    if (!confirm(q)) return;
+    if (!await ask(q)) return;
     loading('Changing the role...');
     SB.rpc('admin_set_user_role', { p_user_id: u.user_id, p_role: to })
       .then(function () {
@@ -1041,8 +1062,8 @@
       if (!x.account_no) notes.push('no account');
       tr.appendChild(el('td', notes.join(', ')));
       var tdx = el('td'); var rb = el('button', '✕', 'btn-light btn-small'); rb.title = 'Remove from this list';
-      rb.addEventListener('click', function () {
-        if (!confirm('Remove ' + x.applicant_name + ' (' + x.job_card_no + ') from this list?')) return;
+      rb.addEventListener('click', async function () {
+        if (!await ask('Remove ' + x.applicant_name + ' (' + x.job_card_no + ') from this list?')) return;
         editList([], [x.worker_id], x.applicant_name + ' removed.');
       });
       tdx.appendChild(rb); tr.appendChild(tdx);
@@ -1141,11 +1162,11 @@
 
   // ---------- add a GP ----------
   $('gpPrefix').addEventListener('input', function () { var v = this.value.toUpperCase(); if (v !== this.value) this.value = v; });
-  $('gpAddBtn').addEventListener('click', function () {
+  $('gpAddBtn').addEventListener('click', async function () {
     var name = $('gpName').value.trim(), prefix = $('gpPrefix').value.trim().toUpperCase();
     if (name.length < 2) { status('Enter the GP name.', 'err'); return; }
     if (!/^WB-\d{2}-\d{3}-\d{3}$/.test(prefix)) { status(errText({ code: 'BAD_PREFIX' }), 'err'); return; }
-    if (!confirm('New GP: ' + name + ' (' + prefix + ')\nAdd it?')) return;
+    if (!await ask('New GP: ' + name + ' (' + prefix + ')\nAdd it?')) return;
     loading('Adding the GP...');
     SB.rpc('admin_add_gp', { p_jc_prefix: prefix, p_name: name }).then(function (g) {
       status('✅ ' + g.name + ' (' + g.jc_prefix + ') added. Now pick the GP below and import its data, then create supervisors in the Users tab.', 'ok');

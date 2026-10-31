@@ -96,11 +96,86 @@
     @media (max-width:600px){ .pvedit{grid-template-columns:1fr;} }
     .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
     .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
+
+    /* ===== 2026-10-31 layout: PC sidebar · phone top bar + bottom tabs ===== */
+    :root{--ink:#0f172a;--line:#e2e8f0;--blue:#2563eb;}
+    .app{max-width:none;padding:0;}
+    .main{padding:12px;min-width:0;}
+    .side .header{margin-bottom:8px;}
+    .tab{display:flex;align-items:center;gap:8px;}
+    .tab i{font-style:normal;}
+    .side-foot{display:none;font-size:11px;color:#94a3b8;line-height:1.4;}
+    .card{border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.04);border-radius:12px;}
+    .card h2{font-size:15px;}
+    .stat{border-radius:10px;background:#fff;}
+    .stat .n{font-size:22px;}
+    .ucard{border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+    .ucard .acts button,.lcard .acts button{border-radius:8px;}
+    .lcard{border-radius:10px;}
+    .filters button{border-radius:20px;}
+    .exp-float{position:fixed;right:14px;bottom:18px;z-index:60;background:#16a34a;color:#fff;border-radius:24px;padding:12px 16px;font-size:14px;box-shadow:0 6px 18px rgba(22,163,74,.35);}
+    .ask{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:12px;}
+    .ask.show{display:flex;}
+    .ask-box{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+    .ask-msg{font-size:14px;line-height:1.5;white-space:pre-line;word-break:break-word;}
+    .ask-btns{display:flex;gap:8px;margin-top:16px;} .ask-btns button{flex:1;padding:12px;font-size:14px;border-radius:10px;}
+    @media (min-width:900px){
+      .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+      .side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--ink);color:#fff;padding:14px 12px;display:flex;flex-direction:column;gap:10px;}
+      .side .header{background:none;padding:0 4px 10px;border-bottom:1px solid #1e293b;border-radius:0;}
+      .side .header-title{font-size:15px;line-height:1.35;}
+      .side .bar{background:#1e293b;box-shadow:none;color:#fff;margin:0;}
+      .side .bar .role{color:#94a3b8;}
+      .side .viewbar{background:#1e293b;color:#c4b5fd;margin:0;flex-direction:column;align-items:stretch;}
+      .side .viewbar select{width:100%;}
+      .side .tabs{flex-direction:column;gap:4px;margin:4px 0 0;}
+      .side .tab{background:none;color:#cbd5e1;text-align:left;padding:11px 12px;font-size:14px;border-radius:10px;}
+      .side .tab:hover{background:#1e293b;color:#fff;}
+      .side .tab.active{background:var(--blue);color:#fff;}
+      .side-foot{display:block;margin-top:auto;padding:8px 4px 0;}
+      .main{padding:18px 22px;max-width:1500px;}
+      .dash-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start;}
+      .dash-side{position:sticky;top:18px;}
+      .dash-side .grid3{grid-template-columns:1fr;}
+      .stats{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));}
+      .stats .stat .l{font-size:10.5px;}
+      .ucards{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;}
+      .exp-float{display:none;}
+    }
+    @media (max-width:899px){
+      body{padding-bottom:70px;}
+      .side .header{border-radius:0;margin:0;padding:10px 12px;}
+      .side .header-sub{display:none;}
+      .side .bar{border-radius:0;margin:0 0 6px;padding:7px 12px;box-shadow:none;border-bottom:1px solid var(--line);}
+      .side .viewbar{margin:0 8px 6px;}
+      .side .tabs{position:fixed;left:0;right:0;bottom:0;z-index:80;background:#fff;border-top:1px solid var(--line);margin:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom));gap:2px;flex-wrap:nowrap;box-shadow:0 -4px 14px rgba(15,23,42,.06);}
+      .side .tab{flex:1;flex-direction:column;gap:2px;background:none;color:#64748b;font-size:10.5px;padding:6px 2px;border-radius:10px;}
+      .side .tab i{font-size:19px;}
+      .side .tab.active{color:var(--blue);background:#eff6ff;}
+      .main{padding:6px 8px;}
+      .stats{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px;scrollbar-width:none;}
+      .stats .stat{flex:0 0 112px;}
+      .filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+      .filters button{flex:0 0 auto;}
+      .ucards{grid-template-columns:1fr;}
+      .card > .row:first-child{gap:6px;}
+      .exp-float{bottom:78px;}
+      .table-wrap.stack{border:0;max-height:none;overflow:visible;}
+      .stack table,.stack tbody,.stack tr,.stack td{display:block;width:100%;}
+      .stack thead{display:none;}
+      .stack tr{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:#fff;}
+      .stack td{border:0;padding:4px 0;display:flex;justify-content:space-between;gap:10px;text-align:right;font-size:13px;}
+      .stack td::before{content:attr(data-label);font-weight:700;color:#64748b;text-align:left;flex:0 0 auto;}
+      .stack td[data-label=""]{justify-content:flex-start;flex-wrap:wrap;gap:6px;}
+      .stack td[data-label=""]::before{display:none;}
+      .modal{padding:0;} .modal-box{border-radius:0;min-height:100vh;}
+    }
   </style>
 </head>
 <body>
 <div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
 <div class="app">
+<aside class="side">
   <div class="header">
     <div class="header-title">📋 G RAM-G 4A/Demand List Builder <span class="badge badge-admin">Admin</span></div>
     <div class="header-sub">Worker selection, list preparation and demand management</div>
@@ -118,17 +193,22 @@
     <span id="viewNote"></span>
   </div>
 
-  <div id="status" class="status" role="status" aria-live="polite"></div>
 
   <div class="tabs" role="tablist">
-    <button class="tab active" data-tab="dash">📊 Dashboard</button>
-    <button class="tab" data-tab="import">📥 Data Import</button>
-    <button class="tab" data-tab="history">🕘 Import History</button>
-    <button class="tab" data-tab="users">👥 Users</button>
+    <button class="tab active" data-tab="dash"><i>📊</i><span>Dashboard</span></button>
+    <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
+    <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
+    <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
   </div>
+  <div class="side-foot">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
+</aside>
+<main class="main">
+  <div id="status" class="status" role="status" aria-live="polite"></div>
 
   <!-- ============ DASHBOARD ============ -->
   <section id="tab-dash">
+   <div class="dash-grid">
+   <div class="dash-main">
     <div class="card">
       <div class="row" style="justify-content:space-between;">
         <h2 style="margin:0;">Supervisor lists</h2>
@@ -151,8 +231,9 @@
       <div class="muted" id="dashUpdated"></div>
     </div>
     <div class="ucards" id="dashCards"></div>
-
-    <div class="card" id="exportCard" style="margin-top:8px;">
+   </div>
+   <div class="dash-side">
+    <div class="card" id="exportCard">
       <h2>📥 K-Desk Demand file</h2>
       <div class="muted">The lists you tick with <b>"Add to K-Desk export"</b> above go into one Excel file. Columns: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>. A worker who is in two lists appears only once. A list that has its own Work Code uses it; the Work code below is for lists without one.</div>
       <div class="grid3" style="margin-top:6px;">
@@ -168,6 +249,9 @@
         <button class="btn-light btn-small" id="pickNone">Clear selection</button>
       </div>
     </div>
+   </div>
+   </div>
+   <button class="exp-float hidden" id="expFloat" type="button">📥 K-Desk export (<span id="expFloatN">0</span>)</button>
   </section>
 
   <!-- ============ IMPORT ============ -->
@@ -224,7 +308,7 @@
     <div class="card">
       <h2>Import History</h2>
       <div class="muted">Only the latest import can be rolled back. A rollback restores the data as it was before that import; workers that the import added are deleted if nobody selected them, otherwise they become inactive.</div>
-      <div class="table-wrap" style="margin-top:8px;"><table>
+      <div class="table-wrap stack" style="margin-top:8px;"><table>
         <thead><tr><th>Date</th><th>File</th><th>Status</th><th>New</th><th>Changed</th><th>Account</th><th>Inactive</th><th>By</th><th></th></tr></thead>
         <tbody id="history"></tbody></table></div>
     </div>
@@ -237,7 +321,7 @@
         <h2 style="margin:0;">Users</h2>
         <button class="btn-primary btn-small super-only" id="gaJump">🛡 New GP Admin</button>
       </div>
-      <div class="table-wrap"><table>
+      <div class="table-wrap stack"><table>
         <thead><tr><th>Username</th><th>Name</th><th>GP</th><th>Status</th><th>Devices</th><th>Last used</th><th></th></tr></thead>
         <tbody id="users"></tbody></table></div>
     </div>
@@ -397,12 +481,16 @@
     </div>
   </div>
 
-  <div class="muted" style="text-align:center;margin:14px 0;">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
+  <div class="ask" id="askBox" role="dialog" aria-modal="true">
+    <div class="ask-box"><div class="ask-msg" id="askMsg"></div>
+      <div class="ask-btns"><button class="btn-light" id="askNo">Cancel</button><button class="btn-danger" id="askYes">Yes</button></div></div>
+  </div>
+</main>
 </div>
 
 <script src="./js/config.js?v=20261020a"></script>
 <script src="./js/sb-client.js?v=20261020a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261031a"></script>
+<script src="./js/admin.js?v=20261031b"></script>
 </body>
 </html>

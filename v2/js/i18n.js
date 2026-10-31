@@ -219,6 +219,23 @@
     'একসঙ্গে সর্বোচ্চ ৩টা Draft list রাখা যায়। আগে একটা Draft Submit করুন অথবা 🗑 দিয়ে মুছুন।': 'At most 3 Draft lists at a time. Submit a draft first, or delete one with 🗑.',
     'আপনার ৩টা Draft list আছে। Edit করার আগে একটা Draft Submit করুন অথবা মুছুন।': 'You have 3 Draft lists. Submit or delete a draft before editing this one.',
     'List মুছুন': 'Delete list',
+    'বাছাই করা ': 'Remove the ',
+    ' জন worker সরিয়ে দেবেন?': ' selected worker(s)?',
+    'List থাকবে, শুধু worker বাছাই খালি হবে।': 'The list stays, only the selection is cleared.',
+    'হ্যাঁ, খালি করুন': 'Yes, clear',
+    'হ্যাঁ, মুছুন': 'Yes, delete',
+    'হ্যাঁ, জমা দিন': 'Yes, submit',
+    ' list মুছবেন?': ' — delete this list?',
+    ' list জমা দেবেন?': ' — submit this list?',
+    ' জন worker সহ Admin-এর কাছে যাবে।': ' worker(s) will go to the admin.',
+    'পরে বদলাতে হলে "↩ Edit" চাপতে হবে।': 'To change it later, tap "↩ Edit".',
+    'এতে ': 'It has ',
+    ' জন worker আছে। মুছলে এরা আবার নতুন list-এ নেওয়া যাবে।': ' worker(s). After deleting, they can be added to a new list again.',
+    'List-টা জমা দেওয়া আছে, মুছলে Admin-এর কাছেও আর দেখাবে না।': 'This list is submitted; after deleting, the admin will not see it either.',
+    'নাম (ইংরেজিতে)': 'Name (in English)',
+    'যেমন: Arup Roy': 'e.g. Arup Roy',
+    'বাদ দিন': 'Remove',
+    'Work Code নেই': 'No Work Code',
     // small words (applied last)
     'জন।': '.',
     'জন)।': ').',
@@ -227,7 +244,7 @@
     'জন': ''
   };
   // short words: only when they are the whole text of a node
-  var EXACT = { '২.': '2. Choose', 'বাছুন।': '.', 'চাপুন।': 'at the top right.', 'নেই': 'none', 'বন্ধ': 'Close',
+  var EXACT = { 'না': 'No', 'হ্যাঁ': 'Yes', '২.': '2. Choose', 'বাছুন।': '.', 'চাপুন।': 'at the top right.', 'নেই': 'none', 'বন্ধ': 'Close',
                 'জমা দেওয়া': 'Submitted', 'নাম': 'Name', 'অন্য': 'another', 'জমা': 'submitted', 'বা': 'or' };
   var BN_DIGITS = '০১২৩৪৫৬৭৮৯';
   // the same Bengali letter can be stored in two ways (e.g. য়), so compare in one form

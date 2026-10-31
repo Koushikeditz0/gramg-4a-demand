@@ -709,7 +709,7 @@
     .lcard{position:relative;} .lcard.draft{padding-right:52px;}
     .lcard-del{position:absolute;right:8px;bottom:8px;width:36px;height:36px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;font-size:16px;cursor:pointer;}
     .lcard.draft .pill{margin-right:0;}
-    .lcard b{font-size:15px;} .lcard .pill{float:right;margin-left:6px;}
+    .lcard b{font-size:13px;} .lcard .pill{float:right;margin-left:6px;}
     .lcard .m{color:#64748b;font-size:12px;margin-top:3px;}
     body.home .control-box,body.home .action-bar,body.home .columns,body.home .wtabs{display:none !important;}
     .ro-view{display:none;margin-top:8px;}
@@ -796,6 +796,21 @@
     body.step-4 .preview-top{position:static;border-radius:12px;}
     .steps .st{border:0;cursor:pointer;font-family:inherit;}
     .steps .st:disabled{cursor:default;}
+    .cfm{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:3000;display:none;align-items:flex-end;justify-content:center;}
+    .cfm.show{display:flex;}
+    .cfm-box{background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:18px 16px 20px;box-shadow:0 -6px 24px rgba(0,0,0,.2);}
+    .cfm-ic{font-size:38px;text-align:center;}
+    .cfm-t{font-size:16px;font-weight:800;text-align:center;margin:4px 0 6px;white-space:pre-line;word-break:break-word;}
+    .cfm-m{font-size:13px;color:#475569;text-align:center;white-space:pre-line;line-height:1.45;}
+    .cfm-b{display:flex;gap:8px;margin-top:16px;} .cfm-b button{flex:1;padding:13px 8px;font-weight:800;font-size:15px;border-radius:12px;}
+    .sup-card{border:1px solid #e2e8f0;border-left:5px solid #2563eb;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff;}
+    .sup-card .sc-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:13px;color:#1e3a8a;margin-bottom:6px;}
+    .sup-card .sc-h button{width:32px;height:32px;border-radius:9px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-weight:800;cursor:pointer;}
+    .sup-card .sc-l{display:block;font-size:11px;font-weight:700;color:#64748b;margin:6px 0 3px;}
+    .sup-card input[type=text]{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px;font-size:15px;}
+    .sup-card .sc-id{display:flex;border:1px solid #cbd5e1;border-radius:9px;overflow:hidden;}
+    .sup-card .sc-id span{background:#eff6ff;color:#1e3a8a;font-weight:800;padding:10px 6px 10px 10px;font-size:14px;border-right:1px dashed #93c5fd;white-space:nowrap;}
+    .sup-card .sc-id input[type=text]{border:0;border-radius:0;flex:1;min-width:0;outline:none;}
     .link-btn{background:none;border:0;color:#2563eb;font-weight:700;font-size:12px;padding:2px 4px;cursor:pointer;text-decoration:underline;}
     .fam-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;}
     .yn-head{display:flex;gap:2px;flex:0 0 auto;font-size:8px;font-weight:800;color:#475569;padding-top:1px;}
@@ -1391,6 +1406,15 @@
           <button class="btn-light" onclick="setStep(2)">← ② Worker</button>
           <button class="btn-primary" onclick="saveSup(true)">Next: ④ Preview →</button>
         </div>
+      </div>
+    </div>
+
+    <div class="cfm" id="cfmBox" role="dialog" aria-modal="true">
+      <div class="cfm-box">
+        <div class="cfm-ic" id="cfmIc"></div>
+        <div class="cfm-t" id="cfmT"></div>
+        <div class="cfm-m" id="cfmM"></div>
+        <div class="cfm-b"><button class="btn-light" id="cfmNo">না</button><button class="btn-danger" id="cfmYes">হ্যাঁ</button></div>
       </div>
     </div>
 
@@ -2831,17 +2855,9 @@
     }
 
 
-    const ok =
-      confirm(
-        'সব selected worker remove করবেন?'
-      );
-
-
-    if(!ok){
-
-      return;
-
-    }
+    askYesNo({icon:'🧹',title:'বাছাই করা '+selected.size+' জন worker সরিয়ে দেবেন?',msg:'List থাকবে, শুধু worker বাছাই খালি হবে।',yes:'হ্যাঁ, খালি করুন'}).then(function(ok){ if(ok) clearSelectedNow(); });
+  }
+  function clearSelectedNow(){
 
 
     selected.clear();
@@ -3455,6 +3471,21 @@ function listSelectChanged(){
   showLoading('List খুলছে...');
   gramgAdapter.switchList(id).then(afterListLoaded, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
 }
+// app's own Yes/No box: phones (in-app browsers, blocked dialogs) can make confirm() return false silently
+function askYesNo(o){
+  return new Promise(function(res){
+    const box=document.getElementById('cfmBox'), y=document.getElementById('cfmYes'), n=document.getElementById('cfmNo');
+    document.getElementById('cfmIc').textContent=o.icon||'❓';
+    document.getElementById('cfmT').textContent=o.title||'';
+    const m=document.getElementById('cfmM'); m.textContent=o.msg||''; m.style.display=o.msg?'':'none';
+    y.textContent=o.yes||'হ্যাঁ'; n.textContent=o.no||'না';
+    y.className=o.kind==='ok'?'btn-success':'btn-danger';
+    const done=function(v){ box.classList.remove('show'); y.onclick=n.onclick=box.onclick=null; res(v); };
+    y.onclick=function(){ done(true); }; n.onclick=function(){ done(false); };
+    box.onclick=function(e){ if(e.target===box) done(false); };
+    box.classList.add('show');
+  });
+}
 function openGm(id){ document.getElementById(id).classList.add('show'); }
 function closeGm(id){ document.getElementById(id).classList.remove('show'); }
 function openNewList(){
@@ -3479,13 +3510,27 @@ function saveNewList(){
       function(e){ if(e&&e.authLost) return; showStatus('List খোলা হয়েছে, কিন্তু Work Code save হয়নি ('+((e&&e.message)||e)+')। "③ Supervisor" থেকে আবার দিন।','error'); });
   }, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
 }
+function supIdPrefix(){ const j=String((currentUser&&currentUser.jcPrefix)||'').trim(); return 'S-'+(j?j+'-':''); }
+function supSplit(v){ const m=String(v||'').match(/^(.*?)\s*\((S-[^()]*)\)\s*$/); return m?{name:m[1].trim(),id:m[2].trim()}:{name:String(v||'').trim(),id:''}; }
+function supNumber(rowEl){ const p=supIdPrefix(); let id=rowEl.querySelector('.sup-id').value.replace(/\s+/g,''); if(!id) return ''; if(id.toUpperCase().indexOf(p.toUpperCase())===0) id=id.slice(p.length); return p+id; }
+function supValues(){
+  return Array.prototype.map.call(document.querySelectorAll('#mmSups .sup-card'),function(c){
+    const name=c.querySelector('.sup-input').value.trim(); if(!name) return '';
+    const id=supNumber(c); return id?name+' ('+id+')':name;
+  }).filter(Boolean);
+}
+function renumberSups(){ Array.prototype.forEach.call(document.querySelectorAll('#mmSups .sup-card .sc-n'),function(e,i){ e.textContent='👤 Supervisor '+(i+1); }); }
 function addSupRow(v){
-  const box=document.getElementById('mmSups'), row=document.createElement('div'); row.className='sup-row';
-  const inp=document.createElement('input'); inp.type='text'; inp.maxLength=100; inp.value=v||''; inp.className='sup-input';
-  inp.placeholder='Supervisor '+(box.children.length+1)+'-এর নাম';
-  const del=document.createElement('button'); del.type='button'; del.className='btn-light btn-small'; del.textContent='✕'; del.title='বাদ দিন';
-  del.onclick=function(){ row.remove(); };
-  row.appendChild(inp); row.appendChild(del); box.appendChild(row);
+  const box=document.getElementById('mmSups'), sp=supSplit(v), p=supIdPrefix();
+  const c=document.createElement('div'); c.className='sup-card';
+  c.innerHTML='<div class="sc-h"><span class="sc-n"></span><button type="button" title="বাদ দিন">✕</button></div>'+
+    '<label class="sc-l">নাম (ইংরেজিতে)</label><input type="text" class="sup-input" maxlength="60" autocomplete="off" placeholder="যেমন: Arup Roy">'+
+    '<label class="sc-l">Supervisor ID</label><div class="sc-id"><span></span><input type="text" class="sup-id" maxlength="20" autocomplete="off" inputmode="numeric" placeholder="01"></div>';
+  c.querySelector('.sup-input').value=sp.name;
+  c.querySelector('.sc-id span').textContent=p;
+  c.querySelector('.sup-id').value=(sp.id && sp.id.toUpperCase().indexOf(p.toUpperCase())===0)?sp.id.slice(p.length):sp.id;
+  c.querySelector('.sc-h button').onclick=function(){ c.remove(); renumberSups(); };
+  box.appendChild(c); renumberSups();
 }
 /* ---------- steps as pages: ① Work Name/Code · ② Worker · ③ Supervisor · ④ Preview & Submit ---------- */
 var curStep=2;
@@ -3529,7 +3574,7 @@ function goSupervisorStep(){
   if(busySaving()) return;
   setStep(3);
 }
-function previewSubmit(){ closeFinalPreview(); submitMyList(); }
+function previewSubmit(){ submitMyList(); }
 function saveListInfo(){
   if(listLocked(true)) return;
   const name=document.getElementById('liName').value.trim(), msg=document.getElementById('liMsg');
@@ -3545,7 +3590,7 @@ function saveListInfo(){
 }
 function saveSup(next){
   if(listLocked(true)) return;
-  const sups=Array.prototype.map.call(document.querySelectorAll('#mmSups .sup-input'),function(i){return i.value.trim();}).filter(Boolean);
+  const sups=supValues();
   const msg=document.getElementById('supMsg');
   showLoading('Save হচ্ছে...');
   gramgAdapter.setMeta(listState.workName||'', sups).then(function(r){
@@ -3561,7 +3606,9 @@ const MAX_DRAFTS=3;
 function draftCount(exceptId){ return (listState.lists||[]).filter(function(l){ return l.submit_state==='draft' && l.list_id!==exceptId; }).length; }
 // 🗑 on a Draft card: delete that list without opening it first
 function deleteCard(l){
-  if(!confirm('"'+(l.work_name||'(নাম নেই)')+'" list মুছবেন?'+(l.workers?'\n\nএতে '+l.workers+' জন worker আছে। মুছলে এরা আবার নতুন list-এ নেওয়া যাবে।':''))) return;
+  askYesNo({icon:'🗑',title:'"'+(l.work_name||'(নাম নেই)')+'" list মুছবেন?',msg:l.workers?('এতে '+l.workers+' জন worker আছে। মুছলে এরা আবার নতুন list-এ নেওয়া যাবে।'):'',yes:'হ্যাঁ, মুছুন'}).then(function(ok){ if(ok) deleteCardNow(l); });
+}
+function deleteCardNow(l){
   showLoading('List মোছা হচ্ছে...');
   gramgAdapter.switchList(l.list_id).then(function(){ return gramgAdapter.deleteList(); })
     .then(function(){ return gramgAdapter.closeList(); })
@@ -3573,7 +3620,12 @@ function deleteMyList(){
   if(listState.state==='locked'){ showStatus('Admin এই list lock করেছেন, তাই মোছা যাবে না। দরকার হলে Admin-কে বলুন।','error'); return; }
   if(busySaving()) return;
   const n=selected.size;
-  if(!confirm('"'+(listState.workName||'(নাম নেই)')+'" list মুছবেন?'+(n?'\n\nএতে '+n+' জন worker আছে। মুছলে এরা আবার নতুন list-এ নেওয়া যাবে।':'')+(listState.state==='submitted'?'\nList-টা জমা দেওয়া আছে, মুছলে Admin-এর কাছেও আর দেখাবে না।':''))) return;
+  askYesNo({icon:'🗑',title:'"'+(listState.workName||'(নাম নেই)')+'" list মুছবেন?',msg:(n?'এতে '+n+' জন worker আছে। মুছলে এরা আবার নতুন list-এ নেওয়া যাবে।':'')+(listState.state==='submitted'?'\nList-টা জমা দেওয়া আছে, মুছলে Admin-এর কাছেও আর দেখাবে না।':''),yes:'হ্যাঁ, মুছুন'})
+    .then(function(ok){ if(ok) deleteMyListNow(); });
+}
+function deleteMyListNow(){
+  if(busySaving()) return;
+  document.getElementById('searchInput').value=''; clearSearchResults();
   showLoading('List মোছা হচ্ছে...');
   gramgAdapter.deleteList().then(function(items){ afterListLoaded(items); showStatus('List মোছা হয়েছে।','success'); },
     function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
@@ -3585,7 +3637,12 @@ function submitMyList(){
   const req=requiredSupervisors(selected.size), have=(listState.supervisors||[]).length;
   if(!(listState.workName||'').trim()){ openInfo('Submit করার আগে Work Name লিখুন।'); return; }
   if(have<req){ openMeta(selected.size+' জন worker-এর জন্য '+req+' জন Supervisor-এর নাম লাগবে (দেওয়া আছে '+have+' জন)।'); return; }
-  if(!confirm('"'+listState.workName+'" — '+selected.size+' জন worker সহ list Admin-কে জমা দেবেন?\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।')) return;
+  askYesNo({icon:'📤',title:'"'+listState.workName+'" list জমা দেবেন?',msg:selected.size+' জন worker সহ Admin-এর কাছে যাবে।\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।',yes:'হ্যাঁ, জমা দিন',kind:'ok'})
+    .then(function(ok){ if(ok) submitMyListNow(); });
+}
+function submitMyListNow(){
+  if(busySaving()) return;
+  if(document.getElementById('previewOverlay').classList.contains('show')) closeFinalPreview();
   showLoading('List জমা দেওয়া হচ্ছে...');
   gramgAdapter.submitList().then(function(r){
     // blank screen for the next work; the submitted list stays in the list picker above
@@ -3652,7 +3709,8 @@ function renderListCards(){
     const c=document.createElement('div'); c.setAttribute('role','button'); c.tabIndex=0; c.className='lcard '+(l.submit_state||'draft');
     const sups=l.supervisors||[];
     c.innerHTML='<span class="pill '+escapeHtml(l.submit_state||'draft')+'">'+escapeHtml(STATE_LABEL[l.submit_state]||'')+'</span><b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b>'+
-      '<div class="m">'+(l.workers||0)+' জন'+(l.submitted_at?' · '+escapeHtml(fmtBnDate(l.submitted_at))+' জমা':'')+' · Supervisor: '+escapeHtml(sups.length?sups.join(', '):'—')+'</div>';
+      '<div class="m">'+(l.workers||0)+' জন'+(l.submitted_at?' · '+escapeHtml(fmtBnDate(l.submitted_at))+' জমা':'')+
+      (((l.submit_state||'draft')==='draft')?' · '+(l.work_code?'Work Code: '+escapeHtml(l.work_code):'Work Code নেই'):' · Supervisor: '+escapeHtml(sups.length?sups.join(', '):'—'))+'</div>';
     c.onclick=function(){ openListCard(l.list_id); };
     if((l.submit_state||'draft')==='draft'){
       const d=document.createElement('button'); d.type='button'; d.className='lcard-del'; d.title='List মুছুন'; d.textContent='🗑';
@@ -3803,7 +3861,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261031d"></script>
+<script src="./js/i18n.js?v=20261031e"></script>
 </body>
 
 </html>

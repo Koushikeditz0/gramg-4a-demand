@@ -3237,6 +3237,10 @@ function renderListMeta(){
     const b=document.createElement('button'); b.className='link-btn'; b.id='editMetaBtn'; b.textContent='✏️ নাম/Supervisor'; b.onclick=function(){ openMeta(''); };
     box.appendChild(b);
   }
+  if(listState.state==='draft' || listState.state==='submitted'){
+    const d=document.createElement('button'); d.className='link-btn'; d.id='deleteListBtn'; d.textContent='🗑 List মুছুন'; d.style.color='#dc2626';
+    d.onclick=deleteMyList; box.appendChild(d);
+  }
   // keep the selector's worker count live
   const opt=document.querySelector('#listSelect option[value="'+listState.listId+'"]');
   if(opt) opt.textContent=optionLabel({work_name:listState.workName,submit_state:listState.state,workers:selected.size});
@@ -3340,7 +3344,7 @@ function openMeta(msg){
   const box=document.getElementById('mmSups'); box.innerHTML='';
   sups.forEach(addSupRow);
   for(let i=sups.length;i<req;i++) addSupRow('');
-  document.getElementById('mmDelete').style.display=selected.size===0?'':'none';
+  document.getElementById('mmDelete').style.display='';
   openGm('metaModal');
 }
 function saveMeta(){
@@ -3355,8 +3359,11 @@ function saveMeta(){
   }, function(e){ hideLoading(); if(e&&e.authLost) return; const m=document.getElementById('mmMsg'); m.textContent=(e&&e.message)||String(e); m.style.display='block'; });
 }
 function deleteMyList(){
-  if(selected.size){ showStatus('List-এ worker আছে। মোছার আগে Clear Selected করুন।','error'); return; }
-  if(!confirm('"'+(listState.workName||'')+'" list মুছবেন?')) return;
+  if(listState.noList) return;
+  if(listState.state==='locked'){ showStatus('Admin এই list lock করেছেন, তাই মোছা যাবে না। দরকার হলে Admin-কে বলুন।','error'); return; }
+  if(busySaving()) return;
+  const n=selected.size;
+  if(!confirm('"'+(listState.workName||'(নাম নেই)')+'" list মুছবেন?'+(n?'\n\nএতে '+n+' জন worker আছে। মুছলে এরা আবার নতুন list-এ নেওয়া যাবে।':'')+(listState.state==='submitted'?'\nList-টা জমা দেওয়া আছে, মুছলে Admin-এর কাছেও আর দেখাবে না।':''))) return;
   closeGm('metaModal'); showLoading('List মোছা হচ্ছে...');
   gramgAdapter.deleteList().then(function(items){ afterListLoaded(items); showStatus('List মোছা হয়েছে।','success'); },
     function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });

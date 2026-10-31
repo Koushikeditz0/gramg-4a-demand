@@ -612,6 +612,7 @@
       if (confirm('"' + r.work_name + '" (' + r.username + ') — work complete?\nThe list is closed (it stays in the history) and its ' + n + ' workers can be picked for new work again.')) listAction(r, 'complete');
     });
     if (Number(r.submissions)) act('🕘 Past submissions (' + r.submissions + ')', 'btn-light', function () { openSubmissions(r); });
+    act('🗑 Delete', 'btn-danger', function () { deleteList(r); });
     box.appendChild(acts);
     return box;
   }
@@ -623,6 +624,23 @@
         var msg = { lock: 'locked.', reopen: 'back to draft.', complete: 'work complete — the list is closed and its workers can be picked again.' }[action];
         status('"' + r.work_name + '" (' + r.username + '): ' + msg, 'ok');
         if (action === 'complete') dash.picked.delete(r.list_id);
+        return loadDashboard();
+      }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
+
+  // ---------- delete list (database: admin_delete_list; soft delete, kept in Backup) ----------
+  function deleteList(r) {
+    var n = Number(r.workers || 0);
+    if (!confirm('Delete "' + (r.work_name || '(no Work Name)') + '" (' + r.username + ', ' + (STATE_BN[r.submit_state] || r.submit_state) + ', ' + n + ' workers)?\n' +
+      'The list disappears from the panel and the supervisor app, and its workers can be picked for a new list again.\n' +
+      'It stays in the database (Backup) with its K-Desk results.' +
+      (r.submit_state === 'locked' ? '\n\n⚠ This list is Locked (it may be in K-Desk now).' : ''))) return;
+    loading('Deleting the list...');
+    return SB.rpc('admin_delete_list', { p_list_id: r.list_id })
+      .then(function () {
+        status('🗑 "' + r.work_name + '" (' + r.username + ') deleted.', 'ok');
+        dash.picked.delete(r.list_id);
         return loadDashboard();
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });

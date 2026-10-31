@@ -50,6 +50,7 @@
   // the list the supervisor last worked on is remembered per device
   function memKey() { return 'GramG2_ListSel_' + ((st.ctx && st.ctx.username) || ''); }
   function remember(id) { try { if (id) localStorage.setItem(memKey(), id); else localStorage.removeItem(memKey()); } catch (e) {} }
+  var NO_LIST = 'none';             // remembered "blank screen" (after a submit)
   function remembered() { try { return localStorage.getItem(memKey()); } catch (e) { return null; } }
 
   function toMember(r) {
@@ -144,8 +145,9 @@
       st.lists = lists || [];
       var ids = st.lists.map(function (l) { return l.list_id; });
       if (!st.listId || ids.indexOf(st.listId) < 0) {
-        var m = remembered();
-        st.listId = ids.indexOf(m) >= 0 ? m : (ids[0] || null);
+        // picked before on this device > blank screen after a submit > first draft > blank
+        var m = remembered(), draft = st.lists.filter(function (l) { return l.submit_state === 'draft'; })[0];
+        st.listId = ids.indexOf(m) >= 0 ? m : (m === NO_LIST ? null : (draft ? draft.list_id : null));
       }
     });
   }
@@ -178,6 +180,10 @@
         });
       });
     });
+  }
+  // Blank screen: no list open, the supervisor starts a new one or picks an old one.
+  function closeList() {
+    return whenIdle().then(function () { st.listId = null; remember(NO_LIST); return applyList(null); });
   }
   function switchList(id) {
     return whenIdle().then(function () { st.listId = id; remember(id); return getSavedWorkers(); });
@@ -300,6 +306,7 @@
     }).then(function (r) {
       st.submitState = r.submit_state; st.submittedAt = r.submitted_at || null;
       if (r.version) st.version = r.version;
+      st.lists.forEach(function (l) { if (l.list_id === st.listId) l.submit_state = st.submitState; });
       notifyState();
       return r;
     }, function (e) { throw bnError(e || {}); });
@@ -339,7 +346,7 @@
   window.gramgAdapter = {
     restore: restore, logout: logout, setWorkName: setWorkName,
     submitList: function () { return changeSubmit('submit_list'); },
-    switchList: switchList, createList: createList, setMeta: setMeta, deleteList: deleteList,
+    switchList: switchList, closeList: closeList, createList: createList, setMeta: setMeta, deleteList: deleteList,
     listId: function () { return st.listId; },
     supervisors: function () { return st.supervisors.slice(); },
     lists: function () { return st.lists.slice(); },

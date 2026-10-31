@@ -25,6 +25,7 @@
     NEED_SUPERVISORS: 'যথেষ্ট Supervisor-এর নাম দেওয়া হয়নি।',
     TOO_MANY_LISTS: 'একসঙ্গে সর্বোচ্চ ৫টা চলতি list রাখা যায়। পুরনো list শেষ হলে নতুন খুলুন।',
     DUPLICATE_WORK_NAME: 'এই Work Name-এ আপনার আরেকটা list আছে। অন্য নাম দিন।',
+    BAD_WORK_CODE: 'Work Code-এর format মেলেনি (যেমন 3206003006/IF/93393042892327)।',
     LIST_NOT_EMPTY: 'List-এ worker আছে। মোছার আগে Clear Selected করুন।'
   };
   function bnError(e) {
@@ -34,7 +35,7 @@
   }
 
   function freshState(ctx) {
-    return { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: ctx || null, workName: '',
+    return { listId: null, version: 0, server: new Set(), keyByWid: new Map(), ctx: ctx || null, workName: '', workCode: '',
              submitState: 'draft', submittedAt: null, supervisors: [], lists: [] };
   }
   var st = freshState();
@@ -42,7 +43,8 @@
     if (typeof window.gramgOnListState === 'function') {
       try {
         window.gramgOnListState({ state: st.submitState, submittedAt: st.submittedAt, listId: st.listId,
-                                  workName: st.workName, supervisors: st.supervisors.slice(), lists: st.lists.slice(),
+                                  workName: st.workName, workCode: st.workCode, gpCode: (st.ctx && st.ctx.gp_code) || '',
+                                  supervisors: st.supervisors.slice(), lists: st.lists.slice(),
                                   noList: !st.listId });
       } catch (e) {}
     }
@@ -153,11 +155,11 @@
   }
   function applyList(r) {
     if (!r) {
-      st.listId = null; st.version = 0; st.server = new Set(); st.workName = ''; st.supervisors = [];
+      st.listId = null; st.version = 0; st.server = new Set(); st.workName = ''; st.workCode = ''; st.supervisors = [];
       st.submitState = 'draft'; st.submittedAt = null;
       notifyState(); return [];
     }
-    st.listId = r.list_id; st.version = r.version; st.workName = r.work_name || '';
+    st.listId = r.list_id; st.version = r.version; st.workName = r.work_name || ''; st.workCode = r.work_code || '';
     st.supervisors = r.supervisors || [];
     st.submitState = r.submit_state || 'draft'; st.submittedAt = r.submitted_at || null;
     st.server = new Set((r.items || []).map(function (x) { return x.id; }));
@@ -203,6 +205,17 @@
     }).then(function (r) {
       st.workName = r.work_name || ''; st.supervisors = r.supervisors || []; st.version = r.version;
       st.lists.forEach(function (l) { if (l.list_id === st.listId) { l.work_name = st.workName; l.supervisors = st.supervisors; } });
+      notifyState(); return r;
+    }, function (e) { throw bnError(e || {}); });
+  }
+  // Supervisor's own Work Code (database: set_list_work_code, needs the 2026-10-31 SQL)
+  function setWorkCode(code) {
+    if (!st.listId) return Promise.reject(bnError({ code: 'NO_LIST' }));
+    return whenIdle().then(function () {
+      return SB.rpc('set_list_work_code', { p_list_id: st.listId, p_work_code: String(code || '') });
+    }).then(function (r) {
+      st.workCode = r.work_code || ''; if (r.version) st.version = r.version;
+      st.lists.forEach(function (l) { if (l.list_id === st.listId) l.work_code = st.workCode; });
       notifyState(); return r;
     }, function (e) { throw bnError(e || {}); });
   }
@@ -346,7 +359,7 @@
   window.gramgAdapter = {
     restore: restore, logout: logout, setWorkName: setWorkName,
     submitList: function () { return changeSubmit('submit_list'); },
-    switchList: switchList, closeList: closeList, createList: createList, setMeta: setMeta, deleteList: deleteList,
+    switchList: switchList, closeList: closeList, createList: createList, setMeta: setMeta, setWorkCode: setWorkCode, deleteList: deleteList,
     listId: function () { return st.listId; },
     supervisors: function () { return st.supervisors.slice(); },
     lists: function () { return st.lists.slice(); },

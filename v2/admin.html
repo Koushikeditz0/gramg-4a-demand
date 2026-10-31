@@ -57,6 +57,11 @@
     code{background:#f1f5f9;border-radius:4px;padding:1px 4px;font-size:11px;}
     input[type=date],input[type=number]{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:9px 10px;font-size:14px;}
     .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;}
+    .phcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;}
+    .phcard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;}
+    .phcard .nm{font-weight:800;font-size:14px;} .phcard .mono{font-family:ui-monospace,Consolas,monospace;}
+    .phcard .acc{background:#f8fafc;border-radius:7px;padding:5px 7px;}
+    #phvImg{display:block;max-width:100%;max-height:70vh;margin:6px auto;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;}
     .ucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:8px;}
     .ucard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
     .ucard.sel{border-color:#2563eb;box-shadow:0 0 0 2px #bfdbfe;}
@@ -196,6 +201,7 @@
 
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="dash"><i>📊</i><span>Dashboard</span></button>
+    <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
     <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
@@ -252,6 +258,25 @@
    </div>
    </div>
    <button class="exp-float hidden" id="expFloat" type="button">📥 K-Desk export (<span id="expFloatN">0</span>)</button>
+  </section>
+
+  <!-- ============ ACCOUNT COPY PHOTOS ============ -->
+  <section id="tab-photos" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">📷 Account copy photos</h2>
+        <button class="btn-light btn-small" id="phRefresh">🔄 Refresh</button>
+      </div>
+      <div class="muted">Supervisors take a photo of the worker's passbook / account copy in the phone app. Open it, update the account on the portal, then press <b>✅ Done</b>: the photo is deleted at once. Photos not marked Done are deleted automatically after 30 days.</div>
+      <label class="f" for="phGp">Gram Panchayat</label>
+      <select id="phGp"></select>
+      <div class="filters" id="phFilters" style="margin-top:8px;">
+        <button data-f="new" class="active">New</button>
+        <button data-f="done">Done</button>
+      </div>
+      <div class="muted" id="phStore"></div>
+    </div>
+    <div class="phcards" id="phCards"></div>
   </section>
 
   <!-- ============ IMPORT ============ -->
@@ -383,6 +408,22 @@
     </div>
   </section>
 
+  <!-- account copy viewer -->
+  <div class="modal" id="phvModal" role="dialog" aria-modal="true" aria-labelledby="phvTitle">
+    <div class="modal-box" style="max-width:760px;">
+      <div class="modal-head">
+        <div><h2 id="phvTitle">Account copy</h2><div class="muted" id="phvSub"></div></div>
+        <button class="btn-light btn-small" id="phvClose">✕ Close</button>
+      </div>
+      <div class="muted" id="phvAcc"></div>
+      <img id="phvImg" alt="Account copy photo">
+      <div class="row" style="justify-content:flex-end;margin-top:6px;">
+        <button class="btn-light btn-small" id="phvDl">⬇ Download</button>
+        <button class="btn-success btn-small" id="phvDone">✅ Done (delete photo)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- list preview -->
   <div class="modal" id="pvModal" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
     <div class="modal-box">
@@ -489,8 +530,8 @@
 </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261020a"></script>
+<script src="./js/sb-client.js?v=20261031p"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261031b"></script>
+<script src="./js/admin.js?v=20261031p"></script>
 </body>
 </html>

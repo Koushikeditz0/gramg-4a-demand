@@ -33,13 +33,14 @@
 
   function request(path, opts) {
     opts = opts || {};
-    var headers = { 'apikey': CFG.SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' };
+    var raw = opts.raw !== undefined;               // binary body (Storage upload)
+    var headers = { 'apikey': CFG.SUPABASE_PUBLISHABLE_KEY, 'Content-Type': raw ? (opts.contentType || 'application/octet-stream') : 'application/json' };
     if (opts.auth !== false && session) headers['Authorization'] = 'Bearer ' + session.access_token;
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, opts.timeout || 20000);
     return fetch(CFG.SUPABASE_URL + path, {
-      method: 'POST', headers: headers, cache: 'no-store',
-      body: JSON.stringify(opts.body === undefined ? {} : opts.body),
+      method: opts.method || 'POST', headers: headers, cache: 'no-store',
+      body: raw ? opts.raw : JSON.stringify(opts.body === undefined ? {} : opts.body),
       signal: ctrl ? ctrl.signal : undefined
     }).then(function (res) {
       clearTimeout(timer);
@@ -143,6 +144,44 @@
     return once();
   }
 
+  // Storage (private buckets; access is checked by the bucket's policies)
+  function encPath(p) { return String(p).split('/').map(encodeURIComponent).join('/'); }
+  function withAuth(fn) {
+    var attempt = 0;
+    function once() {
+      return ensureFresh().then(fn).catch(function (e) {
+        if (e.authLost) throw e;
+        if (attempt === 0 && /jwt expired|exp.* claim/i.test(e.message || '')) { attempt++; return refresh().then(once); }
+        if (e.network) e.code = 'NETWORK';
+        throw e;
+      });
+    }
+    return once();
+  }
+  var storage = {
+    upload: function (bucket, path, blob, contentType) {
+      return withAuth(function () {
+        return request('/storage/v1/object/' + bucket + '/' + encPath(path),
+                       { raw: blob, contentType: contentType || blob.type, timeout: 60000 });
+      });
+    },
+    // link that works for a few minutes, without the login token
+    signedUrl: function (bucket, path, seconds) {
+      return withAuth(function () {
+        return request('/storage/v1/object/sign/' + bucket + '/' + encPath(path), { body: { expiresIn: seconds || 300 } });
+      }).then(function (r) {
+        var u = r && (r.signedURL || r.signedUrl) || '';
+        return /^https?:/.test(u) ? u : CFG.SUPABASE_URL + '/storage/v1' + u;
+      });
+    },
+    remove: function (bucket, paths) {
+      if (!paths || !paths.length) return Promise.resolve([]);
+      return withAuth(function () {
+        return request('/storage/v1/object/' + bucket, { method: 'DELETE', body: { prefixes: paths } });
+      });
+    }
+  };
+
   function signIn(email, password) {
     return request('/auth/v1/token?grant_type=password', { auth: false, body: { email: email, password: password } })
       .then(storeSession);
@@ -158,8 +197,9 @@
   }
 
   var api = {
-    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction,
+    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction, storage: storage,
     hasSession: function () { return !!session; },
+    userId: function () { return session && session.user_id; },
     onAuthLost: null
   };
   window.GramgSB = api;

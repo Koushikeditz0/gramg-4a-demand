@@ -572,6 +572,14 @@
       font-size:11px;
     }
 
+    /* account copy photo */
+    .photo-btn{flex:0 0 30px;width:30px;height:26px;padding:0;border-radius:7px;background:#e0f2fe;color:#075985;border:1px solid #bae6fd;font-size:14px;cursor:pointer;line-height:1;position:relative;}
+    .photo-btn.has{background:#dcfce7;border-color:#86efac;}
+    .photo-btn.has::after{content:'✓';position:absolute;right:-4px;top:-6px;background:#16a34a;color:#fff;border-radius:50%;font-size:9px;width:13px;height:13px;line-height:13px;font-weight:800;}
+    .photo-btn.done{background:#ede9fe;border-color:#c4b5fd;}
+    .photo-btn.done::after{content:'✓✓';position:absolute;right:-6px;top:-6px;background:#6d28d9;color:#fff;border-radius:7px;font-size:8px;padding:0 2px;height:13px;line-height:13px;font-weight:800;}
+    .photo-btn.busy{opacity:.5;pointer-events:none;}
+    #phImg{display:block;max-width:100%;max-height:52vh;margin:8px auto;border-radius:8px;border:1px solid #e2e8f0;}
     .selected-item{
 
       display:flex;
@@ -1628,6 +1636,21 @@
   </div>
 
   <!-- INSTALL HELP (iPhone etc.) -->
+  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+  <div class="gm-modal" id="photoModal" role="dialog" aria-modal="true" aria-labelledby="phTitle">
+    <div class="gm-box" style="max-width:520px;">
+      <h3 id="phTitle">📷 Account copy</h3>
+      <div class="gm-note" id="phWho"></div>
+      <img id="phImg" alt="">
+      <div class="gm-note" id="phInfo"></div>
+      <div class="gm-actions">
+        <button class="btn-light" onclick="closePhoto()">বাতিল</button>
+        <button class="btn-light" onclick="retakePhoto()">🔄 আবার তুলুন</button>
+        <button class="btn-primary" id="phSend" onclick="sendPhoto()">⬆ Admin-কে পাঠান</button>
+      </div>
+    </div>
+  </div>
+
   <div class="gm-modal" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
     <div class="gm-box" style="max-width:680px;">
       <h3 id="rsTitle">📋 K-Desk ফলাফল</h3>
@@ -1678,8 +1701,8 @@
   </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261020a"></script>
-<script src="./js/gramg-adapter.js?v=20261031b"></script>
+<script src="./js/sb-client.js?v=20261031p"></script>
+<script src="./js/gramg-adapter.js?v=20261031p"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2662,10 +2685,13 @@
         '<div class="selected-job">'+escapeHtml(shortJobCard(item.jobCard))+'</div>'+
         '<div class="selected-name">'+escapeHtml(item.name)+'</div>'+
         '</div>'+
+        (item.wid?'<button class="photo-btn" title="Account copy (passbook) photo">📷</button>':'')+
         '<button class="remove-btn" title="Remove">✕</button>';
+      if(item.wid && typeof paintPhotoBtn==='function'){ const pb=row.querySelector('.photo-btn'); pb.dataset.wid=item.wid; paintPhotoBtn(pb); pb.addEventListener('click',function(){ startPhoto(item); }); }
       row.querySelector('.remove-btn').addEventListener('click',function(){if(listLocked(true))return;selected.delete(item.id);syncCurrentCheckboxes();updateFamilyHeaders();renderSelected();scheduleSaveSelection();});
       container.appendChild(row); sl++;
     });
+    if(typeof schedulePhotoStates==='function') schedulePhotoStates();
   }
 
 
@@ -3797,6 +3823,95 @@ function loadDataStatus(){
   },function(){ box.style.display='none'; });
 }
 /* ---------- K-Desk results (Demand / Allocation) of the current list ---------- */
+/* ---------- account copy (passbook) photo ---------- */
+const photoState=new Map();          // worker id -> 'new' | 'done'
+let photoTimer=null, photoItem=null, photoBlob=null, photoUrl=null;
+function paintPhotoBtn(b){
+  const st=photoState.get(Number(b.dataset.wid));
+  b.classList.toggle('has',st==='new'); b.classList.toggle('done',st==='done');
+  b.title=st==='new'?'Account copy পাঠানো হয়েছে (আবার তুললে আগেরটা বদলে যাবে)':st==='done'?'Admin কাজ শেষ করেছেন':'Account copy (passbook) photo';
+}
+function paintPhotoBtns(){ document.querySelectorAll('.photo-btn[data-wid]').forEach(paintPhotoBtn); }
+function schedulePhotoStates(){
+  clearTimeout(photoTimer);
+  photoTimer=setTimeout(function(){
+    const wids=[]; selected.forEach(function(it){ if(it.wid) wids.push(it.wid); });
+    if(!wids.length) return;
+    gramgAdapter.photoStates(wids).then(function(rows){
+      wids.forEach(function(w){ photoState.delete(w); });
+      (rows||[]).forEach(function(r){ photoState.set(Number(r.worker_id), r.status); });
+      paintPhotoBtns();
+    },function(){});
+  },700);
+}
+function startPhoto(item){
+  photoItem=item;
+  const inp=document.getElementById('photoInput'); inp.value=''; inp.click();
+}
+function retakePhoto(){ closePhoto(true); if(photoItem) startPhoto(photoItem); }
+function closePhoto(keepItem){
+  closeGm('photoModal');
+  if(photoUrl){ URL.revokeObjectURL(photoUrl); photoUrl=null; }
+  photoBlob=null; if(!keepItem) photoItem=null;
+}
+function loadImageFile(file){
+  return new Promise(function(res,rej){
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=function(){ res({img:img,url:url}); };
+    img.onerror=function(){ URL.revokeObjectURL(url); rej(new Error('এই ছবিটা খোলা গেল না। আবার তুলুন।')); };
+    img.src=url;
+  });
+}
+function canvasJpeg(img,maxSide,q){
+  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  const k=Math.min(1,maxSide/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(img,0,0,w,h);
+  return new Promise(function(res){ c.toBlob(function(b){ res(b); },'image/jpeg',q); });
+}
+// Small enough for the free storage (aim ≤150 KB), still readable for the account number.
+function compressPhoto(file){
+  return loadImageFile(file).then(function(o){
+    const tries=[[1600,.7],[1600,.55],[1400,.5],[1200,.5],[1000,.5],[900,.45]];
+    let i=0;
+    function next(){
+      return canvasJpeg(o.img,tries[i][0],tries[i][1]).then(function(b){
+        if(!b) throw new Error('এই phone-এ ছবি ছোট করা গেল না।');
+        if(b.size<=150*1024 || i===tries.length-1){ URL.revokeObjectURL(o.url); return b; }
+        i++; return next();
+      });
+    }
+    return next();
+  });
+}
+document.getElementById('photoInput').addEventListener('change',function(){
+  const f=this.files&&this.files[0]; if(!f||!photoItem) return;
+  showLoading('ছবি ছোট করা হচ্ছে...');
+  compressPhoto(f).then(function(b){
+    hideLoading();
+    photoBlob=b; if(photoUrl) URL.revokeObjectURL(photoUrl); photoUrl=URL.createObjectURL(b);
+    document.getElementById('phImg').src=photoUrl;
+    document.getElementById('phWho').textContent=shortJobCard(photoItem.jobCard)+' · '+photoItem.name;
+    const had=photoState.get(Number(photoItem.wid))==='new';
+    document.getElementById('phInfo').textContent='Size: '+Math.round(b.size/1024)+' KB · Account number পরিষ্কার পড়া যাচ্ছে কিনা দেখে নিন।'+(had?' (আগের photo-টা বদলে যাবে)':'');
+    openGm('photoModal');
+  },function(e){ hideLoading(); showStatus((e&&e.message)||String(e),'error'); });
+});
+function sendPhoto(){
+  if(!photoBlob||!photoItem) return;
+  const item=photoItem, blob=photoBlob;
+  const btn=document.querySelector('.photo-btn[data-wid="'+item.wid+'"]'); if(btn) btn.classList.add('busy');
+  closePhoto();
+  showLoading('Photo পাঠানো হচ্ছে...');
+  gramgAdapter.uploadPhoto(item.wid,blob).then(function(){
+    hideLoading(); if(btn) btn.classList.remove('busy');
+    photoState.set(Number(item.wid),'new'); paintPhotoBtns();
+    showStatus('✅ '+item.name+' — Account copy Admin-কে পাঠানো হয়েছে।','success');
+  },function(e){
+    hideLoading(); if(btn) btn.classList.remove('busy');
+    if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error');
+  });
+}
 function openResults(){
   showLoading('ফলাফল আনছি...');
   gramgAdapter.listResults().then(function(rows){
@@ -3861,7 +3976,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261031e"></script>
+<script src="./js/i18n.js?v=20261031p"></script>
 </body>
 
 </html>

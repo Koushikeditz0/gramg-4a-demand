@@ -26,7 +26,10 @@
     TOO_MANY_LISTS: 'একসঙ্গে সর্বোচ্চ ৫টা চলতি list রাখা যায়। পুরনো list শেষ হলে নতুন খুলুন।',
     DUPLICATE_WORK_NAME: 'এই Work Name-এ আপনার আরেকটা list আছে। অন্য নাম দিন।',
     BAD_WORK_CODE: 'Work Code-এর format মেলেনি (যেমন 3206003006/IF/93393042892327)।',
-    LIST_NOT_EMPTY: 'List-এ worker আছে। মোছার আগে Clear Selected করুন।'
+    LIST_NOT_EMPTY: 'List-এ worker আছে। মোছার আগে Clear Selected করুন।',
+    PHOTO_NOT_FOUND: 'Photo upload শেষ হয়নি। আবার তুলুন।',
+    PHOTO_SETUP: 'Account copy-র ব্যবস্থা এখনো চালু হয়নি (Admin SQL চালাননি)।',
+    PHOTO_TOO_BIG: 'Photo খুব বড়। আবার তুলুন।'
   };
   function bnError(e) {
     var out = new Error(BN[e.code] || ('Server error: ' + (e.message || e)));
@@ -370,6 +373,36 @@
       return SB.rpc('get_list_results', { p_list_id: st.listId }, { retry: true }).catch(function (e) { throw bnError(e || {}); });
     },
     listState: function () { return st.submitState; },
+    // ---- account copy (passbook) photos ----
+    photoStates: function (wids) {
+      if (!wids || !wids.length) return Promise.resolve([]);
+      return SB.rpc('get_account_photos', { p_worker_ids: wids }, { retry: true }).catch(function (e) {
+        if (e && (e.status === 404 || /get_account_photos/.test(e.message || ''))) return [];   // SQL not run yet
+        throw bnError(e || {});
+      });
+    },
+    uploadPhoto: function (wid, blob) {
+      var gp = st.ctx && st.ctx.gp_id, uid = SB.userId();
+      if (!gp || !uid) return Promise.reject(bnError({ code: 'NOT_AUTHORIZED' }));
+      var path = gp + '/' + uid + '/w' + wid + '_' + Date.now().toString(36) + '.jpg';
+      return SB.storage.upload('account-copies', path, blob, 'image/jpeg').catch(function (e) {
+        e = e || {}; var m = e.message || '';
+        if (/bucket not found/i.test(m)) e.code = 'PHOTO_SETUP';
+        else if (/exceeded|too large|payload/i.test(m)) e.code = 'PHOTO_TOO_BIG';
+        else if (/row-level security|unauthorized/i.test(m)) e.code = 'NOT_AUTHORIZED';
+        e.stage = 'upload'; throw e;
+      }).then(function () {
+        return SB.rpc('add_account_photo', { p_worker_id: wid, p_list_id: st.listId, p_path: path, p_size: blob.size });
+      }).then(function (r) {
+        var old = (r && r.old_paths) || [];
+        SB.storage.remove('account-copies', old).catch(function () {});   // the admin clean-up catches any left over
+        return r;
+      }).catch(function (e) {
+        e = e || {};
+        if (e.status === 404 && /add_account_photo/.test(e.message || '')) e.code = 'PHOTO_SETUP';
+        throw bnError(e);
+      });
+    },
     workName: function () { return st.workName; },
     whenIdle: whenIdle
   };

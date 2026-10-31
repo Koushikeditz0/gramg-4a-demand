@@ -86,7 +86,8 @@
         if (me.role === 'super_admin') {
           try { view.gp = Number(localStorage.getItem(VIEW_KEY)) || null; } catch (_e) { view.gp = null; }
         }
-        return loadGps().then(function () { applyView(false); }).then(loadDashboard).then(loadHistory).then(loadUsers);
+        return loadGps().then(function () { applyView(false); }).then(loadDashboard).then(loadHistory).then(loadUsers)
+          .then(function () { photoCleanupAll(); photoBadge(); });
       })
       .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -109,7 +110,7 @@
   function fillGpSelects() {
     var lim = gpView();
     var gps = state.gps.filter(function (g) { return !lim || g.id === lim; });
-    [$('gpSelect'), $('linkGp'), $('dashGp'), $('nuGp'), $('gaGp')].forEach(function (sel) {
+    [$('gpSelect'), $('linkGp'), $('dashGp'), $('nuGp'), $('gaGp'), $('phGp')].forEach(function (sel) {
       var keep = sel.value; sel.innerHTML = '';
       gps.forEach(function (g) { var o = el('option', g.name + ' (' + g.jc_prefix + ')'); o.value = g.id; sel.appendChild(o); });
       if (keep && gps.some(function (g) { return String(g.id) === keep; })) sel.value = keep;
@@ -146,11 +147,134 @@
   document.querySelectorAll('.tab').forEach(function (b) {
     b.addEventListener('click', function () {
       document.querySelectorAll('.tab').forEach(function (x) { x.classList.toggle('active', x === b); });
-      ['dash', 'import', 'history', 'users'].forEach(function (t) { $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab); });
+      ['dash', 'photos', 'import', 'history', 'users'].forEach(function (t) { $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab); });
+      if (b.dataset.tab === 'photos') loadPhotos(true);
       if (b.dataset.tab === 'dash') loadDashboard();
       if (b.dataset.tab === 'history') loadHistory();
       if (b.dataset.tab === 'users') loadUsers();
     });
+  });
+
+  // ---------- account copy photos ----------
+  var BUCKET = 'account-copies';
+  var ph = { filter: 'new', rows: [], cur: null, ready: true };
+  function phSetupMissing(e) { return e && (e.status === 404 || /admin_account_photo/.test(e.message || '')); }
+  // Delete files that are Done / replaced / older than 30 days (any admin page open does this).
+  function photoCleanup(gp) {
+    return SB.rpc('admin_account_photo_cleanup', { p_gp_id: gp }).then(function (rows) {
+      rows = rows || [];
+      if (!rows.length) return 0;
+      var paths = rows.map(function (r) { return r.path; });
+      var chunks = [];
+      for (var i = 0; i < paths.length; i += 100) chunks.push(paths.slice(i, i + 100));
+      return chunks.reduce(function (p, c) { return p.then(function () { return SB.storage.remove(BUCKET, c); }); }, Promise.resolve())
+        .then(function () { return SB.rpc('admin_account_photo_purged', { p_ids: rows.map(function (r) { return r.id; }) }); });
+    });
+  }
+  function photoCleanupAll() {
+    var lim = gpView();
+    var gps = state.gps.filter(function (g) { return !lim || g.id === lim; });
+    return gps.reduce(function (p, g) { return p.then(function () { return photoCleanup(g.id).catch(function (e) { if (phSetupMissing(e)) ph.ready = false; }); }); }, Promise.resolve());
+  }
+  function photoBadge() {
+    var gp = Number($('phGp').value); if (!gp || !ph.ready) return;
+    SB.rpc('admin_account_photos', { p_gp_id: gp, p_status: 'new' }).then(function (r) {
+      var n = (r && r.new_count) || 0; $('phBadge').textContent = n ? String(n) : ''; $('phBadge').classList.toggle('hidden', !n);
+    }, function () {});
+  }
+  function loadPhotos(clean) {
+    var gp = Number($('phGp').value); if (!gp) return Promise.resolve();
+    loading('Loading account copies...');
+    return (clean ? photoCleanup(gp).catch(function (e) { if (phSetupMissing(e)) throw e; }) : Promise.resolve())
+      .then(function () { return SB.rpc('admin_account_photos', { p_gp_id: gp, p_status: ph.filter }); })
+      .then(function (r) {
+        ph.ready = true;
+        ph.rows = (r && r.rows) || [];
+        var n = (r && r.new_count) || 0;
+        $('phBadge').textContent = n ? String(n) : ''; $('phBadge').classList.toggle('hidden', !n);
+        var mb = ((r && r.stored_bytes) || 0) / 1048576;
+        $('phStore').textContent = n + ' new photo(s). Photos kept now: ' + mb.toFixed(1) + ' MB' +
+          (r && r.all_gps ? ' of the 1 GB free Storage (all GPs).' : ' (this GP).');
+        renderPhotos();
+      })
+      .catch(function (e) {
+        if (e.authLost) return;
+        if (phSetupMissing(e)) { ph.ready = false; $('phCards').innerHTML = ''; status('Account copy is not set up yet: run supabase/2026-10-31_account_copy.sql in the Supabase SQL Editor.', 'err'); return; }
+        status(errText(e), 'err');
+      })
+      .then(function () { loading(''); });
+  }
+  function renderPhotos() {
+    var box = $('phCards'); box.innerHTML = '';
+    document.querySelectorAll('#phFilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.f === ph.filter); });
+    if (!ph.rows.length) { box.appendChild(el('div', ph.filter === 'new' ? 'No new account copy.' : 'No photo marked Done in the last 30 days.', 'muted')); return; }
+    ph.rows.forEach(function (r) {
+      var c = el('div', null, 'phcard');
+      c.appendChild(el('div', r.applicant_name || '', 'nm'));
+      c.appendChild(el('div', r.job_card_no + '  ·  App ' + r.applicant_no, 'mono'));
+      c.appendChild(el('div', 'Account in data: ' + (r.account_no || '—') + (r.ifsc ? '  ·  ' + r.ifsc : ''), 'acc mono'));
+      c.appendChild(el('div', '📷 ' + (r.uploaded_by || '') + '  ·  ' + fmtDate(r.uploaded_at) + (r.work_name ? '  ·  ' + r.work_name : '') +
+        (r.size ? '  ·  ' + Math.round(r.size / 1024) + ' KB' : ''), 'muted'));
+      var row = el('div', null, 'row');
+      if (r.status === 'new') {
+        var v = el('button', '👁 View', 'btn-primary btn-small'); v.onclick = function () { openPhoto(r); }; row.appendChild(v);
+        var d = el('button', '⬇ Download', 'btn-light btn-small'); d.onclick = function () { downloadPhoto(r); }; row.appendChild(d);
+        var ok = el('button', '✅ Done', 'btn-success btn-small'); ok.onclick = function () { photoDone(r); }; row.appendChild(ok);
+      } else {
+        row.appendChild(el('span', '✅ Done ' + fmtDate(r.done_at) + ' · photo deleted', 'pill on'));
+      }
+      c.appendChild(row);
+      box.appendChild(c);
+    });
+  }
+  function photoName(r) {
+    return (String(r.job_card_no || '').replace(/[^A-Za-z0-9-]+/g, '_') + '_' + r.applicant_no + '_' +
+            String(r.applicant_name || '').replace(/[^A-Za-z0-9]+/g, '_')).replace(/_+/g, '_').slice(0, 90) + '.jpg';
+  }
+  function openPhoto(r) {
+    ph.cur = r;
+    $('phvTitle').textContent = r.applicant_name || 'Account copy';
+    $('phvSub').textContent = r.job_card_no + ' · App ' + r.applicant_no + ' · ' + fmtDate(r.uploaded_at) + ' · ' + (r.uploaded_by || '');
+    $('phvAcc').textContent = 'Account in data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '');
+    $('phvImg').removeAttribute('src');
+    $('phvModal').classList.add('show');
+    SB.storage.signedUrl(BUCKET, r.path, 300).then(function (u) { if (ph.cur === r) $('phvImg').src = u; },
+      function (e) { if (!e.authLost) status('Could not open the photo: ' + (e.message || e), 'err'); });
+  }
+  function closePhoto() { $('phvModal').classList.remove('show'); $('phvImg').removeAttribute('src'); ph.cur = null; }
+  function downloadPhoto(r) {
+    loading('Downloading...');
+    SB.storage.signedUrl(BUCKET, r.path, 120)
+      .then(function (u) { return fetch(u); })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+      .then(function (b) {
+        var a = document.createElement('a'), u = URL.createObjectURL(b);
+        a.href = u; a.download = photoName(r); document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+      })
+      .catch(function (e) { if (!e.authLost) status('Download failed: ' + (e.message || e), 'err'); })
+      .then(function () { loading(''); });
+  }
+  function photoDone(r) {
+    ask('Mark the account copy of ' + (r.applicant_name || '') + ' as Done? The photo is deleted and cannot be opened again.', '✅ Done', 'ok').then(function (yes) {
+      if (!yes) return;
+      loading('Saving...');
+      SB.rpc('admin_account_photo_done', { p_ids: [r.id] })
+        .then(function (res) { return SB.storage.remove(BUCKET, (res && res.paths) || []); })
+        .then(function () { return SB.rpc('admin_account_photo_purged', { p_ids: [r.id] }); })
+        .then(function () { if (ph.cur === r) closePhoto(); status('✅ Done: ' + (r.applicant_name || '') + ' (photo deleted).', 'ok'); },
+              function (e) { if (!e.authLost) status(errText(e), 'err'); })
+        .then(function () { loading(''); return loadPhotos(false); });
+    });
+  }
+  $('phvClose').addEventListener('click', closePhoto);
+  $('phvModal').addEventListener('click', function (e) { if (e.target === this) closePhoto(); });
+  $('phvDl').addEventListener('click', function () { if (ph.cur) downloadPhoto(ph.cur); });
+  $('phvDone').addEventListener('click', function () { if (ph.cur) photoDone(ph.cur); });
+  $('phRefresh').addEventListener('click', function () { loadPhotos(true); });
+  $('phGp').addEventListener('change', function () { loadPhotos(true); });
+  document.querySelectorAll('#phFilters button').forEach(function (b) {
+    b.addEventListener('click', function () { ph.filter = b.dataset.f; loadPhotos(false); });
   });
 
   // ---------- file reading ----------

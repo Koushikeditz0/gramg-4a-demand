@@ -35,6 +35,13 @@
       box.classList.add('show'); y.focus();
     });
   }
+  // Yes/No box with a text box; resolves to the text, or null when cancelled
+  function askText(msg, value, yes) {
+    var inp = $('askInput'); inp.value = value || ''; inp.classList.remove('hidden');
+    var p = ask(msg, yes, 'danger');
+    setTimeout(function () { inp.focus(); inp.select(); }, 30);
+    return p.then(function (ok) { inp.classList.add('hidden'); return ok ? inp.value : null; });
+  }
   function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
   function fmtDate(s) { if (!s) return '—'; var d = new Date(s); return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
   function bn(n) { return Number(n || 0).toLocaleString('en-IN'); }
@@ -58,6 +65,7 @@
       BAD_ROLE: 'You cannot create this kind of user.',
       USER_NOT_FOUND: 'User not found.', ONLY_SUPERVISORS: 'Only a supervisor\'s PIN can be changed here. For a K-Desk login, switch it back to Supervisor first, change the PIN, then make it a K-Desk login again.',
       BAD_WORK_CODE: 'The Work Code format does not match (e.g. 3206003006/IF/93393042892327).',
+      ALREADY_DONE: 'This photo was already verified or returned. Refresh.', NEED_REASON: 'Write a reason.',
       CONFIRM_MISMATCH: 'The username you typed does not match.', CANNOT_DELETE_ADMIN: 'A Super Admin cannot be deleted.',
       USER_HAS_IMPORTS: 'This user started data imports, so the account is kept for the import history. Disable it instead.',
       BAD_INPUT: 'The input is not valid.', SESSION_REVOKED: 'This device was logged out. Please log in again.',
@@ -208,21 +216,28 @@
   function renderPhotos() {
     var box = $('phCards'); box.innerHTML = '';
     document.querySelectorAll('#phFilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.f === ph.filter); });
-    if (!ph.rows.length) { box.appendChild(el('div', ph.filter === 'new' ? 'No new account copy.' : 'No photo marked Done in the last 30 days.', 'muted')); return; }
+    if (!ph.rows.length) { box.appendChild(el('div', ph.filter === 'new' ? 'No new account copy.' : 'Nothing verified or returned in the last 30 days.', 'muted')); return; }
     ph.rows.forEach(function (r) {
       var c = el('div', null, 'phcard');
       c.appendChild(el('div', r.applicant_name || '', 'nm'));
       c.appendChild(el('div', r.job_card_no + '  ·  App ' + r.applicant_no, 'mono'));
-      c.appendChild(el('div', 'Account in data: ' + (r.account_no || '—') + (r.ifsc ? '  ·  ' + r.ifsc : ''), 'acc mono'));
+      if (r.sent_account_no || r.sent_ifsc) {
+        var same = r.sent_account_no === r.account_no && r.sent_ifsc === r.ifsc;
+        c.appendChild(el('div', 'Sent: A/C ' + (r.sent_account_no || '—') + '  ·  IFSC ' + (r.sent_ifsc || '—') + (same ? '  (same as data)' : ''), 'acc mono sent'));
+      }
+      c.appendChild(el('div', 'In data: ' + (r.account_no || '—') + (r.ifsc ? '  ·  ' + r.ifsc : ''), 'acc mono'));
       c.appendChild(el('div', '📷 ' + (r.uploaded_by || '') + '  ·  ' + fmtDate(r.uploaded_at) + (r.work_name ? '  ·  ' + r.work_name : '') +
         (r.size ? '  ·  ' + Math.round(r.size / 1024) + ' KB' : ''), 'muted'));
       var row = el('div', null, 'row');
       if (r.status === 'new') {
         var v = el('button', '👁 View', 'btn-primary btn-small'); v.onclick = function () { openPhoto(r); }; row.appendChild(v);
         var d = el('button', '⬇ Download', 'btn-light btn-small'); d.onclick = function () { downloadPhoto(r); }; row.appendChild(d);
-        var ok = el('button', '✅ Done', 'btn-success btn-small'); ok.onclick = function () { photoDone(r); }; row.appendChild(ok);
+        var ok = el('button', '✔ Verify', 'btn-success btn-small'); ok.onclick = function () { photoVerify(r); }; row.appendChild(ok);
+        var rt = el('button', '✕ Return', 'btn-danger btn-small'); rt.onclick = function () { photoReturn(r); }; row.appendChild(rt);
+      } else if (r.status === 'returned') {
+        row.appendChild(el('span', '✕ Returned ' + fmtDate(r.done_at) + ' · ' + (r.return_reason || ''), 'pill off'));
       } else {
-        row.appendChild(el('span', '✅ Done ' + fmtDate(r.done_at) + ' · photo deleted', 'pill on'));
+        row.appendChild(el('span', '✔ Verified ' + fmtDate(r.done_at) + ' · photo deleted', 'pill on'));
       }
       c.appendChild(row);
       box.appendChild(c);
@@ -236,7 +251,8 @@
     ph.cur = r;
     $('phvTitle').textContent = r.applicant_name || 'Account copy';
     $('phvSub').textContent = r.job_card_no + ' · App ' + r.applicant_no + ' · ' + fmtDate(r.uploaded_at) + ' · ' + (r.uploaded_by || '');
-    $('phvAcc').textContent = 'Account in data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '');
+    $('phvAcc').textContent = (r.sent_account_no || r.sent_ifsc ? 'Sent: A/C ' + (r.sent_account_no || '—') + ' · IFSC ' + (r.sent_ifsc || '—') + '   |   ' : '') +
+      'In data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '');
     $('phvImg').removeAttribute('src');
     $('phvModal').classList.add('show');
     SB.storage.signedUrl(BUCKET, r.path, 300).then(function (u) { if (ph.cur === r) $('phvImg').src = u; },
@@ -256,22 +272,44 @@
       .catch(function (e) { if (!e.authLost) status('Download failed: ' + (e.message || e), 'err'); })
       .then(function () { loading(''); });
   }
-  function photoDone(r) {
-    ask('Mark the account copy of ' + (r.applicant_name || '') + ' as Done? The photo is deleted and cannot be opened again.', '✅ Done', 'ok').then(function (yes) {
+  function photoFinish(r, rpc, args, okMsg) {
+    loading('Saving...');
+    return SB.rpc(rpc, args)
+      .then(function (res) { return SB.storage.remove(BUCKET, (res && res.paths) || []).then(function () { return res; }); })
+      .then(function (res) { return SB.rpc('admin_account_photo_purged', { p_ids: [r.id] }).then(function () { return res; }); })
+      .then(function (res) { if (ph.cur === r) closePhoto(); status(okMsg(res || {}), 'ok'); },
+            function (e) {
+              if (e.authLost) return;
+              if (e.status === 404) { status('Run v181_account_requests.sql in the Supabase SQL Editor first (Verify / Return).', 'err'); return; }
+              status(errText(e), 'err');
+            })
+      .then(function () { loading(''); return loadPhotos(false); });
+  }
+  function photoVerify(r) {
+    var hasAcc = /^\d{6,20}$/.test(r.sent_account_no || '') && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(r.sent_ifsc || '');
+    ask('Verify the account of ' + (r.applicant_name || '') + '?' +
+        (hasAcc ? '\nA/C ' + r.sent_account_no + ' · IFSC ' + r.sent_ifsc + ' is written into the worker data.' : '') +
+        '\nThe photo is deleted. Update the account on the portal too.', '✔ Verify', 'ok').then(function (yes) {
       if (!yes) return;
-      loading('Saving...');
-      SB.rpc('admin_account_photo_done', { p_ids: [r.id] })
-        .then(function (res) { return SB.storage.remove(BUCKET, (res && res.paths) || []); })
-        .then(function () { return SB.rpc('admin_account_photo_purged', { p_ids: [r.id] }); })
-        .then(function () { if (ph.cur === r) closePhoto(); status('✅ Done: ' + (r.applicant_name || '') + ' (photo deleted).', 'ok'); },
-              function (e) { if (!e.authLost) status(errText(e), 'err'); })
-        .then(function () { loading(''); return loadPhotos(false); });
+      photoFinish(r, 'admin_account_photo_verify', { p_id: r.id, p_update: true }, function (res) {
+        return '✔ Verified: ' + (r.applicant_name || '') + (res.data_updated ? ' (account saved in the data)' : '') + '. Photo deleted.';
+      });
+    });
+  }
+  function photoReturn(r) {
+    askText('Why return it to the supervisor? (they see this reason)', 'Photo not clear', '✕ Return').then(function (reason) {
+      if (reason === null) return;
+      if (!reason.trim()) { status('Write a reason.', 'err'); return; }
+      photoFinish(r, 'admin_account_photo_return', { p_id: r.id, p_reason: reason.trim() }, function () {
+        return '✕ Returned to the supervisor: ' + (r.applicant_name || '') + '.';
+      });
     });
   }
   $('phvClose').addEventListener('click', closePhoto);
   $('phvModal').addEventListener('click', function (e) { if (e.target === this) closePhoto(); });
   $('phvDl').addEventListener('click', function () { if (ph.cur) downloadPhoto(ph.cur); });
-  $('phvDone').addEventListener('click', function () { if (ph.cur) photoDone(ph.cur); });
+  $('phvDone').addEventListener('click', function () { if (ph.cur) photoVerify(ph.cur); });
+  $('phvRet').addEventListener('click', function () { if (ph.cur) photoReturn(ph.cur); });
   $('phRefresh').addEventListener('click', function () { loadPhotos(true); });
   $('phGp').addEventListener('change', function () { loadPhotos(true); });
   document.querySelectorAll('#phFilters button').forEach(function (b) {

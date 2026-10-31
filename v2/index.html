@@ -586,6 +586,11 @@
     .photo-btn.done{background:#ede9fe;border-color:#c4b5fd;}
     .photo-btn.done::after{content:'✓✓';position:absolute;right:-6px;top:-6px;background:#6d28d9;color:#fff;border-radius:7px;font-size:8px;padding:0 2px;height:13px;line-height:13px;font-weight:800;}
     .photo-btn.busy{opacity:.5;pointer-events:none;}
+    .ph-acc label{display:block;font-size:12px;font-weight:700;color:#475569;margin:7px 0 3px;}
+    .ph-acc input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;font-size:16px;letter-spacing:.5px;font-family:ui-monospace,Consolas,monospace;}
+    .ph-acc input.bad{border-color:#dc2626;background:#fef2f2;} .ph-acc input.good{border-color:#16a34a;}
+    .ph-err{color:#b91c1c;font-size:12px;font-weight:700;min-height:16px;margin-top:5px;}
+    #phImg{max-height:34vh!important;}
     #phImg{display:block;max-width:100%;max-height:52vh;margin:8px auto;border-radius:8px;border:1px solid #e2e8f0;}
     .selected-item{
 
@@ -1659,8 +1664,15 @@
     <div class="gm-box" style="max-width:520px;">
       <h3 id="phTitle">📷 Account copy</h3>
       <div class="gm-note" id="phWho"></div>
+      <div class="gm-note" id="phRet" style="display:none;color:#991b1b;font-weight:700;"></div>
       <img id="phImg" alt="">
       <div class="gm-note" id="phInfo"></div>
+      <div class="ph-acc">
+        <label for="phAcc">Account No</label><input type="text" id="phAcc" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="শুধু সংখ্যা">
+        <label for="phAcc2">Account No আবার লিখুন</label><input type="text" id="phAcc2" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="মিলিয়ে দেখার জন্য">
+        <label for="phIfsc">IFSC Code</label><input type="text" id="phIfsc" autocomplete="off" autocapitalize="characters" maxlength="11" placeholder="যেমন SBIN0001234">
+        <div class="ph-err" id="phErr"></div>
+      </div>
       <div class="gm-actions">
         <button class="btn-light" onclick="closePhoto()">বাতিল</button>
         <button class="btn-light" onclick="retakePhoto()">🔄 আবার তুলুন</button>
@@ -1719,8 +1731,8 @@
   </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261031r"></script>
-<script src="./js/gramg-adapter.js?v=20261031r"></script>
+<script src="./js/sb-client.js?v=20261031s"></script>
+<script src="./js/gramg-adapter.js?v=20261031s"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3843,7 +3855,25 @@ function loadDataStatus(){
 /* ---------- K-Desk results (Demand / Allocation) of the current list ---------- */
 /* ---------- account copy (passbook) photo ---------- */
 const photoState=new Map();          // worker id -> 'new' | 'done'
-let photoTimer=null, photoItem=null, photoBlob=null, photoUrl=null;
+let photoTimer=null, photoItem=null, photoBlob=null, photoUrl=null, photoKeepAcc=false;
+const IFSC_RE=/^[A-Z]{4}0[A-Z0-9]{6}$/;
+function accCheck(final){
+  const a=document.getElementById('phAcc'), a2=document.getElementById('phAcc2'), f=document.getElementById('phIfsc');
+  a.value=a.value.replace(/\D/g,''); a2.value=a2.value.replace(/\D/g,''); f.value=f.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  let err='';
+  const okA=/^\d{6,20}$/.test(a.value), okA2=okA && a2.value===a.value, okF=IFSC_RE.test(f.value);
+  a.classList.toggle('good',okA); a.classList.toggle('bad',(final||a.value.length>=6)&&!okA);
+  a2.classList.toggle('good',okA2); a2.classList.toggle('bad',(final||a2.value.length>=a.value.length&&a2.value.length>0)&&!okA2);
+  f.classList.toggle('good',okF); f.classList.toggle('bad',(final||f.value.length>=11)&&!okF);
+  if(final){
+    if(!okA) err='Account No ঠিক নয় (৬–২০টা সংখ্যা)।';
+    else if(!okA2) err='দুবারের Account No মেলেনি।';
+    else if(!okF) err='IFSC ঠিক নয় — ১১ অক্ষর, ৫ নম্বরটা 0 (যেমন SBIN0001234)।';
+  }
+  document.getElementById('phErr').textContent=err;
+  return okA&&okA2&&okF;
+}
+['phAcc','phAcc2','phIfsc'].forEach(function(id){ document.addEventListener('input',function(e){ if(e.target&&e.target.id===id) accCheck(false); }); });
 function paintPhotoBtn(b){
   const st=photoState.get(Number(b.dataset.wid));
   b.classList.toggle('has',st==='new'); b.classList.toggle('done',st==='done');
@@ -3866,7 +3896,7 @@ function startPhoto(item){
   photoItem=item;
   const inp=document.getElementById('photoInput'); inp.value=''; inp.click();
 }
-function retakePhoto(){ closePhoto(true); if(photoItem) startPhoto(photoItem); }
+function retakePhoto(){ photoKeepAcc=true; closePhoto(true); if(photoItem) startPhoto(photoItem); }
 function closePhoto(keepItem){
   closeGm('photoModal');
   if(photoUrl){ URL.revokeObjectURL(photoUrl); photoUrl=null; }
@@ -3911,20 +3941,27 @@ document.getElementById('photoInput').addEventListener('change',function(){
     document.getElementById('phImg').src=photoUrl;
     document.getElementById('phWho').textContent=shortJobCard(photoItem.jobCard)+' · '+photoItem.name;
     const had=photoState.get(Number(photoItem.wid))==='new';
+    ['phAcc','phAcc2','phIfsc'].forEach(function(id){ const x=document.getElementById(id); x.classList.remove('bad','good'); if(!photoKeepAcc) x.value=''; });
+    document.getElementById('phErr').textContent='';
+    const rr=photoItem.returnReason||'';
+    document.getElementById('phRet').style.display=rr?'':'none'; document.getElementById('phRet').textContent=rr?'✕ Admin ফেরত পাঠিয়েছেন: '+rr:'';
+    photoKeepAcc=false;
     document.getElementById('phInfo').textContent='Size: '+Math.round(b.size/1024)+' KB · Account number পরিষ্কার পড়া যাচ্ছে কিনা দেখে নিন।'+(had?' (আগের photo-টা বদলে যাবে)':'');
     openGm('photoModal');
   },function(e){ hideLoading(); showStatus((e&&e.message)||String(e),'error'); });
 });
 function sendPhoto(){
   if(!photoBlob||!photoItem) return;
+  if(!accCheck(true)) return;
   const item=photoItem, blob=photoBlob;
+  const acc=document.getElementById('phAcc').value, ifsc=document.getElementById('phIfsc').value;
   const btn=document.querySelector('.photo-btn[data-wid="'+item.wid+'"]'); if(btn) btn.classList.add('busy');
   closePhoto();
   showLoading('Photo পাঠানো হচ্ছে...');
-  gramgAdapter.uploadPhoto(item.wid,blob).then(function(){
+  gramgAdapter.uploadPhoto(item.wid,blob,acc,ifsc).then(function(){
     hideLoading(); if(btn) btn.classList.remove('busy');
     photoState.set(Number(item.wid),'new'); paintPhotoBtns();
-    acReqs.forEach(function(r){ if(Number(r.worker_id)===Number(item.wid)) r.status='photo'; });
+    acReqs.forEach(function(r){ if(Number(r.worker_id)===Number(item.wid)){ r.status='photo'; r.return_reason=null; } });
     renderAcReqBar(); if(document.getElementById('acReqModal').classList.contains('show')) renderAcReqList();
     showStatus('✅ '+item.name+' — Account copy Admin-কে পাঠানো হয়েছে।','success');
   },function(e){
@@ -3938,7 +3975,7 @@ function loadAcRequests(){
   if(!currentUser) return;
   gramgAdapter.accountRequests().then(function(rows){
     acReqs=rows||[];
-    acReqs.forEach(function(r){ if(r.status==='photo' && !photoState.has(Number(r.worker_id))) photoState.set(Number(r.worker_id),'new'); });
+    acReqs.forEach(function(r){ const w=Number(r.worker_id); if(r.status==='photo') photoState.set(w,'new'); else if(photoState.get(w)==='new') photoState.delete(w); });
     renderAcReqBar();
     if(document.getElementById('acReqModal').classList.contains('show')) renderAcReqList();
   },function(){});
@@ -3946,9 +3983,10 @@ function loadAcRequests(){
 function renderAcReqBar(){
   const bar=document.getElementById('acReqBar'); if(!bar) return;
   const open=acReqs.filter(function(r){ return r.status==='open'; }).length;
+  const ret=acReqs.filter(function(r){ return r.status==='open' && r.return_reason; }).length;
   if(!acReqs.length){ bar.innerHTML=''; return; }
   bar.innerHTML='<button type="button" class="acreq-bar"><span style="font-size:24px;">📷</span><span><b>Account copy চাই</b><small>'+
-    (open?open+' জনের passbook photo বাকি':'সবার photo পাঠানো হয়েছে ✓')+'</small></span><span class="n">'+open+'/'+acReqs.length+'</span></button>';
+    (open?open+' জনের passbook photo বাকি'+(ret?' ('+ret+' জন ফেরত এসেছে)':''):'সবার photo পাঠানো হয়েছে ✓')+'</small></span><span class="n">'+open+'/'+acReqs.length+'</span></button>';
   bar.firstChild.onclick=openAcRequests;
 }
 function openAcRequests(){
@@ -3969,13 +4007,13 @@ function renderAcReqList(){
   document.getElementById('acrNote').textContent='এদের account freeze হয়নি। Passbook / account copy-র photo তুলে পাঠান।'+(notes.length?' Admin: '+notes.join(' · '):'');
   if(!rows.length){ box.innerHTML='<div class="selected-empty">কেউ নেই।</div>'; return; }
   rows.forEach(function(r,i){
-    const sent=r.status==='photo' || photoState.get(Number(r.worker_id))==='new';
+    const sent=r.status==='photo';
     const d=document.createElement('div'); d.className='acr-row';
     d.innerHTML='<div class="selected-sl">'+(i+1)+'</div><div class="m"><div class="j">'+escapeHtml(shortJobCard(r.job_card_no))+' · App '+escapeHtml(String(r.applicant_no))+'</div>'+
-      '<div class="nm">'+escapeHtml(r.applicant_name)+'</div><div class="st'+(sent?' ok':'')+'">'+(sent?'✓ Photo পাঠানো হয়েছে':'⏳ Photo বাকি')+'</div></div>'+
+      '<div class="nm">'+escapeHtml(r.applicant_name)+'</div><div class="st'+(sent?' ok':'')+'">'+(sent?'✓ Photo পাঠানো হয়েছে':(r.return_reason?'✕ ফেরত: '+escapeHtml(r.return_reason):'⏳ Photo বাকি'))+'</div></div>'+
       '<button class="photo-btn" title="Account copy (passbook) photo">📷</button>';
     const b=d.querySelector('.photo-btn'); b.dataset.wid=r.worker_id; paintPhotoBtn(b);
-    b.onclick=function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name }); };
+    b.onclick=function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); };
     box.appendChild(d);
   });
 }
@@ -4045,7 +4083,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261031r"></script>
+<script src="./js/i18n.js?v=20261031s"></script>
 </body>
 
 </html>

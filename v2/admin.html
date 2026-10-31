@@ -60,7 +60,7 @@
     .phcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;}
     .phcard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;}
     .phcard .nm{font-weight:800;font-size:14px;} .phcard .mono{font-family:ui-monospace,Consolas,monospace;}
-    .phcard .acc{background:#f8fafc;border-radius:7px;padding:5px 7px;}
+    .phcard .acc{background:#f8fafc;border-radius:7px;padding:5px 7px;} .phcard .acc.sent{background:#ecfdf5;color:#065f46;font-weight:700;}
     #phvImg{display:block;max-width:100%;max-height:70vh;margin:6px auto;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;}
     .ucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:8px;}
     .ucard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
@@ -267,12 +267,12 @@
         <h2 style="margin:0;">📷 Account copy photos</h2>
         <button class="btn-light btn-small" id="phRefresh">🔄 Refresh</button>
       </div>
-      <div class="muted">Supervisors take a photo of the worker's passbook / account copy in the phone app. Open it, update the account on the portal, then press <b>✅ Done</b>: the photo is deleted at once. Photos not marked Done are deleted automatically after 30 days.</div>
+      <div class="muted">Supervisors take a photo of the worker's passbook / account copy in the phone app. The supervisor also writes the Account No and IFSC. Check them against the photo: <b>✔ Verify</b> saves the account in the data (update the portal too), <b>✕ Return</b> sends it back to the supervisor with your reason. Either way the photo is deleted at once. Photos not checked are deleted automatically after 30 days.</div>
       <label class="f" for="phGp">Gram Panchayat</label>
       <select id="phGp"></select>
       <div class="filters" id="phFilters" style="margin-top:8px;">
         <button data-f="new" class="active">New</button>
-        <button data-f="done">Done</button>
+        <button data-f="done">Verified / Returned</button>
       </div>
       <div class="muted" id="phStore"></div>
     </div>
@@ -441,7 +441,8 @@
       <img id="phvImg" alt="Account copy photo">
       <div class="row" style="justify-content:flex-end;margin-top:6px;">
         <button class="btn-light btn-small" id="phvDl">⬇ Download</button>
-        <button class="btn-success btn-small" id="phvDone">✅ Done (delete photo)</button>
+        <button class="btn-danger btn-small" id="phvRet">✕ Return</button>
+        <button class="btn-success btn-small" id="phvDone">✔ Verify</button>
       </div>
     </div>
   </div>
@@ -545,15 +546,16 @@
   </div>
 
   <div class="ask" id="askBox" role="dialog" aria-modal="true">
-    <div class="ask-box"><div class="ask-msg" id="askMsg"></div>
+    <div class="ask-box"><div class="ask-msg" id="askMsg" style="white-space:pre-line;"></div>
+      <input type="text" id="askInput" class="hidden" maxlength="200" style="margin-top:8px;">
       <div class="ask-btns"><button class="btn-light" id="askNo">Cancel</button><button class="btn-danger" id="askYes">Yes</button></div></div>
   </div>
 </main>
 </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261031r"></script>
+<script src="./js/sb-client.js?v=20261031s"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261031r"></script>
+<script src="./js/admin.js?v=20261031s"></script>
 </body>
 </html>

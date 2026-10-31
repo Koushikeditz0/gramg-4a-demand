@@ -690,70 +690,9 @@
     #newListBtn.hl{background:#2563eb;color:#fff;font-weight:800;box-shadow:0 0 0 3px rgba(37,99,235,.35);animation:nlPulse 1.4s ease-in-out infinite;}
     @keyframes nlPulse{0%,100%{box-shadow:0 0 0 2px rgba(37,99,235,.45);}50%{box-shadow:0 0 0 7px rgba(37,99,235,.12);}}
     .lp-empty{font-size:13px;color:#1e3a8a;background:#eff6ff;border:1px dashed #93c5fd;border-radius:8px;padding:10px;margin-top:6px;}
-    /* ===== 2026-10-31 new design ===== */
-    .steps{display:flex;gap:4px;margin-bottom:8px;}
-    .steps .st{flex:1;text-align:center;font-size:11px;font-weight:800;padding:6px 2px;border-radius:8px;background:#e2e8f0;color:#64748b;white-space:nowrap;}
-    .steps .st.done{background:#dcfce7;color:#166534;} .steps .st.now{background:#2563eb;color:#fff;}
-    .lp-head{display:none;align-items:center;gap:8px;margin-bottom:4px;}
-    .lp-title{font-weight:800;font-size:15px;min-width:0;flex:1;word-break:break-word;}
-    .pill{display:inline-block;font-size:11px;font-weight:800;border-radius:20px;padding:2px 9px;background:#fef9c3;color:#854d0e;white-space:nowrap;vertical-align:middle;}
-    .pill.submitted{background:#dcfce7;color:#166534;} .pill.locked{background:#e2e8f0;color:#334155;}
-    .lp-row select{display:none;}
-    .lp-row #newListBtn{flex:1;padding:12px;font-size:15px;font-weight:800;border-radius:12px;}
-    body.list-open .lp-head{display:flex;} body.list-open .lp-row{display:none;}
-    .lp-cards{display:none;margin-top:8px;}
-    body.home .lp-cards{display:block;}
-    .lp-cards .h{font-size:12px;font-weight:800;color:#475569;margin:2px 2px 6px;}
-    .lcard{display:block;width:100%;text-align:left;background:#fff;border:1px solid #e2e8f0;border-left:6px solid #eab308;border-radius:12px;padding:11px 12px;margin-bottom:8px;cursor:pointer;font:inherit;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);}
-    .lcard.submitted{border-left-color:#16a34a;} .lcard.locked{border-left-color:#94a3b8;}
-    .lcard b{font-size:15px;} .lcard .pill{float:right;margin-left:6px;}
-    .lcard .m{color:#64748b;font-size:12px;margin-top:3px;}
-    body.home .control-box,body.home .action-bar,body.home .columns,body.home .wtabs{display:none !important;}
-    .ro-view{display:none;margin-top:8px;}
-    body.list-readonly .ro-view{display:block;}
-    .ro-sum{border:1px solid #e2e8f0;border-radius:10px;padding:4px 10px;}
-    .ro-sum div{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px;}
-    .ro-sum div:last-child{border-bottom:0;} .ro-sum b{text-align:right;}
-    .ro-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;} .ro-btns button{flex:1;padding:10px;font-weight:800;}
-    .ro-del{color:#dc2626;}
-    body.list-readonly .control-box,body.list-readonly .action-bar,body.list-readonly .wtabs,body.list-readonly .columns>.panel:not(.sel-panel){display:none !important;}
-    body.list-readonly .columns{display:block;} body.list-readonly .sel-panel{display:block !important;}
-    body.list-readonly .remove-btn,body.list-readonly #deleteListBtn{display:none;} body.list-readonly .sel-panel .selected-scroll{max-height:none;}
-    .wtabs{display:none;gap:4px;background:#fff;border-radius:12px;padding:4px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
-    .wtab{flex:1;border:0;background:none;padding:10px 6px;font-weight:800;font-size:14px;border-radius:9px;color:#64748b;cursor:pointer;}
-    .wtab.on{background:#2563eb;color:#fff;}
-    .wtab-lay{border:0;background:#f1f5f9;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:700;color:#334155;cursor:pointer;}
-    body.ui-new.list-open .wtabs{display:flex;}
-    body.ui-new .columns{display:block;}
-    body.ui-new.wtab-search .columns>.panel.sel-panel{display:none;}
-    body.ui-new.wtab-sel .columns>.panel:not(.sel-panel){display:none;}
-    body.ui-new .panel-header{display:none;}
-    body.ui-new .columns>.panel.sel-panel{position:static;}
-    body.ui-new .sel-panel .selected-scroll{max-height:none;}
-    body.ui-new .action-bar,body.ui-new .lay-new-btn{display:none;}
-    body.ui-new.more-open .action-bar{display:flex;position:fixed;right:10px;bottom:74px;flex-direction:column;align-items:stretch;background:#fff;padding:8px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:70;margin:0;}
-    body.ui-new.more-open .action-bar button{padding:10px 14px;font-size:14px;margin:0;}
-    body.ui-new .action-bar #submitListBtn{display:none !important;}
-    body.ui-new .member{padding:11px 8px;gap:10px;cursor:pointer;}
-    body.ui-new .member-check{width:22px;height:22px;flex:0 0 22px;}
-    body.ui-new .member-name{font-size:14px;}
-    body.ui-new .member-sub,body.ui-new .member-taken{font-size:11px;}
-    body.ui-new .family-title{font-size:13px;} body.ui-new .family-meta{font-size:11px;}
-    body.ui-new .yn-head{display:none;}
-    body.ui-new .yn-wrap{gap:4px;}
-    body.ui-new .yn-wrap .yn{width:auto;flex:0 0 auto;font-size:0;line-height:1;border-radius:6px;padding:4px 6px;background:#dcfce7;color:#166534;}
-    body.ui-new .yn-wrap .yn::before{font-size:10px;font-weight:800;}
-    body.ui-new .yn-wrap .yn:first-child::before{content:'eKYC';} body.ui-new .yn-wrap .yn:last-child::before{content:'ABPS';}
-    body.ui-new .yn-wrap .yn.n{background:#fee2e2;color:#991b1b;} body.ui-new .yn-wrap .yn.n::after{content:' ✗';font-size:10px;font-weight:800;}
-    body.ui-new .selected-item{padding:9px 6px;} body.ui-new .selected-name{font-size:14px;} body.ui-new .selected-job{font-size:11px;}
-    body.ui-new .remove-btn{width:28px;height:28px;flex-basis:28px;font-size:14px;}
-    .wbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:65;background:#fff;border-top:1px solid #e2e8f0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px;align-items:center;box-shadow:0 -4px 14px rgba(0,0,0,.08);}
-    .wbar-c{flex:1;min-width:0;font-weight:800;font-size:15px;} .wbar-c small{display:block;font-weight:400;font-size:11px;color:#64748b;}
-    .wbar-c small.bad{color:#b91c1c;font-weight:700;}
-    .wbar-more{font-size:18px;font-weight:900;padding:10px 14px;} .wbar-submit{padding:12px 18px;font-weight:800;font-size:15px;}
-    body.ui-new.list-open:not(.list-readonly) .wbar{display:flex;}
-    body.ui-new.list-open:not(.list-readonly){padding-bottom:78px;}
-    .status{position:fixed;top:10px;left:50%;transform:translateX(-50%);width:min(92vw,520px);z-index:200;font-size:13px !important;padding:10px 12px !important;border-radius:12px !important;box-shadow:0 8px 24px rgba(0,0,0,.22);margin:0 !important;}
+    body.one-col .columns{grid-template-columns:1fr;}
+    body.one-col .columns > .panel.sel-panel{position:static;}
+    body.one-col .sel-panel .selected-scroll{max-height:none;}
     .link-btn{background:none;border:0;color:#2563eb;font-weight:700;font-size:12px;padding:2px 4px;cursor:pointer;text-decoration:underline;}
     .fam-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;}
     .yn-head{display:flex;gap:2px;flex:0 0 auto;font-size:8px;font-weight:800;color:#475569;padding-top:1px;}
@@ -1286,25 +1225,12 @@
 
     <!-- LIST (one per work) -->
     <div id="listPanel" class="list-panel" style="display:none;">
-      <div class="steps" id="lpSteps"></div>
-      <div class="lp-head" id="lpHead">
-        <button class="btn-light btn-small" onclick="goMyLists()">← আমার list</button>
-        <div class="lp-title" id="lpTitle"></div>
-      </div>
       <div class="lp-row">
         <select id="listSelect" aria-label="কোন কাজের list" onchange="listSelectChanged()"></select>
         <button class="btn-light btn-small" id="newListBtn" onclick="openNewList()">➕ নতুন list</button>
       </div>
       <div class="lp-meta" id="lpMeta"></div>
       <div id="listStateBar" class="list-state-bar" style="display:none;" role="status" aria-live="polite"></div>
-      <div id="lpCards" class="lp-cards"></div>
-      <div id="roView" class="ro-view">
-        <div class="ro-sum" id="roSum"></div>
-        <div class="ro-btns">
-          <button class="btn-success" onclick="openFinalPreview()">👀 Preview / PDF</button>
-          <button class="btn-light ro-del" id="roDelete" onclick="deleteMyList()">🗑 মুছুন</button>
-        </div>
-      </div>
     </div>
 
     <!-- CONTROL -->
@@ -1400,7 +1326,7 @@
 
       <button class="btn-success btn-small" onclick="openFinalPreview()">👀 Preview</button>
       <button class="btn-primary btn-small" id="submitListBtn" onclick="submitMyList()" style="display:none;">📤 Submit</button>
-      <button class="btn-light btn-small lay-new-btn" onclick="setUiLayout('new')" title="নতুন design: tab, বড় row, নিচে Submit">📱 নতুন design</button>
+      <button class="btn-light btn-small" id="colsBtn" onclick="toggleCols()" title="Search আর Selected পাশাপাশি (২ column) না উপর-নিচে (১ column)">▤ ১ column</button>
       <button class="btn-danger btn-small push-right" onclick="clearSelected()" title="Clear Selected">🗑 Clear</button>
 
 
@@ -1408,13 +1334,6 @@
 
 
 
-
-    <!-- NEW DESIGN: tabs (phone friendly); old design shows the two columns side by side -->
-    <div class="wtabs" id="wTabs">
-      <button class="wtab on" id="wTabSearch" onclick="setWorkerTab('search')">🔎 খুঁজুন</button>
-      <button class="wtab" id="wTabSel" onclick="setWorkerTab('sel')">✅ বাছাই (<span id="wTabCount">0</span>)</button>
-      <button class="wtab-lay" onclick="setUiLayout('cols')" title="আগের মতো ২ column">▥ ২ column</button>
-    </div>
 
     <!-- TWO COLUMNS -->
 
@@ -1527,22 +1446,12 @@
 
 
 
-  <!-- NEW DESIGN: bottom bar with the count and Submit -->
-  <div class="wbar" id="wBar">
-    <div class="wbar-c"><span id="wBarCount">0 জন বাছাই</span><small id="wBarNeed"></small></div>
-    <button class="btn-light wbar-more" onclick="toggleMore()" aria-label="আরও">⋯</button>
-    <button class="btn-success wbar-submit" onclick="submitMyList()">📤 Submit</button>
-  </div>
-
   <!-- NEW LIST -->
   <div class="gm-modal" id="newListModal" role="dialog" aria-modal="true" aria-labelledby="nlTitle">
     <div class="gm-box">
       <h3 id="nlTitle">➕ নতুন list (নতুন কাজ)</h3>
       <label for="nlName">Work Name — কোন কাজের list?</label>
       <input type="text" id="nlName" maxlength="200" placeholder="যেমন: Pukur Khanan, Village 002">
-      <label for="nlSup">Supervisor-এর নাম (ইংরেজিতে)</label>
-      <input type="text" id="nlSup" maxlength="100" placeholder="যেমন: Arup Roy (পরে দিলেও চলবে)">
-      <div class="gm-note">প্রতি ২০ জন worker-এ ১ জন Supervisor লাগে। আরও Supervisor পরে "✏️ নাম/Supervisor" থেকে যোগ করা যাবে।</div>
       <div class="gm-note">একই গ্রামে একাধিক কাজ চললে প্রতি কাজের জন্য আলাদা list খুলুন (সর্বোচ্চ ৫টা)। একজন worker একসময়ে একটাই list-এ থাকতে পারেন।</div>
       <div class="gm-actions">
         <button class="btn-light" onclick="closeGm('newListModal')">বাতিল</button>
@@ -2289,7 +2198,6 @@
   ====================================================== */
 
   function renderSearchResults(){
-    try{ if(workerTab==='sel'){ workerTab='search'; applyUiLayout(); } }catch(e){}
 
     const container =
       document
@@ -3323,7 +3231,7 @@ function fmtBnDate(s){ if(!s) return ''; const d=new Date(s); return d.toLocaleD
 function renderListMeta(){
   const box=document.getElementById('lpMeta'); if(!box) return;
   box.innerHTML='';
-  if(!currentUser || listState.noList){ renderChrome(); return; }
+  if(!currentUser || listState.noList) return;
   const sups=listState.supervisors||[], req=requiredSupervisors(selected.size);
   const lab=document.createElement('span'); lab.textContent='👷 Supervisor: '+(sups.length?sups.join(', '):'—');
   box.appendChild(lab);
@@ -3339,7 +3247,6 @@ function renderListMeta(){
     const d=document.createElement('button'); d.className='link-btn'; d.id='deleteListBtn'; d.textContent='🗑 List মুছুন'; d.style.color='#dc2626';
     d.onclick=deleteMyList; box.appendChild(d);
   }
-  renderChrome();
   // keep the selector's worker count live
   const opt=document.querySelector('#listSelect option[value="'+listState.listId+'"]');
   if(opt) opt.textContent=optionLabel({work_name:listState.workName,submit_state:listState.state,workers:selected.size});
@@ -3374,7 +3281,7 @@ function renderListState(){
       ? '⚠ ৫টা list হয়ে গেছে। নতুন list খুলতে আগে পুরনো একটা list বেছে "🗑 List মুছুন" চাপুন, অথবা Admin-কে বলুন।'
       : '📝 নতুন কাজের জন্য "➕ নতুন list" চাপুন আর কাজের নাম (Work Name) দিন। একই গ্রামে একাধিক কাজ থাকলে প্রতি কাজে আলাদা list।'+((listState.lists||[]).length?' জমা দেওয়া list উপরের তালিকা থেকে বেছে দেখা যাবে।':'');
     panel.appendChild(e);
-    bar.style.display='none'; if(sbtn) sbtn.style.display='none'; renderListCards(); renderListMeta(); return;
+    bar.style.display='none'; if(sbtn) sbtn.style.display='none'; renderListMeta(); return;
   }
   const st=listState.state;
   if(sbtn) sbtn.style.display=(st==='draft')?'':'none';
@@ -3422,19 +3329,15 @@ function openGm(id){ document.getElementById(id).classList.add('show'); }
 function closeGm(id){ document.getElementById(id).classList.remove('show'); }
 function openNewList(){
   if((listState.lists||[]).length>=5){ showStatus('একসঙ্গে সর্বোচ্চ ৫টা চলতি list রাখা যায়।','error'); return; }
-  document.getElementById('nlName').value=''; document.getElementById('nlSup').value=''; openGm('newListModal'); setTimeout(function(){ document.getElementById('nlName').focus(); },50);
+  document.getElementById('nlName').value=''; openGm('newListModal'); setTimeout(function(){ document.getElementById('nlName').focus(); },50);
 }
 function saveNewList(){
   const name=document.getElementById('nlName').value.trim();
   if(!name){ showStatus('Work Name লিখুন।','error'); return; }
   if(busySaving()) return;
   closeGm('newListModal'); showLoading('নতুন list খুলছে...');
-  const sup=document.getElementById('nlSup').value.trim();
   gramgAdapter.createList(name).then(function(items){
-    afterListLoaded(items); workerTab='search'; applyUiLayout();
-    if(!sup){ showStatus('✅ "'+name+'" list খোলা হয়েছে। এবার worker বাছুন, তারপর Supervisor-এর নাম দিন।','success'); return; }
-    return gramgAdapter.setMeta(name,[sup]).then(function(){ showStatus('✅ "'+name+'" list খোলা হয়েছে। এবার worker খুঁজে বাছুন।','success'); },
-      function(){ showStatus('List খোলা হয়েছে, কিন্তু Supervisor-এর নাম save হয়নি। "✏️ নাম/Supervisor" থেকে আবার দিন।','error'); });
+    afterListLoaded(items); showStatus('✅ "'+name+'" list খোলা হয়েছে। এবার worker বাছুন, তারপর Supervisor-এর নাম দিন।','success');
   }, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
 }
 function addSupRow(v){
@@ -3507,82 +3410,18 @@ function unsubmitMyList(){
     hideLoading(); showStatus('এখন list বদলাতে পারবেন। শেষ হলে আবার Submit করুন।','success');
   },function(e){ hideLoading(); if(e && e.authLost) return; showStatus((e&&e.message)||String(e),'error'); refreshSelectionFromServer(true); });
 }
-/* ---------- 2026-10-31 new design: list cards, steps, worker tabs (or the old 2 columns), read-only view ---------- */
-const UI_KEY='GramG2_uiLayout';
-let uiLayout=(function(){ try{ return localStorage.getItem(UI_KEY)||'new'; }catch(e){ return 'new'; } })(), workerTab='search';
-function applyUiLayout(){
-  const b=document.body;
-  b.classList.toggle('ui-new', uiLayout==='new');
-  b.classList.toggle('wtab-search', workerTab==='search'); b.classList.toggle('wtab-sel', workerTab==='sel');
-  document.getElementById('wTabSearch').classList.toggle('on', workerTab==='search');
-  document.getElementById('wTabSel').classList.toggle('on', workerTab==='sel');
+/* ---------- Worker অংশ: ২ column (পাশাপাশি) বা ১ column (উপর-নিচে), প্রত্যেক device নিজেরটা মনে রাখে ---------- */
+const COLS_KEY='GramG2_cols';
+function applyCols(one){
+  document.body.classList.toggle('one-col', one);
+  const b=document.getElementById('colsBtn'); if(b) b.textContent=one?'▥ ২ column':'▤ ১ column';
 }
-function setUiLayout(m){
-  uiLayout=m==='cols'?'cols':'new'; try{ localStorage.setItem(UI_KEY,uiLayout); }catch(e){}
-  document.body.classList.remove('more-open'); applyUiLayout();
-  showStatus(uiLayout==='new'?'নতুন design চালু হয়েছে। আগেরটা চাইলে "▥ ২ column" চাপুন।':'আগের ২ column design চালু হয়েছে। নতুনটা চাইলে "📱 নতুন design" চাপুন।','success');
+function toggleCols(){
+  const one=!document.body.classList.contains('one-col');
+  try{ localStorage.setItem(COLS_KEY, one?'1':'2'); }catch(e){}
+  applyCols(one);
 }
-function setWorkerTab(t){ workerTab=t==='sel'?'sel':'search'; applyUiLayout(); window.scrollTo(0,0); }
-function toggleMore(){ document.body.classList.toggle('more-open'); }
-document.addEventListener('click',function(e){
-  const b=document.body;
-  if(b.classList.contains('more-open') && !e.target.closest('.wbar-more') && (e.target.closest('.action-bar button') || !e.target.closest('.action-bar'))) b.classList.remove('more-open');
-  // new design: tapping anywhere on a worker row ticks it
-  if(!b.classList.contains('ui-new') || e.target.closest('input,button,a')) return;
-  const row=e.target.closest('#searchResults .member'); if(!row) return;
-  const cb=row.querySelector('.member-check'); if(!cb || cb.disabled) return;
-  if(listLocked(true)) return;
-  cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
-});
-function goMyLists(){
-  if(listState.noList || busySaving()) return;
-  document.getElementById('searchInput').value=''; clearSearchResults();
-  showLoading('আমার list খুলছে...');
-  gramgAdapter.closeList().then(afterListLoaded, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
-}
-function openListCard(id){
-  const sel=document.getElementById('listSelect'); sel.value=id; listSelectChanged(); workerTab='search'; applyUiLayout();
-}
-function renderListCards(){
-  const box=document.getElementById('lpCards'); if(!box) return; box.innerHTML='';
-  const lists=listState.lists||[]; if(!lists.length) return;
-  const h=document.createElement('div'); h.className='h'; h.textContent='আমার list ('+lists.length+'টা, সর্বোচ্চ ৫টা) — খুলতে ছুঁয়ে দিন'; box.appendChild(h);
-  lists.slice().sort(function(a,b){ const o={draft:0,submitted:1,locked:2}; return (o[a.submit_state]||0)-(o[b.submit_state]||0); }).forEach(function(l){
-    const c=document.createElement('button'); c.type='button'; c.className='lcard '+(l.submit_state||'draft');
-    const sups=l.supervisors||[];
-    c.innerHTML='<span class="pill '+escapeHtml(l.submit_state||'draft')+'">'+escapeHtml(STATE_LABEL[l.submit_state]||'')+'</span><b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b>'+
-      '<div class="m">'+(l.workers||0)+' জন'+(l.submitted_at?' · '+escapeHtml(fmtBnDate(l.submitted_at))+' জমা':'')+' · Supervisor: '+escapeHtml(sups.length?sups.join(', '):'—')+'</div>';
-    c.onclick=function(){ openListCard(l.list_id); };
-    box.appendChild(c);
-  });
-}
-function renderChrome(){
-  const open=!!currentUser && !listState.noList, n=selected.size;
-  const sups=(listState.supervisors||[]).length, req=requiredSupervisors(n), st=listState.state;
-  document.body.classList.toggle('home', !!currentUser && !!listState.noList);
-  document.body.classList.toggle('list-open', open);
-  const done=[open, open&&n>0, open&&n>0&&sups>=req, open&&st!=='draft'];
-  const names=['① List','② Worker','③ Supervisor','④ Submit'];
-  const nowAt=done.indexOf(false);
-  const sb=document.getElementById('lpSteps');
-  if(sb) sb.innerHTML=names.map(function(t,i){ return '<div class="st'+(done[i]?' done':(i===nowAt?' now':''))+'">'+t+(i===3&&done[3]?' ✓':'')+'</div>'; }).join('');
-  const tt=document.getElementById('lpTitle');
-  if(tt) tt.innerHTML=open?escapeHtml(listState.workName||'(নাম নেই)')+' <span class="pill '+escapeHtml(st)+'">'+escapeHtml(STATE_LABEL[st]||'')+'</span>':'';
-  const tc=document.getElementById('wTabCount'); if(tc) tc.textContent=n;
-  const bc=document.getElementById('wBarCount'); if(bc) bc.textContent=n+' জন বাছাই';
-  const bn=document.getElementById('wBarNeed');
-  if(bn){ bn.textContent=n?('Supervisor লাগবে '+req+' জন, দেওয়া আছে '+sups+' জন'):'worker খুঁজে ছুঁয়ে বাছুন'; bn.className=(n&&sups<req)?'bad':''; }
-  const ro=document.getElementById('roSum');
-  if(ro && open && st!=='draft'){
-    const vs={}; selected.forEach(function(x){ const p=parseJobCardClient(x.jobCard); if(p) vs[String(p.v).padStart(3,'0')]=true; });
-    ro.innerHTML='<div><span>Worker</span><b>'+n+' জন</b></div><div><span>Village</span><b>'+(Object.keys(vs).sort().join(', ')||'—')+'</b></div>'+
-      '<div><span>Supervisor</span><b>'+escapeHtml((listState.supervisors||[]).join(', ')||'—')+'</b></div>'+
-      (listState.submittedAt?'<div><span>জমা দেওয়া</span><b>'+escapeHtml(fmtBnDate(listState.submittedAt))+'</b></div>':'');
-  }
-  const del=document.getElementById('roDelete'); if(del) del.style.display=(st==='submitted')?'':'none';
-  if(open && st!=='draft') document.body.classList.remove('more-open');
-}
-applyUiLayout();
+(function(){ let v='2'; try{ v=localStorage.getItem(COLS_KEY)||'2'; }catch(e){} applyCols(v==='1'); })();
 /* ---------- "শেষ data": worker-দের eKYC/ABPS তথ্য কবে, কোথা থেকে update হয়েছে ---------- */
 function loadDataStatus(){
   const box=document.getElementById('dataStatus'); if(!box) return;

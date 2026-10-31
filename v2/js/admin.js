@@ -225,6 +225,7 @@
         var same = r.sent_account_no === r.account_no && r.sent_ifsc === r.ifsc;
         c.appendChild(el('div', 'Sent: A/C ' + (r.sent_account_no || '—') + '  ·  IFSC ' + (r.sent_ifsc || '—') + (same ? '  (same as data)' : ''), 'acc mono sent'));
       }
+      if (r.holder_name) c.appendChild(el('div', 'Name in passbook: ' + r.holder_name, 'muted'));
       c.appendChild(el('div', 'In data: ' + (r.account_no || '—') + (r.ifsc ? '  ·  ' + r.ifsc : ''), 'acc mono'));
       c.appendChild(el('div', '📷 ' + (r.uploaded_by || '') + '  ·  ' + fmtDate(r.uploaded_at) + (r.work_name ? '  ·  ' + r.work_name : '') +
         (r.size ? '  ·  ' + Math.round(r.size / 1024) + ' KB' : ''), 'muted'));
@@ -252,7 +253,7 @@
     $('phvTitle').textContent = r.applicant_name || 'Account copy';
     $('phvSub').textContent = r.job_card_no + ' · App ' + r.applicant_no + ' · ' + fmtDate(r.uploaded_at) + ' · ' + (r.uploaded_by || '');
     $('phvAcc').textContent = (r.sent_account_no || r.sent_ifsc ? 'Sent: A/C ' + (r.sent_account_no || '—') + ' · IFSC ' + (r.sent_ifsc || '—') + '   |   ' : '') +
-      'In data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '');
+      'In data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '') + (r.holder_name ? '   |   Name in passbook: ' + r.holder_name : '');
     $('phvImg').removeAttribute('src');
     $('phvModal').classList.add('show');
     SB.storage.signedUrl(BUCKET, r.path, 300).then(function (u) { if (ph.cur === r) $('phvImg').src = u; },

@@ -383,13 +383,19 @@
         throw bnError(e || {});
       });
     },
+    searchAccountWorker: function (q) {
+      return SB.rpc('search_account_worker', { p_query: q }).catch(function (e) {
+        if (e && e.status === 404) e.code = 'PHOTO_SETUP';
+        throw bnError(e || {});
+      });
+    },
     accountRequests: function () {
       return SB.rpc('get_account_requests', {}, { retry: true }).catch(function (e) {
         if (e && e.status === 404) return [];                         // SQL v181 not run yet
         throw bnError(e || {});
       });
     },
-    uploadPhoto: function (wid, blob, accountNo, ifsc) {
+    uploadPhoto: function (wid, blob, accountNo, ifsc, holder) {
       var gp = st.ctx && st.ctx.gp_id, uid = SB.userId();
       if (!gp || !uid) return Promise.reject(bnError({ code: 'NOT_AUTHORIZED' }));
       var path = gp + '/' + uid + '/w' + wid + '_' + Date.now().toString(36) + '.jpg';
@@ -401,15 +407,17 @@
         e.stage = 'upload'; throw e;
       }).then(function () {
         var args = { p_worker_id: wid, p_list_id: st.listId, p_path: path, p_size: blob.size };
-        if (accountNo || ifsc) { args.p_account_no = accountNo || null; args.p_ifsc = ifsc || null; }
-        return SB.rpc('add_account_photo', args).catch(function (e) {
-          // database without the Account No / IFSC columns yet (v181 not run): send the photo alone
-          if (e && e.status === 404 && args.p_account_no !== undefined) {
-            delete args.p_account_no; delete args.p_ifsc;
-            return SB.rpc('add_account_photo', args);
-          }
-          throw e;
-        });
+        if (accountNo || ifsc || holder) { args.p_account_no = accountNo || null; args.p_ifsc = ifsc || null; }
+        if (holder) args.p_holder_name = holder;
+        function call() {
+          return SB.rpc('add_account_photo', args).catch(function (e) {
+            // older database (v182 / v181 not run yet): drop the newer fields and try again
+            if (e && e.status === 404 && args.p_holder_name !== undefined) { delete args.p_holder_name; return call(); }
+            if (e && e.status === 404 && args.p_account_no !== undefined) { delete args.p_account_no; delete args.p_ifsc; return call(); }
+            throw e;
+          });
+        }
+        return call();
       }).then(function (r) {
         var old = (r && r.old_paths) || [];
         SB.storage.remove('account-copies', old).catch(function () {});   // the admin clean-up catches any left over

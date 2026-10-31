@@ -573,8 +573,35 @@
     }
 
     /* account copy photo */
+    .acpage{position:fixed;inset:0;z-index:96;background:#f3f6f4;overflow:auto;display:none;-webkit-overflow-scrolling:touch;}
+    .acpage.show{display:block;}
+    .ac-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 12px;}
+    .ac-top b{font-size:17px;}
+    .ac-body{max-width:620px;margin:0 auto;padding:12px 12px 40px;}
+    .ac-note{font-size:14px;color:#475569;line-height:1.45;margin-bottom:10px;}
+    .ac-other-btn{width:100%;background:#fff;border:1.5px solid #cbd5e1;border-radius:14px;padding:13px;font-size:16px;font-weight:800;color:#0f172a;cursor:pointer;}
+    .ac-other{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px;margin-top:8px;}
+    .ac-other input,.ac-search{width:100%;box-sizing:border-box;border:1.5px solid #cbd5e1;border-radius:12px;padding:12px;font-size:16px;background:#fff;}
+    .ac-search{margin:10px 0;}
+    .ac-grp{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:12px;}
+    .ac-gh{display:flex;justify-content:space-between;align-items:center;background:#eef2f6;padding:10px 14px;font-weight:800;font-size:16px;}
+    .ac-gh small{font-weight:600;color:#64748b;font-size:13px;}
+    .ac-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:0;border-top:1px solid #edf2f7;padding:12px 14px;font:inherit;color:inherit;cursor:pointer;}
+    .ac-row:first-of-type{border-top:0;}
+    .ac-row .m{flex:1;min-width:0;} .ac-row .nm{font-size:16px;font-weight:800;line-height:1.25;} .ac-row .jc{font-size:12.5px;color:#64748b;margin-top:3px;word-break:break-all;}
+    .ac-row .st{font-size:12px;font-weight:700;margin-top:3px;color:#9a3412;} .ac-row .st.ok{color:#166534;}
+    .ac-row .go{font-size:22px;flex:0 0 auto;} .ac-row .go small{font-size:18px;color:#94a3b8;margin-left:4px;}
+    .ac-row.sent{background:#f0fdf4;}
+    .ac-who{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px 14px;} .ac-who .nm{font-size:18px;font-weight:800;} .ac-who .jc{font-size:13px;color:#64748b;margin-top:3px;}
+    .ac-ret{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:8px 10px;margin-top:8px;font-weight:700;font-size:13px;}
+    .ac-h{font-size:17px;font-weight:800;margin:14px 0 2px;} .ac-hint{font-size:13px;color:#64748b;margin:2px 0 8px;}
+    .ac-cam{display:block;width:100%;background:#16a34a;color:#fff;border:0;border-radius:14px;padding:18px;font-size:19px;font-weight:800;cursor:pointer;}
+    .ac-gal{display:block;margin:8px auto 0;background:#fff;border:1.5px solid #cbd5e1;border-radius:12px;padding:10px 22px;font-size:16px;font-weight:700;cursor:pointer;}
+    .ac-send{display:block;width:100%;margin-top:14px;background:#2563eb;color:#fff;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:800;cursor:pointer;}
+    .ac-send:disabled{opacity:.45;}
     .acreq-bar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff7ed;border:1px solid #fdba74;border-left:6px solid #f97316;border-radius:12px;padding:11px 12px;margin:4px 0 10px;cursor:pointer;font:inherit;color:#7c2d12;}
     .acreq-bar b{font-size:15px;} .acreq-bar small{display:block;color:#9a3412;font-size:12px;margin-top:2px;}
+    .acreq-bar.quiet{background:#fff;border-color:#e2e8f0;border-left-color:#94a3b8;color:#334155;} .acreq-bar.quiet small{color:#64748b;}
     .acreq-bar .n{margin-left:auto;background:#f97316;color:#fff;border-radius:20px;padding:3px 10px;font-weight:800;}
     .acr-row{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #edf2f7;}
     .acr-row .m{flex:1;min-width:0;} .acr-row .j{font-size:11px;font-weight:800;color:#334155;} .acr-row .nm{font-size:14px;font-weight:700;}
@@ -590,8 +617,7 @@
     .ph-acc input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;font-size:16px;letter-spacing:.5px;font-family:ui-monospace,Consolas,monospace;}
     .ph-acc input.bad{border-color:#dc2626;background:#fef2f2;} .ph-acc input.good{border-color:#16a34a;}
     .ph-err{color:#b91c1c;font-size:12px;font-weight:700;min-height:16px;margin-top:5px;}
-    #phImg{max-height:34vh!important;}
-    #phImg{display:block;max-width:100%;max-height:52vh;margin:8px auto;border-radius:8px;border:1px solid #e2e8f0;}
+    #phImg{display:block;max-width:100%;max-height:40vh;margin:10px auto 2px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;}
     .selected-item{
 
       display:flex;
@@ -1650,34 +1676,41 @@
 
   <!-- INSTALL HELP (iPhone etc.) -->
   <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
-  <div class="gm-modal" id="acReqModal" role="dialog" aria-modal="true" aria-labelledby="acrTitle">
-    <div class="gm-box" style="max-width:560px;">
-      <h3 id="acrTitle">📷 Account copy চাই</h3>
-      <div class="gm-note" id="acrNote">এদের account freeze হয়নি। Passbook / account copy-র photo তুলে পাঠান।</div>
-      <select id="acrVillage" style="width:100%;margin-top:6px;padding:8px;border-radius:9px;border:1px solid #cbd5e1;"></select>
-      <div id="acrList" style="overflow:auto;max-height:58vh;margin-top:6px;border:1px solid #e2e8f0;border-radius:8px;"></div>
-      <div class="gm-actions"><button class="btn-primary" onclick="closeGm('acReqModal')">বন্ধ</button></div>
+  <input type="file" id="galleryInput" accept="image/*" style="display:none">
+  <!-- Account copy চাই: list page -->
+  <div class="acpage" id="acPage" role="dialog" aria-modal="true" aria-labelledby="acrTitle">
+    <div class="ac-top"><button class="btn-light btn-small" onclick="closeAcPage()">← ফিরে যান</button><b id="acrTitle">🏦 Account copy চাই</b></div>
+    <div class="ac-body">
+      <div class="ac-note" id="acrNote">এদের account freeze হয়নি। নামে ছুঁয়ে passbook-এর photo তুলে পাঠান।</div>
+      <button type="button" class="ac-other-btn" onclick="toggleAcOther()">➕ অন্য কারো account পাঠান</button>
+      <div id="acOther" class="ac-other" style="display:none;">
+        <input type="search" id="acOtherQ" placeholder="নাম বা Job Card (যেমন 16/98)" autocomplete="off">
+        <div id="acOtherRes"></div>
+      </div>
+      <input type="search" id="acrSearch" class="ac-search" placeholder="🔎 নাম বা Job Card খুঁজুন" autocomplete="off">
+      <div id="acrList"></div>
     </div>
   </div>
-
-  <div class="gm-modal" id="photoModal" role="dialog" aria-modal="true" aria-labelledby="phTitle">
-    <div class="gm-box" style="max-width:520px;">
-      <h3 id="phTitle">📷 Account copy</h3>
-      <div class="gm-note" id="phWho"></div>
-      <div class="gm-note" id="phRet" style="display:none;color:#991b1b;font-weight:700;"></div>
-      <img id="phImg" alt="">
-      <div class="gm-note" id="phInfo"></div>
+  <!-- Account copy: send form -->
+  <div class="acpage" id="acForm" role="dialog" aria-modal="true" aria-labelledby="phTitle">
+    <div class="ac-top"><button class="btn-light btn-small" onclick="closePhoto()">← ফিরে যান</button><b id="phTitle">🏦 Account পাঠান</b></div>
+    <div class="ac-body">
+      <div class="ac-who"><div class="nm" id="phWho"></div><div class="jc" id="phJc"></div></div>
+      <div class="ac-ret" id="phRet" style="display:none;"></div>
+      <div class="ac-h">Passbook-এর photo</div>
+      <div class="ac-hint">নাম আর Account number লেখা page-টার পরিষ্কার photo তুলুন।</div>
+      <button type="button" class="ac-cam" onclick="pickPhoto(true)">📷 Camera</button>
+      <button type="button" class="ac-gal" onclick="pickPhoto(false)">🖼️ Gallery</button>
+      <img id="phImg" alt="" style="display:none;">
+      <div class="ac-hint" id="phInfo"></div>
       <div class="ph-acc">
-        <label for="phAcc">Account No</label><input type="text" id="phAcc" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="শুধু সংখ্যা">
+        <label for="phAcc">Account No (পড়া গেলে লিখুন)</label><input type="text" id="phAcc" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="শুধু সংখ্যা">
         <label for="phAcc2">Account No আবার লিখুন</label><input type="text" id="phAcc2" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="মিলিয়ে দেখার জন্য">
-        <label for="phIfsc">IFSC Code</label><input type="text" id="phIfsc" autocomplete="off" autocapitalize="characters" maxlength="11" placeholder="যেমন SBIN0001234">
+        <label for="phIfsc">IFSC Code (পড়া গেলে লিখুন)</label><input type="text" id="phIfsc" autocomplete="off" autocapitalize="characters" maxlength="11" placeholder="যেমন SBIN0001234">
+        <label for="phHolder">Passbook-এ লেখা নাম (ইংরেজিতে)</label><input type="text" id="phHolder" autocomplete="off" autocapitalize="characters" maxlength="100" placeholder="যেমন RAMESH CHANDRA BARMAN" style="font-family:inherit;">
         <div class="ph-err" id="phErr"></div>
       </div>
-      <div class="gm-actions">
-        <button class="btn-light" onclick="closePhoto()">বাতিল</button>
-        <button class="btn-light" onclick="retakePhoto()">🔄 আবার তুলুন</button>
-        <button class="btn-primary" id="phSend" onclick="sendPhoto()">⬆ Admin-কে পাঠান</button>
-      </div>
+      <button type="button" class="ac-send" id="phSend" onclick="sendPhoto()">⬆ Admin-কে পাঠান</button>
     </div>
   </div>
 
@@ -1731,8 +1764,8 @@
   </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261031s"></script>
-<script src="./js/gramg-adapter.js?v=20261031s"></script>
+<script src="./js/sb-client.js?v=20261101a"></script>
+<script src="./js/gramg-adapter.js?v=20261101a"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3855,25 +3888,28 @@ function loadDataStatus(){
 /* ---------- K-Desk results (Demand / Allocation) of the current list ---------- */
 /* ---------- account copy (passbook) photo ---------- */
 const photoState=new Map();          // worker id -> 'new' | 'done'
-let photoTimer=null, photoItem=null, photoBlob=null, photoUrl=null, photoKeepAcc=false;
+let photoTimer=null, photoItem=null, photoBlob=null, photoUrl=null;
 const IFSC_RE=/^[A-Z]{4}0[A-Z0-9]{6}$/;
 function accCheck(final){
-  const a=document.getElementById('phAcc'), a2=document.getElementById('phAcc2'), f=document.getElementById('phIfsc');
+  const a=document.getElementById('phAcc'), a2=document.getElementById('phAcc2'), f=document.getElementById('phIfsc'), h=document.getElementById('phHolder');
   a.value=a.value.replace(/\D/g,''); a2.value=a2.value.replace(/\D/g,''); f.value=f.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  h.value=h.value.replace(/[^A-Za-z .]/g,'').toUpperCase();
+  const hasA=a.value.length>0||a2.value.length>0, okA=/^\d{6,20}$/.test(a.value), okA2=okA && a2.value===a.value;
+  const hasF=f.value.length>0, okF=IFSC_RE.test(f.value);
+  a.classList.toggle('good',okA); a.classList.toggle('bad',hasA&&(final||a.value.length>=6)&&!okA);
+  a2.classList.toggle('good',okA2); a2.classList.toggle('bad',hasA&&(final||a2.value.length>=a.value.length&&a2.value.length>0)&&!okA2);
+  f.classList.toggle('good',okF); f.classList.toggle('bad',hasF&&(final||f.value.length>=11)&&!okF);
   let err='';
-  const okA=/^\d{6,20}$/.test(a.value), okA2=okA && a2.value===a.value, okF=IFSC_RE.test(f.value);
-  a.classList.toggle('good',okA); a.classList.toggle('bad',(final||a.value.length>=6)&&!okA);
-  a2.classList.toggle('good',okA2); a2.classList.toggle('bad',(final||a2.value.length>=a.value.length&&a2.value.length>0)&&!okA2);
-  f.classList.toggle('good',okF); f.classList.toggle('bad',(final||f.value.length>=11)&&!okF);
   if(final){
-    if(!okA) err='Account No ঠিক নয় (৬–২০টা সংখ্যা)।';
-    else if(!okA2) err='দুবারের Account No মেলেনি।';
-    else if(!okF) err='IFSC ঠিক নয় — ১১ অক্ষর, ৫ নম্বরটা 0 (যেমন SBIN0001234)।';
+    if(!photoBlob) err='আগে passbook-এর photo তুলুন।';
+    else if(hasA&&!okA) err='Account No ঠিক নয় (৬–২০টা সংখ্যা)।';
+    else if(hasA&&!okA2) err='দুবারের Account No মেলেনি।';
+    else if(hasF&&!okF) err='IFSC ঠিক নয় — ১১ অক্ষর, ৫ নম্বরটা 0 (যেমন SBIN0001234)।';
   }
   document.getElementById('phErr').textContent=err;
-  return okA&&okA2&&okF;
+  return !err;
 }
-['phAcc','phAcc2','phIfsc'].forEach(function(id){ document.addEventListener('input',function(e){ if(e.target&&e.target.id===id) accCheck(false); }); });
+document.addEventListener('input',function(e){ if(e.target&&/^ph(Acc|Acc2|Ifsc|Holder)$/.test(e.target.id)) accCheck(false); });
 function paintPhotoBtn(b){
   const st=photoState.get(Number(b.dataset.wid));
   b.classList.toggle('has',st==='new'); b.classList.toggle('done',st==='done');
@@ -3892,15 +3928,30 @@ function schedulePhotoStates(){
     },function(){});
   },700);
 }
+function openPage(id){ document.getElementById(id).classList.add('show'); document.getElementById(id).scrollTop=0; document.body.style.overflow='hidden'; }
+function closePage(id){ document.getElementById(id).classList.remove('show'); if(!document.querySelector('.acpage.show')) document.body.style.overflow=''; }
+// Open the send form for one worker: {wid, jobCard, name, returnReason}
 function startPhoto(item){
-  photoItem=item;
-  const inp=document.getElementById('photoInput'); inp.value=''; inp.click();
-}
-function retakePhoto(){ photoKeepAcc=true; closePhoto(true); if(photoItem) startPhoto(photoItem); }
-function closePhoto(keepItem){
-  closeGm('photoModal');
+  photoItem=item; photoBlob=null;
   if(photoUrl){ URL.revokeObjectURL(photoUrl); photoUrl=null; }
-  photoBlob=null; if(!keepItem) photoItem=null;
+  document.getElementById('phWho').textContent=item.name||'';
+  const p=parseJobCardClient(item.jobCard);
+  document.getElementById('phJc').textContent=(p?'Household '+String(p.h).padStart(3,'0')+' · ':'')+(item.jobCard||'');
+  const rr=item.returnReason||'';
+  document.getElementById('phRet').style.display=rr?'':'none'; document.getElementById('phRet').textContent=rr?'✕ Admin ফেরত পাঠিয়েছেন: '+rr:'';
+  ['phAcc','phAcc2','phIfsc','phHolder'].forEach(function(id){ const x=document.getElementById(id); x.value=''; x.classList.remove('bad','good'); });
+  document.getElementById('phHolder').value=String(item.name||'').toUpperCase().replace(/[^A-Z .]/g,'');
+  const img=document.getElementById('phImg'); img.style.display='none'; img.removeAttribute('src');
+  const had=photoState.get(Number(item.wid))==='new';
+  document.getElementById('phInfo').textContent=had?'এর আগে একটা photo পাঠানো হয়েছে; নতুন পাঠালে আগেরটা বদলে যাবে।':'';
+  document.getElementById('phErr').textContent='';
+  openPage('acForm');
+}
+function pickPhoto(camera){ const inp=document.getElementById(camera?'photoInput':'galleryInput'); inp.value=''; inp.click(); }
+function closePhoto(){
+  closePage('acForm');
+  if(photoUrl){ URL.revokeObjectURL(photoUrl); photoUrl=null; }
+  photoBlob=null; photoItem=null;
 }
 function loadImageFile(file){
   return new Promise(function(res,rej){
@@ -3932,92 +3983,114 @@ function compressPhoto(file){
     return next();
   });
 }
-document.getElementById('photoInput').addEventListener('change',function(){
+function photoChosen(){
   const f=this.files&&this.files[0]; if(!f||!photoItem) return;
   showLoading('ছবি ছোট করা হচ্ছে...');
   compressPhoto(f).then(function(b){
     hideLoading();
     photoBlob=b; if(photoUrl) URL.revokeObjectURL(photoUrl); photoUrl=URL.createObjectURL(b);
-    document.getElementById('phImg').src=photoUrl;
-    document.getElementById('phWho').textContent=shortJobCard(photoItem.jobCard)+' · '+photoItem.name;
-    const had=photoState.get(Number(photoItem.wid))==='new';
-    ['phAcc','phAcc2','phIfsc'].forEach(function(id){ const x=document.getElementById(id); x.classList.remove('bad','good'); if(!photoKeepAcc) x.value=''; });
+    const img=document.getElementById('phImg'); img.src=photoUrl; img.style.display='block';
+    document.getElementById('phInfo').textContent='✓ Photo নেওয়া হয়েছে ('+Math.round(b.size/1024)+' KB)। Account number পরিষ্কার পড়া যাচ্ছে কিনা দেখে নিন।';
     document.getElementById('phErr').textContent='';
-    const rr=photoItem.returnReason||'';
-    document.getElementById('phRet').style.display=rr?'':'none'; document.getElementById('phRet').textContent=rr?'✕ Admin ফেরত পাঠিয়েছেন: '+rr:'';
-    photoKeepAcc=false;
-    document.getElementById('phInfo').textContent='Size: '+Math.round(b.size/1024)+' KB · Account number পরিষ্কার পড়া যাচ্ছে কিনা দেখে নিন।'+(had?' (আগের photo-টা বদলে যাবে)':'');
-    openGm('photoModal');
   },function(e){ hideLoading(); showStatus((e&&e.message)||String(e),'error'); });
-});
+}
+document.getElementById('photoInput').addEventListener('change',photoChosen);
+document.getElementById('galleryInput').addEventListener('change',photoChosen);
 function sendPhoto(){
-  if(!photoBlob||!photoItem) return;
+  if(!photoItem) return;
   if(!accCheck(true)) return;
   const item=photoItem, blob=photoBlob;
-  const acc=document.getElementById('phAcc').value, ifsc=document.getElementById('phIfsc').value;
+  const a=document.getElementById('phAcc').value, f=document.getElementById('phIfsc').value, h=document.getElementById('phHolder').value.trim();
   const btn=document.querySelector('.photo-btn[data-wid="'+item.wid+'"]'); if(btn) btn.classList.add('busy');
-  closePhoto();
   showLoading('Photo পাঠানো হচ্ছে...');
-  gramgAdapter.uploadPhoto(item.wid,blob,acc,ifsc).then(function(){
+  gramgAdapter.uploadPhoto(item.wid,blob,a,f,h).then(function(){
     hideLoading(); if(btn) btn.classList.remove('busy');
+    closePhoto();
     photoState.set(Number(item.wid),'new'); paintPhotoBtns();
     acReqs.forEach(function(r){ if(Number(r.worker_id)===Number(item.wid)){ r.status='photo'; r.return_reason=null; } });
-    renderAcReqBar(); if(document.getElementById('acReqModal').classList.contains('show')) renderAcReqList();
+    renderAcReqBar(); if(document.getElementById('acPage').classList.contains('show')) renderAcReqList();
     showStatus('✅ '+item.name+' — Account copy Admin-কে পাঠানো হয়েছে।','success');
   },function(e){
     hideLoading(); if(btn) btn.classList.remove('busy');
-    if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error');
+    if(e&&e.authLost) return; document.getElementById('phErr').textContent=(e&&e.message)||String(e);
   });
 }
 /* ---------- account copy requests (account not frozen) ---------- */
-let acReqs=[];
+let acReqs=[], acOtherTimer=null;
 function loadAcRequests(){
   if(!currentUser) return;
   gramgAdapter.accountRequests().then(function(rows){
     acReqs=rows||[];
     acReqs.forEach(function(r){ const w=Number(r.worker_id); if(r.status==='photo') photoState.set(w,'new'); else if(photoState.get(w)==='new') photoState.delete(w); });
     renderAcReqBar();
-    if(document.getElementById('acReqModal').classList.contains('show')) renderAcReqList();
+    if(document.getElementById('acPage').classList.contains('show')) renderAcReqList();
   },function(){});
 }
 function renderAcReqBar(){
   const bar=document.getElementById('acReqBar'); if(!bar) return;
   const open=acReqs.filter(function(r){ return r.status==='open'; }).length;
   const ret=acReqs.filter(function(r){ return r.status==='open' && r.return_reason; }).length;
-  if(!acReqs.length){ bar.innerHTML=''; return; }
-  bar.innerHTML='<button type="button" class="acreq-bar"><span style="font-size:24px;">📷</span><span><b>Account copy চাই</b><small>'+
-    (open?open+' জনের passbook photo বাকি'+(ret?' ('+ret+' জন ফেরত এসেছে)':''):'সবার photo পাঠানো হয়েছে ✓')+'</small></span><span class="n">'+open+'/'+acReqs.length+'</span></button>';
+  bar.innerHTML='<button type="button" class="acreq-bar"><span style="font-size:24px;">🏦</span><span><b>Account copy চাই</b><small>'+
+    (!acReqs.length?'কোনো request নেই · অন্য কারো account পাঠাতে এখানে ছুঁয়ে দিন':open?open+' জনের passbook photo বাকি'+(ret?' ('+ret+' জন ফেরত এসেছে)':''):'সবার photo পাঠানো হয়েছে ✓')+
+    '</small></span>'+(open?'<span class="n">'+open+'</span>':'')+'</button>';
+  bar.firstChild.classList.toggle('quiet',!open);
   bar.firstChild.onclick=openAcRequests;
 }
 function openAcRequests(){
-  const sel=document.getElementById('acrVillage'), keep=sel.value;
-  const vs=[]; acReqs.forEach(function(r){ if(vs.indexOf(r.village_no)<0) vs.push(r.village_no); });
-  vs.sort(function(a,b){ return a-b; });
-  sel.innerHTML='<option value="">সব village ('+acReqs.length+')</option>'+vs.map(function(v){
-    const n=acReqs.filter(function(r){ return r.village_no===v; }).length;
-    return '<option value="'+v+'">Village '+String(v).padStart(3,'0')+' ('+n+')</option>'; }).join('');
-  sel.value=keep; if(sel.value!==keep) sel.value='';
-  renderAcReqList(); openGm('acReqModal');
+  document.getElementById('acrSearch').value='';
+  renderAcReqList(); openPage('acPage'); loadAcRequests();
+}
+function closeAcPage(){ closePage('acPage'); }
+function acRow(r, onClick){
+  const sent=r.status==='photo';
+  const b=document.createElement('button'); b.type='button'; b.className='ac-row'+(sent?' sent':'');
+  b.innerHTML='<div class="m"><div class="nm">'+escapeHtml(r.applicant_name)+'</div><div class="jc">Household '+String(r.household_no||'').padStart(3,'0')+' · '+escapeHtml(r.job_card_no)+(r.applicant_no?' · App '+escapeHtml(String(r.applicant_no)):'')+'</div>'+
+    (r.status?'<div class="st'+(sent?' ok':'')+'">'+(sent?'✓ Photo পাঠানো হয়েছে':(r.return_reason?'✕ ফেরত: '+escapeHtml(r.return_reason):'⏳ Photo বাকি'))+'</div>':'')+
+    '</div><span class="go">📷<small>›</small></span>';
+  b.onclick=onClick; return b;
 }
 function renderAcReqList(){
   const box=document.getElementById('acrList'); box.innerHTML='';
-  const v=document.getElementById('acrVillage').value;
-  const rows=acReqs.filter(function(r){ return !v || String(r.village_no)===v; });
+  const q=document.getElementById('acrSearch').value.trim().toLowerCase();
   const notes=[]; acReqs.forEach(function(r){ if(r.note && notes.indexOf(r.note)<0) notes.push(r.note); });
-  document.getElementById('acrNote').textContent='এদের account freeze হয়নি। Passbook / account copy-র photo তুলে পাঠান।'+(notes.length?' Admin: '+notes.join(' · '):'');
-  if(!rows.length){ box.innerHTML='<div class="selected-empty">কেউ নেই।</div>'; return; }
-  rows.forEach(function(r,i){
-    const sent=r.status==='photo';
-    const d=document.createElement('div'); d.className='acr-row';
-    d.innerHTML='<div class="selected-sl">'+(i+1)+'</div><div class="m"><div class="j">'+escapeHtml(shortJobCard(r.job_card_no))+' · App '+escapeHtml(String(r.applicant_no))+'</div>'+
-      '<div class="nm">'+escapeHtml(r.applicant_name)+'</div><div class="st'+(sent?' ok':'')+'">'+(sent?'✓ Photo পাঠানো হয়েছে':(r.return_reason?'✕ ফেরত: '+escapeHtml(r.return_reason):'⏳ Photo বাকি'))+'</div></div>'+
-      '<button class="photo-btn" title="Account copy (passbook) photo">📷</button>';
-    const b=d.querySelector('.photo-btn'); b.dataset.wid=r.worker_id; paintPhotoBtn(b);
-    b.onclick=function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); };
-    box.appendChild(d);
+  document.getElementById('acrNote').textContent='এদের account freeze হয়নি। নামে ছুঁয়ে passbook-এর photo তুলে পাঠান।'+(notes.length?' Admin: '+notes.join(' · '):'');
+  const m=q.match(/(\d{1,3})\s*\/\s*(\d{1,4})$/);
+  const rows=acReqs.filter(function(r){
+    if(!q) return true;
+    if(m) return Number(r.village_no)===Number(m[1]) && Number(r.household_no)===Number(m[2]);
+    return String(r.applicant_name||'').toLowerCase().indexOf(q)>=0 || String(r.job_card_no||'').toLowerCase().indexOf(q)>=0;
+  });
+  if(!rows.length){ box.innerHTML='<div class="selected-empty">'+(acReqs.length?'কেউ মেলেনি।':'Admin এখনো কারো account চাননি।')+'</div>'; return; }
+  const groups={}, order=[];
+  rows.forEach(function(r){ const v=r.village_no; if(!groups[v]){ groups[v]=[]; order.push(v); } groups[v].push(r); });
+  order.forEach(function(v){
+    const g=document.createElement('div'); g.className='ac-grp';
+    const wait=groups[v].filter(function(r){ return r.status==='open'; }).length;
+    g.innerHTML='<div class="ac-gh"><span>Village '+String(v).padStart(3,'0')+'</span><small>'+(wait?wait+' জন বাকি':'সব পাঠানো ✓')+'</small></div>';
+    groups[v].forEach(function(r){
+      g.appendChild(acRow(r,function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); }));
+    });
+    box.appendChild(g);
   });
 }
-document.getElementById('acrVillage').addEventListener('change',renderAcReqList);
+function toggleAcOther(){
+  const o=document.getElementById('acOther'); const show=o.style.display==='none';
+  o.style.display=show?'':'none'; if(show){ document.getElementById('acOtherQ').value=''; document.getElementById('acOtherRes').innerHTML=''; document.getElementById('acOtherQ').focus(); }
+}
+document.getElementById('acOtherQ').addEventListener('input',function(){
+  clearTimeout(acOtherTimer);
+  const q=this.value.trim(), res=document.getElementById('acOtherRes');
+  if(q.length<2){ res.innerHTML=''; return; }
+  acOtherTimer=setTimeout(function(){
+    res.innerHTML='<div class="ac-hint">খুঁজছি...</div>';
+    gramgAdapter.searchAccountWorker(q).then(function(rows){
+      res.innerHTML='';
+      if(!rows.length){ res.innerHTML='<div class="ac-hint">কাউকে পাওয়া যায়নি।</div>'; return; }
+      rows.forEach(function(r){ res.appendChild(acRow(r,function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name }); })); });
+    },function(e){ res.innerHTML='<div class="ph-err">'+escapeHtml((e&&e.message)||String(e))+'</div>'; });
+  },400);
+});
+document.getElementById('acrSearch').addEventListener('input',renderAcReqList);
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') loadAcRequests(); });
 function openResults(){
   showLoading('ফলাফল আনছি...');
@@ -4083,7 +4156,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261031s"></script>
+<script src="./js/i18n.js?v=20261101a"></script>
 </body>
 
 </html>

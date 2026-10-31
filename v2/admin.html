@@ -277,6 +277,28 @@
       <div class="muted" id="phStore"></div>
     </div>
     <div class="phcards" id="phCards"></div>
+    <div class="card">
+      <h2>📋 Ask supervisors for account copies</h2>
+      <div class="muted">Paste the workers whose account is not frozen (from the Wage List page or any Excel), or choose the Excel / CSV file. Each line needs the <b>Job Card No</b> and the <b>name</b> (the name picks the right person when a job card has more than one). The supervisors see them in the phone app as <b>📷 Account copy চাই</b>.</div>
+      <textarea id="rqText" rows="5" style="width:100%;margin-top:8px;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font:12.5px ui-monospace,Consolas,monospace;" placeholder="WB-08-005-014-002/012   RINA BARMAN&#10;WB-08-005-014-002/013   HARI ROY"></textarea>
+      <div class="grid3">
+        <div><label class="f" for="rqFile">or Excel / CSV file</label><input type="file" id="rqFile" accept=".xlsx,.xls,.csv"></div>
+        <div><label class="f" for="rqWho">Send to</label><select id="rqWho"></select></div>
+        <div><label class="f" for="rqNote">Note for the supervisor (optional)</label><input type="text" id="rqNote" maxlength="200" placeholder="e.g. Account not frozen — bring passbook photo"></div>
+      </div>
+      <div class="row" style="margin-top:8px;"><button class="btn-primary" id="rqSend">📤 Send to supervisors</button><span class="muted" id="rqParsed"></span></div>
+      <div id="rqResult" class="muted" style="margin-top:6px;white-space:pre-wrap;"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">Requests</h2>
+        <label class="check" style="margin:0;"><input type="checkbox" id="rqAll"><span>Show closed (last 30 days)</span></label>
+      </div>
+      <div class="muted" id="rqSum"></div>
+      <div class="table-wrap stack" style="margin-top:6px;"><table>
+        <thead><tr><th>Village</th><th>Job Card</th><th>Name</th><th>Account in data</th><th>To</th><th>Status</th><th></th></tr></thead>
+        <tbody id="rqBody"></tbody></table></div>
+    </div>
   </section>
 
   <!-- ============ IMPORT ============ -->
@@ -530,8 +552,8 @@
 </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261031p"></script>
+<script src="./js/sb-client.js?v=20261031r"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261031p"></script>
+<script src="./js/admin.js?v=20261031r"></script>
 </body>
 </html>

@@ -381,6 +381,12 @@
         throw bnError(e || {});
       });
     },
+    accountRequests: function () {
+      return SB.rpc('get_account_requests', {}, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) return [];                         // SQL v181 not run yet
+        throw bnError(e || {});
+      });
+    },
     uploadPhoto: function (wid, blob) {
       var gp = st.ctx && st.ctx.gp_id, uid = SB.userId();
       if (!gp || !uid) return Promise.reject(bnError({ code: 'NOT_AUTHORIZED' }));

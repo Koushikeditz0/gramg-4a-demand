@@ -196,6 +196,7 @@
         $('phStore').textContent = n + ' new photo(s). Photos kept now: ' + mb.toFixed(1) + ' MB' +
           (r && r.all_gps ? ' of the 1 GB free Storage (all GPs).' : ' (this GP).');
         renderPhotos();
+        loadRequests();
       })
       .catch(function (e) {
         if (e.authLost) return;
@@ -276,6 +277,122 @@
   document.querySelectorAll('#phFilters button').forEach(function (b) {
     b.addEventListener('click', function () { ph.filter = b.dataset.f; loadPhotos(false); });
   });
+
+  // ---------- account copy requests (account not frozen) ----------
+  var JC_RE = /WB-?\d{2}-?\d{3}-?\d{3}-?\d{3}\s*\/\s*\d+(?:-[A-Z])?/i;
+  var rq = { rows: [], file: [] };
+  function rowsFromTable(aoa) {
+    var out = [], head = -1, jcCol = -1, nmCol = -1;
+    for (var h = 0; h < Math.min(15, aoa.length); h++) {
+      var cells = aoa[h].map(function (c) { return String(c || '').trim(); });
+      var j = cells.findIndex(function (c) { return /job\s*card/i.test(c); });
+      if (j >= 0) {
+        head = h; jcCol = j;
+        nmCol = cells.findIndex(function (c) { return /seeker|applicant\s*name|worker\s*name/i.test(c); });
+        if (nmCol < 0) nmCol = cells.findIndex(function (c) { return /name/i.test(c) && !/bank|father|husband/i.test(c); });
+        break;
+      }
+    }
+    aoa.forEach(function (row, i) {
+      if (i <= head) return;
+      var cells = row.map(function (c) { return String(c == null ? '' : c).trim(); });
+      var jc = '', k = -1;
+      if (jcCol >= 0 && JC_RE.test(cells[jcCol] || '')) { k = jcCol; jc = cells[jcCol].match(JC_RE)[0]; }
+      else for (var c = 0; c < cells.length; c++) { var m = cells[c].match(JC_RE); if (m) { k = c; jc = m[0]; break; } }
+      if (!jc) return;
+      var name = '';
+      if (nmCol >= 0) name = cells[nmCol] || '';
+      if (!name) {
+        var rest = cells[k].replace(JC_RE, '').replace(/[^A-Za-z .]/g, ' ').trim();     // "JC NAME" in one cell
+        if (/[A-Za-z]{2}/.test(rest)) name = rest;
+      }
+      if (!name) for (var c2 = k + 1; c2 < cells.length; c2++) { if (/[A-Za-z]{2}/.test(cells[c2]) && !/\d/.test(cells[c2])) { name = cells[c2]; break; } }
+      out.push({ jc: jc.replace(/\s+/g, '').toUpperCase(), name: name.replace(/\s+/g, ' ').trim() });
+    });
+    return out;
+  }
+  function rqParse() {
+    var lines = $('rqText').value.split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var fromText = rowsFromTable(lines.map(function (l) { return l.indexOf('\t') >= 0 ? l.split('\t') : [l]; }));
+    var all = fromText.concat(rq.file), seen = {};
+    rq.rows = all.filter(function (r) { var k = r.jc + '|' + r.name.toUpperCase(); if (seen[k]) return false; seen[k] = 1; return true; });
+    $('rqParsed').textContent = rq.rows.length ? rq.rows.length + ' worker(s) found' + (rq.rows.some(function (r) { return !r.name; }) ? ' (some without a name)' : '') : '';
+  }
+  $('rqText').addEventListener('input', rqParse);
+  $('rqFile').addEventListener('change', function () {
+    var f = this.files && this.files[0]; rq.file = [];
+    if (!f) { rqParse(); return; }
+    var isCsv = /\.csv$/i.test(f.name);
+    loadXlsx().then(function () { return isCsv ? f.text() : f.arrayBuffer(); }).then(function (data) {
+      var wb = isCsv ? XLSX.read(String(data), { type: 'string', raw: true }) : XLSX.read(data, { type: 'array', cellText: true });
+      wb.SheetNames.forEach(function (n) { rq.file = rq.file.concat(rowsFromTable(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: '' }))); });
+      rqParse();
+      if (!rq.file.length) status('No Job Card No found in this file.', 'err');
+    }).catch(function (e) { status(errText(e), 'err'); });
+  });
+  function rqFillWho() {
+    var gp = Number($('phGp').value), sel = $('rqWho'), keep = sel.value;
+    sel.innerHTML = ''; var o = el('option', '👥 All supervisors of this GP'); o.value = ''; sel.appendChild(o);
+    state.users.filter(function (u) { return u.role === 'gp_user' && u.gp_id === gp && u.active !== false; }).forEach(function (u) {
+      var x = el('option', '👤 ' + (u.full_name || u.username) + ' (' + u.username + ')'); x.value = u.user_id; sel.appendChild(x);
+    });
+    sel.value = keep; if (sel.value !== keep) sel.value = '';
+  }
+  $('rqSend').addEventListener('click', function () {
+    rqParse();
+    var gp = Number($('phGp').value);
+    if (!rq.rows.length) { status('Paste or choose the list first (Job Card No + name).', 'err'); return; }
+    loading('Sending ' + rq.rows.length + ' worker(s)...');
+    SB.rpc('admin_add_account_requests', { p_gp_id: gp, p_rows: rq.rows, p_assign: $('rqWho').value || null, p_note: $('rqNote').value.trim() || null })
+      .then(function (r) {
+        var msg = '✅ Sent: ' + r.added + (r.already ? '   · already asked: ' + r.already : '');
+        if ((r.unclear || []).length) msg += '\n⚠ Name did not match anyone on the job card (' + r.unclear.length + '): ' + r.unclear.map(function (x) { return x.jc + ' ' + (x.name || '(no name)'); }).join(', ');
+        if ((r.not_found || []).length) msg += '\n✕ Job card not in this GP\'s data (' + r.not_found.length + '): ' + r.not_found.map(function (x) { return x.jc; }).join(', ');
+        $('rqResult').textContent = msg;
+        status('✅ ' + r.added + ' account copy request(s) sent to the supervisors.', 'ok');
+        $('rqText').value = ''; $('rqFile').value = ''; rq.file = []; rqParse();
+        return loadRequests();
+      })
+      .catch(function (e) {
+        if (e.authLost) return;
+        if (e.status === 404) { status('Run supabase/2026-10-31_account_requests.sql (v181) in the Supabase SQL Editor first.', 'err'); return; }
+        status(errText(e), 'err');
+      })
+      .then(function () { loading(''); });
+  });
+  var RQ_LBL = { open: '⏳ Waiting', photo: '📷 Photo received', closed: '✅ Closed' };
+  function loadRequests() {
+    var gp = Number($('phGp').value); if (!gp) return Promise.resolve();
+    rqFillWho();
+    return SB.rpc('admin_account_requests', { p_gp_id: gp, p_all: $('rqAll').checked }).then(function (rows) {
+      rows = rows || [];
+      var tb = $('rqBody'); tb.innerHTML = '';
+      var c = { open: 0, photo: 0, closed: 0 };
+      rows.forEach(function (r) {
+        c[r.status] = (c[r.status] || 0) + 1;
+        var tr = document.createElement('tr');
+        [['Village', vno(r.village_no)], ['Job Card', r.job_card_no], ['Name', r.applicant_name], ['Account in data', r.account_no || '—'],
+         ['To', r.assigned || 'All supervisors'], ['Status', RQ_LBL[r.status] || r.status]].forEach(function (p) {
+          var td = el('td', p[1]); td.setAttribute('data-label', p[0]); tr.appendChild(td);
+        });
+        var td = el('td'); td.setAttribute('data-label', '');
+        if (r.status !== 'closed') {
+          var x = el('button', '✕', 'btn-light btn-small'); x.title = 'Remove this request';
+          x.onclick = function () {
+            ask('Remove the request for ' + r.applicant_name + '?', 'Remove').then(function (yes) {
+              if (!yes) return;
+              SB.rpc('admin_close_account_requests', { p_ids: [r.id] }).then(loadRequests, function (e) { status(errText(e), 'err'); });
+            });
+          };
+          td.appendChild(x);
+        }
+        tr.appendChild(td); tb.appendChild(tr);
+      });
+      if (!rows.length) { var tr0 = document.createElement('tr'); var td0 = el('td', 'No request.'); td0.colSpan = 7; tr0.appendChild(td0); tb.appendChild(tr0); }
+      $('rqSum').textContent = 'Waiting: ' + c.open + ' · Photo received: ' + c.photo + ($('rqAll').checked ? ' · Closed: ' + c.closed : '');
+    }, function (e) { if (e.status !== 404 && !e.authLost) status(errText(e), 'err'); });
+  }
+  $('rqAll').addEventListener('change', loadRequests);
 
   // ---------- file reading ----------
   var xlsxLoading = null;

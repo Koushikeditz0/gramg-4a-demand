@@ -573,6 +573,13 @@
     }
 
     /* account copy photo */
+    .acreq-bar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff7ed;border:1px solid #fdba74;border-left:6px solid #f97316;border-radius:12px;padding:11px 12px;margin:4px 0 10px;cursor:pointer;font:inherit;color:#7c2d12;}
+    .acreq-bar b{font-size:15px;} .acreq-bar small{display:block;color:#9a3412;font-size:12px;margin-top:2px;}
+    .acreq-bar .n{margin-left:auto;background:#f97316;color:#fff;border-radius:20px;padding:3px 10px;font-weight:800;}
+    .acr-row{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #edf2f7;}
+    .acr-row .m{flex:1;min-width:0;} .acr-row .j{font-size:11px;font-weight:800;color:#334155;} .acr-row .nm{font-size:14px;font-weight:700;}
+    .acr-row .st{font-size:11px;color:#9a3412;} .acr-row .st.ok{color:#166534;}
+    .acr-row .photo-btn{flex:0 0 44px;width:44px;height:36px;font-size:18px;}
     .photo-btn{flex:0 0 30px;width:30px;height:26px;padding:0;border-radius:7px;background:#e0f2fe;color:#075985;border:1px solid #bae6fd;font-size:14px;cursor:pointer;line-height:1;position:relative;}
     .photo-btn.has{background:#dcfce7;border-color:#86efac;}
     .photo-btn.has::after{content:'✓';position:absolute;right:-4px;top:-6px;background:#16a34a;color:#fff;border-radius:50%;font-size:9px;width:13px;height:13px;line-height:13px;font-weight:800;}
@@ -1378,6 +1385,7 @@
 
       <div class="lp-meta" id="lpMeta"></div>
       <div id="listStateBar" class="list-state-bar" style="display:none;" role="status" aria-live="polite"></div>
+      <div id="acReqBar"></div>
       <div id="lpCards" class="lp-cards"></div>
       <div id="roView" class="ro-view">
         <div class="ro-sum" id="roSum"></div>
@@ -1637,6 +1645,16 @@
 
   <!-- INSTALL HELP (iPhone etc.) -->
   <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+  <div class="gm-modal" id="acReqModal" role="dialog" aria-modal="true" aria-labelledby="acrTitle">
+    <div class="gm-box" style="max-width:560px;">
+      <h3 id="acrTitle">📷 Account copy চাই</h3>
+      <div class="gm-note" id="acrNote">এদের account freeze হয়নি। Passbook / account copy-র photo তুলে পাঠান।</div>
+      <select id="acrVillage" style="width:100%;margin-top:6px;padding:8px;border-radius:9px;border:1px solid #cbd5e1;"></select>
+      <div id="acrList" style="overflow:auto;max-height:58vh;margin-top:6px;border:1px solid #e2e8f0;border-radius:8px;"></div>
+      <div class="gm-actions"><button class="btn-primary" onclick="closeGm('acReqModal')">বন্ধ</button></div>
+    </div>
+  </div>
+
   <div class="gm-modal" id="photoModal" role="dialog" aria-modal="true" aria-labelledby="phTitle">
     <div class="gm-box" style="max-width:520px;">
       <h3 id="phTitle">📷 Account copy</h3>
@@ -1701,8 +1719,8 @@
   </div>
 
 <script src="./js/config.js?v=20261020a"></script>
-<script src="./js/sb-client.js?v=20261031p"></script>
-<script src="./js/gramg-adapter.js?v=20261031p"></script>
+<script src="./js/sb-client.js?v=20261031r"></script>
+<script src="./js/gramg-adapter.js?v=20261031r"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3359,7 +3377,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus();
+  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests();
 }
 const AUTH_LOST_MSG={
   SESSION_REVOKED:'এই account-এ অন্য একটি device-এ নতুন Login হয়েছে। একটি account সর্বোচ্চ ২টি device-এ চালু থাকতে পারে, তাই এই device-এর session বন্ধ করা হয়েছে। আবার Login করুন।',
@@ -3906,12 +3924,63 @@ function sendPhoto(){
   gramgAdapter.uploadPhoto(item.wid,blob).then(function(){
     hideLoading(); if(btn) btn.classList.remove('busy');
     photoState.set(Number(item.wid),'new'); paintPhotoBtns();
+    acReqs.forEach(function(r){ if(Number(r.worker_id)===Number(item.wid)) r.status='photo'; });
+    renderAcReqBar(); if(document.getElementById('acReqModal').classList.contains('show')) renderAcReqList();
     showStatus('✅ '+item.name+' — Account copy Admin-কে পাঠানো হয়েছে।','success');
   },function(e){
     hideLoading(); if(btn) btn.classList.remove('busy');
     if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error');
   });
 }
+/* ---------- account copy requests (account not frozen) ---------- */
+let acReqs=[];
+function loadAcRequests(){
+  if(!currentUser) return;
+  gramgAdapter.accountRequests().then(function(rows){
+    acReqs=rows||[];
+    acReqs.forEach(function(r){ if(r.status==='photo' && !photoState.has(Number(r.worker_id))) photoState.set(Number(r.worker_id),'new'); });
+    renderAcReqBar();
+    if(document.getElementById('acReqModal').classList.contains('show')) renderAcReqList();
+  },function(){});
+}
+function renderAcReqBar(){
+  const bar=document.getElementById('acReqBar'); if(!bar) return;
+  const open=acReqs.filter(function(r){ return r.status==='open'; }).length;
+  if(!acReqs.length){ bar.innerHTML=''; return; }
+  bar.innerHTML='<button type="button" class="acreq-bar"><span style="font-size:24px;">📷</span><span><b>Account copy চাই</b><small>'+
+    (open?open+' জনের passbook photo বাকি':'সবার photo পাঠানো হয়েছে ✓')+'</small></span><span class="n">'+open+'/'+acReqs.length+'</span></button>';
+  bar.firstChild.onclick=openAcRequests;
+}
+function openAcRequests(){
+  const sel=document.getElementById('acrVillage'), keep=sel.value;
+  const vs=[]; acReqs.forEach(function(r){ if(vs.indexOf(r.village_no)<0) vs.push(r.village_no); });
+  vs.sort(function(a,b){ return a-b; });
+  sel.innerHTML='<option value="">সব village ('+acReqs.length+')</option>'+vs.map(function(v){
+    const n=acReqs.filter(function(r){ return r.village_no===v; }).length;
+    return '<option value="'+v+'">Village '+String(v).padStart(3,'0')+' ('+n+')</option>'; }).join('');
+  sel.value=keep; if(sel.value!==keep) sel.value='';
+  renderAcReqList(); openGm('acReqModal');
+}
+function renderAcReqList(){
+  const box=document.getElementById('acrList'); box.innerHTML='';
+  const v=document.getElementById('acrVillage').value;
+  const rows=acReqs.filter(function(r){ return !v || String(r.village_no)===v; });
+  const notes=[]; acReqs.forEach(function(r){ if(r.note && notes.indexOf(r.note)<0) notes.push(r.note); });
+  document.getElementById('acrNote').textContent='এদের account freeze হয়নি। Passbook / account copy-র photo তুলে পাঠান।'+(notes.length?' Admin: '+notes.join(' · '):'');
+  if(!rows.length){ box.innerHTML='<div class="selected-empty">কেউ নেই।</div>'; return; }
+  rows.forEach(function(r,i){
+    const sent=r.status==='photo' || photoState.get(Number(r.worker_id))==='new';
+    const d=document.createElement('div'); d.className='acr-row';
+    d.innerHTML='<div class="selected-sl">'+(i+1)+'</div><div class="m"><div class="j">'+escapeHtml(shortJobCard(r.job_card_no))+' · App '+escapeHtml(String(r.applicant_no))+'</div>'+
+      '<div class="nm">'+escapeHtml(r.applicant_name)+'</div><div class="st'+(sent?' ok':'')+'">'+(sent?'✓ Photo পাঠানো হয়েছে':'⏳ Photo বাকি')+'</div></div>'+
+      '<button class="photo-btn" title="Account copy (passbook) photo">📷</button>';
+    const b=d.querySelector('.photo-btn'); b.dataset.wid=r.worker_id; paintPhotoBtn(b);
+    b.onclick=function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name }); };
+    box.appendChild(d);
+  });
+}
+document.getElementById('acrVillage').addEventListener('change',renderAcReqList);
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') loadAcRequests(); });
 function openResults(){
   showLoading('ফলাফল আনছি...');
   gramgAdapter.listResults().then(function(rows){
@@ -3976,7 +4045,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261031p"></script>
+<script src="./js/i18n.js?v=20261031r"></script>
 </body>
 
 </html>

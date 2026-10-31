@@ -196,6 +196,12 @@
     'যথেষ্ট Supervisor-এর নাম দেওয়া হয়নি।': 'Not enough supervisor names given.',
     'এই Work Name-এ আপনার আরেকটা list আছে। অন্য নাম দিন।': 'You already have a list with this Work Name. Use another name.',
     'List-এ worker আছে। মোছার আগে Clear Selected করুন।': 'The list has workers. Clear them before deleting.',
+    '③ Supervisor ও List-এর তথ্য': '③ Supervisor and list details',
+    '📝 খসড়া — worker বাছাই শেষ হলে "Next" চাপুন': '📝 Draft — tap "Next" when you finish picking workers',
+    'এক column: খুঁজুন / বাছাই tab, বড় row': 'One column: Search / Picked tabs, big rows',
+    'আগে worker বাছুন, তারপর Next চাপুন।': 'Pick workers first, then tap Next.',
+    'Save হয়েছে। Next-এর আগে': 'Saved. Before Next, give',
+    'জন Supervisor-এর নাম দিন (দেওয়া আছে': 'supervisor name(s) (given',
     // small words (applied last)
     'জন।': '.',
     'জন)।': ').',
@@ -207,10 +213,15 @@
   var EXACT = { '২.': '2. Choose', 'বাছুন।': '.', 'চাপুন।': 'at the top right.', 'নেই': 'none', 'বন্ধ': 'Close',
                 'জমা দেওয়া': 'Submitted', 'নাম': 'Name', 'অন্য': 'another', 'জমা': 'submitted', 'বা': 'or' };
   var BN_DIGITS = '০১২৩৪৫৬৭৮৯';
+  // the same Bengali letter can be stored in two ways (e.g. য়), so compare in one form
+  function nf(x) { return x.normalize ? x.normalize('NFC') : x; }
+  var N = {}; Object.keys(D).forEach(function (k) { N[nf(k)] = D[k]; }); D = N;
+  var E2 = {}; Object.keys(EXACT).forEach(function (k) { E2[nf(k)] = EXACT[k]; }); EXACT = E2;
   var keys = Object.keys(D).sort(function (a, b) { return b.length - a.length; });
   var HAS_BN = /[ঀ-৿]/;
   function tr(text) {
     if (!text || !HAS_BN.test(text)) return text;
+    text = nf(text);
     var tt = text.trim(); if (EXACT[tt]) return text.replace(tt, EXACT[tt]);
     var out = text;
     for (var i = 0; i < keys.length; i++) if (out.indexOf(keys[i]) >= 0) out = out.split(keys[i]).join(D[keys[i]]);

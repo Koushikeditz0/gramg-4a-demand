@@ -733,7 +733,9 @@
     body.ui-new .action-bar,body.ui-new .lay-new-btn{display:none;}
     body.ui-new.more-open .action-bar{display:flex;position:fixed;right:10px;bottom:74px;flex-direction:column;align-items:stretch;background:#fff;padding:8px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:70;margin:0;}
     body.ui-new.more-open .action-bar button{padding:10px 14px;font-size:14px;margin:0;}
-    body.ui-new .action-bar #submitListBtn{display:none !important;}
+    body.ui-new .action-bar #nextBtn{display:none !important;}
+    #nextBtn{font-weight:800;}
+    .steps .st{white-space:normal;line-height:1.15;}
     body.ui-new .member{padding:11px 8px;gap:10px;cursor:pointer;}
     body.ui-new .member-check{width:22px;height:22px;flex:0 0 22px;}
     body.ui-new .member-name{font-size:14px;}
@@ -1389,27 +1391,8 @@
     <div class="action-bar">
 
 
-      <button
-        class="btn-light btn-small"
-        onclick="selectAllCurrent()">
-
-        ☑ Select All
-
-      </button>
-
-
-      <button
-        class="btn-light btn-small"
-        onclick="selectEkycAbps()">
-
-        ✓ eKYC + ABPS
-
-      </button>
-
-
-      <button class="btn-success btn-small" onclick="openFinalPreview()">👀 Preview</button>
-      <button class="btn-primary btn-small" id="submitListBtn" onclick="submitMyList()" style="display:none;">📤 Submit</button>
-      <button class="btn-light btn-small lay-new-btn" onclick="setUiLayout('new')" title="এক column: খুঁজুন / বাছাই tab, বড় row, নিচে Submit">▤ ১ column</button>
+      <button class="btn-primary btn-small" id="nextBtn" onclick="goSupervisorStep()">Next: ③ Supervisor →</button>
+      <button class="btn-light btn-small lay-new-btn" onclick="setUiLayout('new')" title="এক column: খুঁজুন / বাছাই tab, বড় row">▤ ১ column</button>
       <button class="btn-danger btn-small push-right" onclick="clearSelected()" title="Clear Selected">🧹 Clear</button>
       <button class="btn-light btn-small" onclick="deleteMyList()" style="color:#dc2626;">🗑 List মুছুন</button>
 
@@ -1541,7 +1524,7 @@
   <div class="wbar" id="wBar">
     <div class="wbar-c"><span id="wBarCount">0 জন বাছাই</span><small id="wBarNeed"></small></div>
     <button class="btn-light wbar-more" onclick="toggleMore()" aria-label="আরও">⋯</button>
-    <button class="btn-success wbar-submit" onclick="submitMyList()">📤 Submit</button>
+    <button class="btn-primary wbar-submit" onclick="goSupervisorStep()">Next: ③ Supervisor →</button>
   </div>
 
   <!-- NEW LIST -->
@@ -1564,7 +1547,7 @@
   <!-- LIST DETAILS: Work Name + supervisors -->
   <div class="gm-modal" id="metaModal" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
     <div class="gm-box">
-      <h3 id="mmTitle">👷 Supervisor ও List-এর তথ্য</h3>
+      <h3 id="mmTitle">③ Supervisor ও List-এর তথ্য</h3>
       <div class="gm-warn" id="mmMsg" style="display:none;"></div>
       <label for="mmName">Work Name</label>
       <input type="text" id="mmName" maxlength="200">
@@ -1578,7 +1561,7 @@
       <div class="gm-actions">
         <button class="btn-danger btn-small" id="mmDelete" onclick="deleteMyList()" style="margin-right:auto;display:none;">🗑 List মুছুন</button>
         <button class="btn-light" onclick="closeGm('metaModal')">বাতিল</button>
-        <button class="btn-primary" id="mmSave" onclick="saveMeta()">Save</button>
+        <button class="btn-primary" id="mmSave" onclick="saveMeta(true)">Next: ④ Preview →</button>
       </div>
     </div>
   </div>
@@ -1615,6 +1598,7 @@
         <button class="btn-light" onclick="closeFinalPreview()">✏ Edit List</button>
         <button class="btn-light" onclick="downloadFinalPdf()">📄 Download PDF</button>
         <button class="btn-success" onclick="generateFinalExcel()">📥 Generate Excel</button>
+        <button class="btn-primary" id="pvSubmit" onclick="previewSubmit()" style="display:none;font-weight:800;">📤 Submit</button>
       </div>
     </div>
     <div class="preview-body">
@@ -3023,6 +3007,7 @@
       document.getElementById('previewSearch').value='';
       const wn=document.getElementById('workName'); if(wn) wn.value=gramgAdapter.workName()||'';
       const sp=document.getElementById('previewSup'); if(sp){ const ss=gramgAdapter.supervisors(); sp.textContent=ss.length?('Supervisor: '+ss.join(', ')):'Supervisor: —'; }
+      const ps=document.getElementById('pvSubmit'); if(ps) ps.style.display=(gramgAdapter.listState()==='draft')?'':'none';
       document.getElementById('previewOverlay').classList.add('show');
       document.body.style.overflow='hidden'; renderPreviewTable();
     }).withFailureHandler(function(err){hideLoading();showStatus(err.message||String(err),'error');}).getAccounts(token,ids);
@@ -3394,7 +3379,7 @@ function renderListState(){
   bar.className='list-state-bar '+st; bar.style.display='flex'; bar.innerHTML='';
   const txt=document.createElement('div');
   if(st==='draft'){
-    txt.textContent='📝 খসড়া — বাছাই শেষ হলে Submit চাপুন';
+    txt.textContent='📝 খসড়া — worker বাছাই শেষ হলে "Next" চাপুন';
     bar.appendChild(txt);
   }else if(st==='submitted'){
     txt.textContent='✅ জমা দেওয়া হয়েছে'+(listState.submittedAt?' ('+fmtBnDate(listState.submittedAt)+')':'');
@@ -3472,7 +3457,14 @@ function openMeta(msg){
   document.getElementById('mmDelete').style.display='';
   openGm('metaModal');
 }
-function saveMeta(){
+function goSupervisorStep(){
+  if(listLocked(true)) return;
+  if(!selected.size){ showStatus('আগে worker বাছুন, তারপর Next চাপুন।','error'); return; }
+  if(busySaving()) return;
+  openMeta('');
+}
+function previewSubmit(){ closeFinalPreview(); submitMyList(); }
+function saveMeta(next){
   const name=document.getElementById('mmName').value.trim();
   const sups=Array.prototype.map.call(document.querySelectorAll('#mmSups .sup-input'),function(i){return i.value.trim();}).filter(Boolean);
   if(!name){ const m=document.getElementById('mmMsg'); m.textContent='Work Name লিখুন।'; m.style.display='block'; return; }
@@ -3480,8 +3472,11 @@ function saveMeta(){
   const code=wcFull('mm'), codeChanged=code!==(listState.workCode||'');
   showLoading('Save হচ্ছে...');
   gramgAdapter.setMeta(name,sups).then(function(r){ return codeChanged ? gramgAdapter.setWorkCode(code).then(function(){ return r; }) : r; }).then(function(r){
-    hideLoading(); closeGm('metaModal');
+    hideLoading();
     const req=requiredSupervisors(selected.size), have=(r.supervisors||[]).length;
+    if(next && have<req){ const m=document.getElementById('mmMsg'); m.textContent='Save হয়েছে। Next-এর আগে '+req+' জন Supervisor-এর নাম দিন (দেওয়া আছে '+have+' জন)।'; m.style.display='block'; for(let i=document.querySelectorAll('#mmSups .sup-input').length;i<req;i++) addSupRow(''); return; }
+    closeGm('metaModal');
+    if(next && selected.size){ openFinalPreview(); return; }
     showStatus(have<req?('Save হয়েছে। মনে রাখবেন: '+req+' জন Supervisor লাগবে, দেওয়া আছে '+have+' জন।'):'✅ List-এর তথ্য save হয়েছে।', have<req?'error':'success');
   }, function(e){ hideLoading(); if(e&&e.authLost) return; const m=document.getElementById('mmMsg'); m.textContent=(e&&e.message)||String(e); m.style.display='block'; });
 }
@@ -3578,7 +3573,7 @@ function stepClick(i){
   if(listState.noList){ openNewList(); return; }
   if(i===1){ if(listState.state==='draft'){ setWorkerTab('search'); document.getElementById('searchInput').focus(); } return; }
   if(i===2){ openMeta(''); return; }
-  if(i===3 && listState.state==='draft') submitMyList();
+  if(i===3) openFinalPreview();
 }
 // Work Code: GP code + "/" is filled in, the supervisor types the rest
 function wcPrefix(){ const g=String(listState.gpCode||'').trim(); return g?g+'/':''; }
@@ -3604,7 +3599,7 @@ function renderChrome(){
   document.body.classList.toggle('home', !!currentUser && !!listState.noList);
   document.body.classList.toggle('list-open', open);
   const done=[open, open&&n>0, open&&n>0&&sups>=req, open&&st!=='draft'];
-  const names=['① List','② Worker','③ Supervisor','④ Submit'];
+  const names=['① List','② Worker','③ Supervisor','④ Preview & Submit'];
   const nowAt=done.indexOf(false);
   const sb=document.getElementById('lpSteps');
   if(sb) sb.innerHTML=names.map(function(t,i){ return '<button type="button" class="st'+(done[i]?' done':(i===nowAt?' now':''))+'" onclick="stepClick('+i+')">'+t+(i===3&&done[3]?' ✓':'')+'</button>'; }).join('');
@@ -3613,7 +3608,7 @@ function renderChrome(){
   const tc=document.getElementById('wTabCount'); if(tc) tc.textContent=n;
   const bc=document.getElementById('wBarCount'); if(bc) bc.textContent=n+' জন বাছাই';
   const bn=document.getElementById('wBarNeed');
-  if(bn){ bn.textContent=(n&&sups<req)?'⚠ ③ Supervisor-এ নাম দিন':(n?'':'worker খুঁজে ছুঁয়ে বাছুন'); bn.className=(n&&sups<req)?'bad':''; }
+  if(bn){ bn.textContent=n?'':'worker খুঁজে ছুঁয়ে বাছুন'; bn.className=''; }
   const ro=document.getElementById('roSum');
   if(ro && open && st!=='draft'){
     const vs={}; selected.forEach(function(x){ const p=parseJobCardClient(x.jobCard); if(p) vs[String(p.v).padStart(3,'0')]=true; });
@@ -3704,7 +3699,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261031a"></script>
+<script src="./js/i18n.js?v=20261031b"></script>
 </body>
 
 </html>

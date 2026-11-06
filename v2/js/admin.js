@@ -175,7 +175,7 @@
       var paths = rows.map(function (r) { return r.path; });
       var chunks = [];
       for (var i = 0; i < paths.length; i += 100) chunks.push(paths.slice(i, i + 100));
-      return chunks.reduce(function (p, c) { return p.then(function () { return SB.storage.remove(BUCKET, c); }); }, Promise.resolve())
+      return chunks.reduce(function (p, c) { return p.then(function () { return SB.photos.remove(c); }); }, Promise.resolve())
         .then(function () { return SB.rpc('admin_account_photo_purged', { p_ids: rows.map(function (r) { return r.id; }) }); });
     });
   }
@@ -256,15 +256,20 @@
       'In data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '') + (r.holder_name ? '   |   Name in passbook: ' + r.holder_name : '');
     $('phvImg').removeAttribute('src');
     $('phvModal').classList.add('show');
-    SB.storage.signedUrl(BUCKET, r.path, 300).then(function (u) { if (ph.cur === r) $('phvImg').src = u; },
+    SB.photos.blob(r.path).then(function (b) {
+        if (ph.cur !== r) return;
+        if (ph.imgUrl) URL.revokeObjectURL(ph.imgUrl);
+        ph.imgUrl = URL.createObjectURL(b); $('phvImg').src = ph.imgUrl;
+      },
       function (e) { if (!e.authLost) status('Could not open the photo: ' + (e.message || e), 'err'); });
   }
-  function closePhoto() { $('phvModal').classList.remove('show'); $('phvImg').removeAttribute('src'); ph.cur = null; }
+  function closePhoto() {
+    $('phvModal').classList.remove('show'); $('phvImg').removeAttribute('src'); ph.cur = null;
+    if (ph.imgUrl) { URL.revokeObjectURL(ph.imgUrl); ph.imgUrl = null; }
+  }
   function downloadPhoto(r) {
     loading('Downloading...');
-    SB.storage.signedUrl(BUCKET, r.path, 120)
-      .then(function (u) { return fetch(u); })
-      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+    SB.photos.blob(r.path)
       .then(function (b) {
         var a = document.createElement('a'), u = URL.createObjectURL(b);
         a.href = u; a.download = photoName(r); document.body.appendChild(a); a.click(); a.remove();
@@ -276,7 +281,7 @@
   function photoFinish(r, rpc, args, okMsg) {
     loading('Saving...');
     return SB.rpc(rpc, args)
-      .then(function (res) { return SB.storage.remove(BUCKET, (res && res.paths) || []).then(function () { return res; }); })
+      .then(function (res) { return SB.photos.remove((res && res.paths) || []).then(function () { return res; }); })
       .then(function (res) { return SB.rpc('admin_account_photo_purged', { p_ids: [r.id] }).then(function () { return res; }); })
       .then(function (res) { if (ph.cur === r) closePhoto(); status(okMsg(res || {}), 'ok'); },
             function (e) {

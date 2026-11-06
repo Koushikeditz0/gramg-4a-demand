@@ -398,10 +398,11 @@
     uploadPhoto: function (wid, blob, accountNo, ifsc, holder) {
       var gp = st.ctx && st.ctx.gp_id, uid = SB.userId();
       if (!gp || !uid) return Promise.reject(bnError({ code: 'NOT_AUTHORIZED' }));
-      var path = gp + '/' + uid + '/w' + wid + '_' + Date.now().toString(36) + '.jpg';
-      return SB.storage.upload('account-copies', path, blob, 'image/jpeg').catch(function (e) {
+      var path = gp + '/' + uid + '/' + (SB.photos.usesR2() ? 'r2w' : 'w') + wid + '_' + Date.now().toString(36) + '.jpg';
+      return SB.photos.upload(path, blob).catch(function (e) {
         e = e || {}; var m = e.message || '';
         if (/bucket not found/i.test(m)) e.code = 'PHOTO_SETUP';
+        else if (e.code === 'NETWORK') { /* keep */ }
         else if (/exceeded|too large|payload/i.test(m)) e.code = 'PHOTO_TOO_BIG';
         else if (/row-level security|unauthorized/i.test(m)) e.code = 'NOT_AUTHORIZED';
         e.stage = 'upload'; throw e;
@@ -420,7 +421,7 @@
         return call();
       }).then(function (r) {
         var old = (r && r.old_paths) || [];
-        SB.storage.remove('account-copies', old).catch(function () {});   // the admin clean-up catches any left over
+        SB.photos.remove(old).catch(function () {});   // the admin clean-up catches any left over
         return r;
       }).catch(function (e) {
         e = e || {};

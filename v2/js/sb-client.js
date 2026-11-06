@@ -182,6 +182,61 @@
     }
   };
 
+  // Account copy photos: Cloudflare R2 through the photo Worker (file name starts with "r2"),
+  // or the Supabase bucket for older photos / when no Worker is set.
+  var BUCKET = 'account-copies';
+  function isR2(path) { return /^r2/.test(String(path).split('/').pop() || ''); }
+  function workerUrl() { return String(CFG.PHOTO_WORKER_URL || '').replace(/\/+$/, ''); }
+  function worker(method, route, body, ctype) {
+    var attempt = 0;
+    function once() {
+      return ensureFresh().then(function () {
+        return fetch(workerUrl() + route, {
+          method: method, cache: 'no-store', body: body,
+          headers: Object.assign({ 'Authorization': 'Bearer ' + session.access_token }, ctype ? { 'Content-Type': ctype } : {})
+        });
+      }).then(function (res) {
+        if (res.status === 401 && attempt === 0) { attempt++; return refresh().then(once); }
+        if (!res.ok) {
+          return res.text().then(function (t) {
+            var d = null; try { d = JSON.parse(t); } catch (e) {}
+            var code = (d && d.error) || ('HTTP ' + res.status);
+            throw ApiError(code, code, { status: res.status });
+          });
+        }
+        return res;
+      }, function (e) {
+        if (e && e.code) throw e;
+        throw ApiError('NETWORK', 'Photo server-এর সঙ্গে যোগাযোগ হয়নি। Internet দেখে আবার চেষ্টা করুন।', { network: true });
+      });
+    }
+    return once();
+  }
+  var photos = {
+    usesR2: function () { return !!workerUrl(); },
+    isR2: isR2,
+    upload: function (path, blob) {
+      if (isR2(path)) return worker('PUT', '/photo?path=' + encodeURIComponent(path), blob, 'image/jpeg');
+      return storage.upload(BUCKET, path, blob, 'image/jpeg');
+    },
+    blob: function (path) {
+      if (isR2(path)) return worker('GET', '/photo?path=' + encodeURIComponent(path)).then(function (r) { return r.blob(); });
+      return storage.signedUrl(BUCKET, path, 120).then(function (u) { return fetch(u); })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
+    },
+    remove: function (paths) {
+      paths = paths || [];
+      var r2 = paths.filter(isR2), sb = paths.filter(function (p) { return !isR2(p); });
+      var jobs = [];
+      if (sb.length) jobs.push(storage.remove(BUCKET, sb));
+      if (r2.length) {
+        if (!workerUrl()) jobs.push(Promise.reject(new Error('PHOTO_WORKER_URL missing')));
+        else jobs.push(worker('POST', '/delete', JSON.stringify({ paths: r2 }), 'application/json'));
+      }
+      return Promise.all(jobs);
+    }
+  };
+
   function signIn(email, password) {
     return request('/auth/v1/token?grant_type=password', { auth: false, body: { email: email, password: password } })
       .then(storeSession);
@@ -197,7 +252,7 @@
   }
 
   var api = {
-    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction, storage: storage,
+    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction, storage: storage, photos: photos,
     hasSession: function () { return !!session; },
     userId: function () { return session && session.user_id; },
     onAuthLost: null

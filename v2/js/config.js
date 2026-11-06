@@ -6,5 +6,5 @@ window.GRAMG_CONFIG = {
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_fCY9paYMNTyepXdI7YRhkw_2u85P7bn',
   ENV: 'production',
   // Cloudflare Worker that keeps the account copy photos in R2 (empty = Supabase Storage)
-  PHOTO_WORKER_URL: ''
+  PHOTO_WORKER_URL: 'https://gramg-photo.koushikeditz0.workers.dev'
 };

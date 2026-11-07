@@ -48,7 +48,7 @@
     if (typeof window.gramgOnListState === 'function') {
       try {
         window.gramgOnListState({ state: st.submitState, submittedAt: st.submittedAt, listId: st.listId,
-                                  workName: st.workName, workCode: st.workCode, gpCode: (st.ctx && st.ctx.gp_code) || '',
+                                  workName: st.workName, workCode: st.workCode, fromDate: st.fromDate || '', workDays: st.workDays || 0, gpCode: (st.ctx && st.ctx.gp_code) || '',
                                   supervisors: st.supervisors.slice(), lists: st.lists.slice(),
                                   noList: !st.listId });
       } catch (e) {}
@@ -160,11 +160,12 @@
   }
   function applyList(r) {
     if (!r) {
-      st.listId = null; st.version = 0; st.server = new Set(); st.workName = ''; st.workCode = ''; st.supervisors = [];
+      st.listId = null; st.version = 0; st.server = new Set(); st.workName = ''; st.workCode = ''; st.fromDate = ''; st.workDays = 0; st.supervisors = [];
       st.submitState = 'draft'; st.submittedAt = null;
       notifyState(); return [];
     }
     st.listId = r.list_id; st.version = r.version; st.workName = r.work_name || ''; st.workCode = r.work_code || '';
+    st.fromDate = r.from_date || ''; st.workDays = r.work_days || 0;
     st.supervisors = r.supervisors || [];
     st.submitState = r.submit_state || 'draft'; st.submittedAt = r.submitted_at || null;
     st.server = new Set((r.items || []).map(function (x) { return x.id; }));
@@ -223,6 +224,19 @@
       st.lists.forEach(function (l) { if (l.list_id === st.listId) l.work_code = st.workCode; });
       notifyState(); return r;
     }, function (e) { throw bnError(e || {}); });
+  }
+  // From date (YYYY-MM-DD) + working days of the open Draft list (SQL v189)
+  function setDates(from, days) {
+    if (!st.listId) return Promise.reject(bnError({ code: 'NO_LIST' }));
+    return whenIdle().then(function () {
+      return SB.rpc('set_list_dates', { p_list_id: st.listId, p_from: from || null, p_days: days || null });
+    }).then(function (r) {
+      st.fromDate = r.from_date || ''; st.workDays = r.work_days || 0; if (r.version) st.version = r.version;
+      notifyState(); return r;
+    }, function (e) {
+      if (e && (e.status === 404 || /set_list_dates/.test(e.message || ''))) { var x = new Error('v189 SQL'); x.code = 'DATES_SETUP'; throw x; }
+      throw bnError(e || {});
+    });
   }
   function deleteList() {
     if (!st.listId) return Promise.resolve([]);
@@ -364,7 +378,7 @@
   window.gramgAdapter = {
     restore: restore, logout: logout, setWorkName: setWorkName,
     submitList: function () { return changeSubmit('submit_list'); },
-    switchList: switchList, closeList: closeList, createList: createList, setMeta: setMeta, setWorkCode: setWorkCode, deleteList: deleteList,
+    switchList: switchList, closeList: closeList, createList: createList, setMeta: setMeta, setWorkCode: setWorkCode, setDates: setDates, deleteList: deleteList,
     listId: function () { return st.listId; },
     supervisors: function () { return st.supervisors.slice(); },
     lists: function () { return st.lists.slice(); },

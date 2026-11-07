@@ -1243,6 +1243,42 @@
       .steps .st{font-size:11px;white-space:nowrap;}
       body.list-open.step-1 .list-state-bar.draft, body.list-open.step-2 .list-state-bar.draft{display:none !important;}
     }
+
+    /* ---- ③ dates + Preview polish (2026-11-07) ---- */
+    .dt-box{margin-top:12px;border:1px solid #e2e8f0;border-radius:12px;padding:10px;background:#f8fafc;}
+    .dt-h{font-weight:800;font-size:14px;margin-bottom:6px;}
+    .dt-grid{display:grid;grid-template-columns:1.4fr .9fr 1fr;gap:8px;align-items:end;}
+    .dt-grid label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:#475569;margin:0;}
+    .dt-grid input{width:100%;box-sizing:border-box;padding:9px 8px;font-size:14px;border:1px solid #cbd5e1;border-radius:9px;margin:0;}
+    .dt-to{display:block;padding:9px 8px;font-size:14px;font-weight:800;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;}
+    .dt-note{font-size:12px;color:#64748b;margin-top:6px;}
+    .pv-info{display:grid;gap:6px;margin-top:4px;}
+    .pv-info>div{display:grid;grid-template-columns:86px 1fr;gap:8px;font-size:13px;align-items:baseline;}
+    .pv-info span{color:#64748b;font-weight:700;font-size:12px;}
+    .pv-info b{font-weight:700;color:#0f172a;word-break:break-word;}
+    .pv-info b.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;}
+    .preview-summary{display:flex;gap:6px;flex-wrap:wrap;background:none;box-shadow:none;padding:0;}
+    .pv-chip{background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:5px 10px;font-size:12px;}
+    .pv-chip.bad{background:#fff7ed;border-color:#fdba74;color:#9a3412;} .pv-chip.ok{background:#f0fdf4;border-color:#86efac;color:#166534;}
+    @media screen and (max-width:600px){
+      .preview-table{min-width:0;font-size:12px;}
+      .preview-table thead{display:none;}
+      .preview-table tr{display:grid;grid-template-columns:26px 1fr auto;gap:1px 8px;padding:8px 6px;border-bottom:1px solid #edf2f7;}
+      .preview-table td{padding:0;border:0;}
+      .preview-table td:nth-child(1){grid-row:1/span 3;color:#94a3b8;font-weight:700;}
+      .preview-table td:nth-child(3){grid-column:2;grid-row:1;font-weight:800;font-size:13px;}
+      .preview-table td:nth-child(2){grid-column:2;grid-row:2;color:#475569;font-size:11px;}
+      .preview-table td:nth-child(4){grid-column:3;grid-row:1;font-size:10px;text-align:right;}
+      .preview-table td:nth-child(5){grid-column:3;grid-row:2;font-size:10px;text-align:right;}
+      .preview-table td:nth-child(4)::before{content:'eKYC ';color:#64748b;}
+      .preview-table td:nth-child(5)::before{content:'ABPS ';color:#64748b;}
+      .preview-table td:nth-child(6){grid-column:2;grid-row:3;font-size:11px;}
+      .preview-table td:nth-child(6)::before{content:'A/C ';color:#64748b;}
+      .preview-table td:nth-child(7){grid-column:3;grid-row:3;font-size:11px;text-align:right;}
+      .preview-table tr.missing-account{border-left:3px solid #f97316;}
+      .dt-grid{grid-template-columns:1fr 1fr;}
+      .dt-grid label:nth-child(1){grid-column:1/-1;}
+    }
   </style>
 
 </head>
@@ -1551,6 +1587,15 @@
         <label for="liCode" class="wm-manual">Work Code</label>
         <div class="wc-box wm-manual"><span class="wc-pre" id="liCodePre"></span><input type="text" id="liCode" maxlength="90" autocomplete="off" placeholder="IF/93393042892327" oninput="wcCheck('li')"></div>
         <div class="wc-hint wm-manual" id="liCodeHint"></div>
+        <div class="dt-box">
+          <div class="dt-h">📅 কাজের তারিখ</div>
+          <div class="dt-grid">
+            <label>From<input type="date" id="dtFrom" onchange="dtCalc()"></label>
+            <label>Working Day<input type="number" id="dtDays" min="1" max="100" inputmode="numeric" placeholder="14" oninput="dtCalc()"></label>
+            <label>To<span class="dt-to" id="dtTo">—</span></label>
+          </div>
+          <div class="dt-note" id="dtNote"></div>
+        </div>
       </div>
 
       <!-- STEP 3: supervisor names only -->
@@ -1855,16 +1900,19 @@
       </div>
       <div class="preview-actions">
         <button class="btn-light" onclick="downloadFinalPdf()">📄 Download PDF</button>
-        <button class="btn-success" onclick="generateFinalExcel()">📥 Generate Excel</button>
         <button class="btn-primary" id="pvSubmit" onclick="previewSubmit()" style="display:none;font-weight:800;">📤 Submit</button>
       </div>
     </div>
     <div class="preview-body">
       <div class="pdf-header-fields">
         <div class="pdf-title-preview">VB-G RAM G DEMAND LIST</div>
-        <label>Work Name: <input id="workName" type="text" readonly></label>
-        <div id="previewCode" style="font-size:12px;margin-top:4px;"></div>
-        <div id="previewSup" style="font-size:12px;margin-top:4px;"></div>
+        <input id="workName" type="hidden">
+        <div class="pv-info">
+          <div><span>Work</span><b id="pvWorkText"></b></div>
+          <div><span>Work Code</span><b id="previewCode" class="mono"></b></div>
+          <div><span>Supervisor</span><b id="previewSup"></b></div>
+          <div><span>Date</span><b id="previewDates"></b></div>
+        </div>
       </div>
       <div class="preview-summary" id="previewSummary"></div>
       <div class="preview-tools">
@@ -1877,7 +1925,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261107s"></script>
+<script src="./js/gramg-adapter.js?v=20261107d"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2860,7 +2908,7 @@
         '<div class="selected-job">'+escapeHtml(shortJobCard(item.jobCard))+'</div>'+
         '<div class="selected-name">'+escapeHtml(item.name)+'</div>'+
         '</div>'+
-        (item.wid?'<button class="photo-btn" title="Account copy (passbook) photo">📷</button>':'')+
+        (item.wid?'<button class="photo-btn" title="Account copy (passbook) photo"'+(accMissing.has(item.wid)?'':' style="display:none"')+'>📷</button>':'')+
         '<button class="remove-btn" title="Remove">✕</button>';
       if(item.wid && typeof paintPhotoBtn==='function'){ const pb=row.querySelector('.photo-btn'); pb.dataset.wid=item.wid; paintPhotoBtn(pb); pb.addEventListener('click',function(){ startPhoto(item); }); }
       row.querySelector('.remove-btn').addEventListener('click',function(){if(listLocked(true))return;selected.delete(item.id);syncCurrentCheckboxes();updateFamilyHeaders();renderSelected();scheduleSaveSelection();});
@@ -3173,6 +3221,7 @@
           if(mySeq===saveSeq && res && res.ok) setSelectionDirty(false);
           showSavedState(res&&res.ok?'Saved ✓':'Local saved');
           if(mySeq===saveSeq) setSaveChip(res&&res.ok?'saved':'failed');
+          if(mySeq===saveSeq && res && res.ok && typeof schedulePhotoStates==='function') schedulePhotoStates();   // 📷 needs the saved list's accounts
           if(res && res.rejected && res.rejected.length){
             res.rejected.forEach(function(x){ selected.delete(x.id); });
             syncCurrentCheckboxes(); updateFamilyHeaders(); renderSelected(); localSaveSelection();
@@ -3260,8 +3309,10 @@
       Object.keys(vs).sort((a,b)=>Number(a)-Number(b)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent='Village '+String(v).padStart(3,'0');sel.appendChild(o);});
       document.getElementById('previewSearch').value='';
       const wn=document.getElementById('workName'); if(wn) wn.value=gramgAdapter.workName()||'';
-      const pc=document.getElementById('previewCode'); if(pc) pc.textContent='Work Code: '+(listState.workCode||'—');
-      const sp=document.getElementById('previewSup'); if(sp){ const ss=gramgAdapter.supervisors(); sp.textContent=ss.length?('Supervisor: '+ss.join(', ')):'Supervisor: —'; }
+      document.getElementById('pvWorkText').textContent=gramgAdapter.workName()||'—';
+      const pc=document.getElementById('previewCode'); if(pc) pc.textContent=listState.workCode||'—';
+      const sp=document.getElementById('previewSup'); if(sp){ const ss=gramgAdapter.supervisors(); sp.textContent=ss.length?ss.join(', '):'—'; }
+      const pd=document.getElementById('previewDates'); if(pd) pd.textContent=dtLine(listState.fromDate,Number(listState.workDays||0))||'—';
       const ps=document.getElementById('pvSubmit'); if(ps) ps.style.display=(gramgAdapter.listState()==='draft')?'':'none';
       document.getElementById('previewOverlay').classList.add('show');
       if(listState.noList){ document.body.style.overflow='hidden'; } else { setStep(4,true); }
@@ -3284,7 +3335,9 @@
       const tr=document.createElement('tr'); if(!acc.accountNo||!acc.ifsc)tr.className='missing-account';
       tr.innerHTML='<td>'+sl+++'</td><td>'+escapeHtml(item.jobCard)+'</td><td>'+escapeHtml(item.name)+'</td><td>'+badgeText(item.ekyc)+'</td><td>'+badgeText(item.abps)+'</td><td>'+escapeHtml(acc.accountNo||'⚠ Missing')+(acc.src==='sent'?' <span class="acc-sent" title="Supervisor-এর পাঠানো (📷 Account copy), data-তে এখনো নেই">📷</span>':'')+'</td><td>'+escapeHtml(acc.ifsc||'⚠ Missing')+'</td>'; body.appendChild(tr);
     });
-    document.getElementById('previewSummary').innerHTML='<b>Total Selected:</b> '+previewRows.length+' &nbsp; | &nbsp; <b>Showing:</b> '+shown+' &nbsp; | &nbsp; <b>Missing Account:</b> '+missing;
+    document.getElementById('previewSummary').innerHTML='<span class="pv-chip">👥 Total <b>'+previewRows.length+'</b></span>'+
+      (shown!==previewRows.length?'<span class="pv-chip">🔍 Showing <b>'+shown+'</b></span>':'')+
+      '<span class="pv-chip '+(missing?'bad':'ok')+'">🏦 Missing Account <b>'+missing+'</b></span>';
     document.getElementById('previewSub').textContent=currentUser.name+' • '+currentUser.gp+' • '+previewRows.length+' workers';
   }
 
@@ -3348,15 +3401,22 @@
       doc.setFontSize(15);
       doc.text('VB-G RAM G DEMAND LIST',pageWidth/2,16,{align:'center'});
       doc.setFontSize(10.5);
-      doc.text('Work Name:',margin,27);
-      if(workName){doc.setFont('helvetica','normal');doc.text(workName,margin+25,27);}
-      const sups=gramgAdapter.supervisors();
-      doc.setFont('helvetica','bold');
-      doc.text('Supervisor:',margin,33);
-      if(sups.length){doc.setFont('helvetica','normal');doc.text(doc.splitTextToSize(sups.join(', '),pageWidth-margin*2-25),margin+25,33);}
+      // label + value lines; long values wrap under the value column
+      let y=27; const valW=pageWidth-margin*2-25;
+      function line(label,val){
+        doc.setFont('helvetica','bold'); doc.text(label,margin,y);
+        const parts=doc.splitTextToSize(String(val||'—'),valW);
+        doc.setFont('helvetica','normal'); doc.text(parts,margin+25,y);
+        y+=5.6*parts.length;
+      }
+      line('Work Name:',workName);
+      line('Work Code:',listState.workCode||'');
+      line('Supervisor:',gramgAdapter.supervisors().join(', '));
+      const wd=Number(listState.workDays||0);
+      if(listState.fromDate&&wd) line('Date:','From '+dtFmtIso(listState.fromDate)+'   To '+dtToText(listState.fromDate,wd)+'   ('+wd+' Working Day)');
 
       doc.autoTable({
-        startY:40,
+        startY:y+1,
         margin:{left:margin,right:margin,top:10,bottom:10},
         head:[['SL No','Job Card No','Applicant Name','eKYC','ABPS','Account No','IFSC Code']],
         body:rows,
@@ -3768,6 +3828,7 @@ function setStep(n, fromPreview){
 function fillInfo(msg){
   const m=document.getElementById('liMsg'); m.textContent=msg||''; m.style.display=msg?'block':'none';
   document.getElementById('liName').value=isPendingName(listState.workName)?'':(listState.workName||''); wcFill('li', listState.workCode||''); wmReset('li');
+  document.getElementById('dtFrom').value=listState.fromDate||''; document.getElementById('dtDays').value=listState.workDays||14; dtCalc();
   if(masters.works.length && isPendingName(listState.workName)) setTimeout(function(){ const q=document.getElementById('liWmQ'); if(q){ q.focus(); wmSearch('li'); } },60);
 }
 function fillSup(msg){
@@ -3817,13 +3878,35 @@ function saveWorkSup(){
   msg.style.display='none';
   if(!name){ msg.textContent=masters.works.length?'তালিকা থেকে কাজ খুঁজে বাছুন।':'Work Name লিখুন।'; msg.style.display='block'; window.scrollTo(0,0); return; }
   if(!wcCheck('li')){ msg.textContent='Work Code-এর format মেলেনি। ঠিক করুন অথবা খালি রাখুন।'; msg.style.display='block'; window.scrollTo(0,0); return; }
+  const dt=dtRead();
+  if(!dt.from){ msg.textContent='From date দিন।'; msg.style.display='block'; document.getElementById('dtFrom').focus(); return; }
+  if(!dt.days){ msg.textContent='Working Day দিন (১ থেকে ১০০)।'; msg.style.display='block'; document.getElementById('dtDays').focus(); return; }
   const code=wcFull('li'), codeChanged=code!==(listState.workCode||''), nameChanged=name!==(listState.workName||'');
-  if(!codeChanged && !nameChanged){ saveSup(true); return; }
+  const datesChanged=dt.from!==(listState.fromDate||'') || dt.days!==Number(listState.workDays||0);
+  if(!codeChanged && !nameChanged && !datesChanged){ saveSup(true); return; }
   showLoading('Save হচ্ছে...');
   (nameChanged?gramgAdapter.setMeta(name, listState.supervisors||[]):Promise.resolve())
     .then(function(){ return codeChanged?gramgAdapter.setWorkCode(code):null; })
+    .then(function(){ return datesChanged?gramgAdapter.setDates(dt.from, dt.days).catch(function(e){
+        if(e&&e.code==='DATES_SETUP'){ listState.fromDate=dt.from; listState.workDays=dt.days; showStatus('তারিখ এখনো save হচ্ছে না: Admin-কে v189 SQL চালাতে বলুন।','error'); return null; }
+        throw e; }):null; })
     .then(function(){ hideLoading(); saveSup(true); },
       function(e){ hideLoading(); if(e&&e.authLost) return; msg.textContent=(e&&e.message)||String(e); msg.style.display='block'; window.scrollTo(0,0); });
+}
+/* ---------- work dates: N working days + 1 rest day per 6 ("6+1") ---------- */
+function dtTotal(n){ return n+Math.floor(n/6); }
+function dtRead(){ const f=document.getElementById('dtFrom').value||'', d=parseInt(document.getElementById('dtDays').value,10); return {from:/^\d{4}-\d{2}-\d{2}$/.test(f)?f:'', days:(d>=1&&d<=100)?d:0}; }
+function dtAdd(iso,k){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); if(!m) return null; const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]+k)); return d; }
+function dtFmt(d){ return d?String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear():''; }
+function dtFmtIso(iso){ return dtFmt(dtAdd(iso,0)); }
+function dtToText(from,days){ return (from&&days)?dtFmt(dtAdd(from,dtTotal(days)-1)):''; }
+function dtLine(from,days){ return (from&&days)?('From '+dtFmtIso(from)+' · '+days+' Working Day · To '+dtToText(from,days)):''; }
+function dtCalc(){
+  const dt=dtRead(), to=document.getElementById('dtTo'), note=document.getElementById('dtNote');
+  to.textContent=dtToText(dt.from,dt.days)||'—';
+  const en=document.documentElement.lang==='en', r=Math.floor(dt.days/6);
+  note.textContent=!dt.days?'':en?(dt.days+' working days + '+r+' rest day(s) = '+dtTotal(dt.days)+' days in all')
+    :(dt.days+' দিন কাজ + '+r+' দিন ছুটি = মোট '+dtTotal(dt.days)+' দিন');
 }
 function saveSup(next){
   if(listLocked(true)) return;
@@ -4145,14 +4228,22 @@ document.addEventListener('input',function(e){ if(e.target&&/^ph(Acc|Acc2|Ifsc|H
 function paintPhotoBtn(b){
   const st=photoState.get(Number(b.dataset.wid));
   b.classList.toggle('has',st==='new'); b.classList.toggle('done',st==='done');
+  // Picked list: 📷 only for workers without an account (or whose copy is already sent)
+  if(b.closest('#selectedResults')){ const a=accMissing.get(Number(b.dataset.wid)); b.style.display=(a===true||st==='new'||st==='done')?'':'none'; }
   b.title=st==='new'?'Account copy পাঠানো হয়েছে (আবার তুললে আগেরটা বদলে যাবে)':st==='done'?'Admin কাজ শেষ করেছেন':'Account copy (passbook) photo';
 }
+var accMissing=new Map();   // wid → true when the worker has no account (Account No / IFSC)
 function paintPhotoBtns(){ document.querySelectorAll('.photo-btn[data-wid]').forEach(paintPhotoBtn); }
 function schedulePhotoStates(){
   clearTimeout(photoTimer);
   photoTimer=setTimeout(function(){
     const wids=[]; selected.forEach(function(it){ if(it.wid) wids.push(it.wid); });
     if(!wids.length) return;
+    google.script.run.withSuccessHandler(function(map){
+      selected.forEach(function(it){ if(!it.wid) return; const a=(map||{})[(String(it.jobCard)+'|'+String(it.applicantNo)).toUpperCase()];
+        if(a) accMissing.set(it.wid, !a.accountNo||!a.ifsc||a.src==='sent'); else accMissing.set(it.wid, true); });
+      paintPhotoBtns();
+    }).withFailureHandler(function(){}).getAccounts(token,wids);
     gramgAdapter.photoStates(wids).then(function(rows){
       wids.forEach(function(w){ photoState.delete(w); });
       (rows||[]).forEach(function(r){ photoState.set(Number(r.worker_id), r.status); });
@@ -4495,7 +4586,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261107w"></script>
+<script src="./js/i18n.js?v=20261107d"></script>
 </body>
 
 </html>

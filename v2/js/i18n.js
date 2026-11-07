@@ -8,6 +8,11 @@
   try { lang = localStorage.getItem(KEY) === 'en' ? 'en' : 'bn'; } catch (e) {}
 
   var D = {
+    // ③ dates
+    '📅 কাজের তারিখ': '📅 Work dates',
+    'From date দিন।': 'Enter the From date.',
+    'Working Day দিন (১ থেকে ১০০)।': 'Enter Working Days (1 to 100).',
+    'তারিখ এখনো save হচ্ছে না: Admin-কে v189 SQL চালাতে বলুন।': 'Dates are not saved yet: ask the Admin to run the v189 SQL.',
     // ③ Work / Supervisor page
     'নাম ইংরেজিতে লিখুন (PDF-এ বাংলা অক্ষর ঠিক দেখায় না)।': 'Type names in English (Bengali letters do not show well in the PDF).',
     '✅ নতুন list খোলা হয়েছে। প্রথমে worker খুঁজে বাছুন, তারপর Next চাপুন।': '✅ New list opened. First search and pick workers, then tap Next.',

@@ -811,6 +811,7 @@
     stat(c.submitted, 'Submitted', 'good'); stat(c.draft, 'Draft (not submitted)', 'warn'); stat(c.locked, 'Locked');
     stat(noList, 'No list'); stat(c.short, 'Too few supervisor names', c.short ? 'bad' : '');
     if (dash.dups.length) stat(dash.dups.length, 'Same worker in two lists (old)', 'bad');
+    renderSummary();
 
     var D = $('dupBox'); D.innerHTML = '';
     D.classList.toggle('hidden', !dash.dups.length);
@@ -839,6 +840,32 @@
     });
     if (!shown) C.appendChild(el('div', dash.users.length ? 'Nothing in this group.' : 'This GP has no supervisors yet. Add them from the Users tab.', 'card muted'));
     updateExportSummary();
+  }
+
+  // Short summary under the numbers: today, workers, accounts, villages, who is still pending
+  function renderSummary() {
+    var box = $('dashSum'); if (!box) { box = el('div', null, 'dsum'); box.id = 'dashSum'; $('dashStats').after(box); }
+    box.innerHTML = '';
+    var today = new Date().toDateString(), tLists = 0, tWorkers = 0, workers = 0, noAcc = 0, vs = {};
+    dash.rows.forEach(function (r) {
+      var n = Number(r.workers || 0); workers += n; noAcc += Number(r.no_account || 0);
+      (r.villages || []).forEach(function (v) { vs[vno(v)] = 1; });
+      if (r.submitted_at && new Date(r.submitted_at).toDateString() === today && r.submit_state !== 'draft') { tLists++; tWorkers += n; }
+    });
+    function row(icon, label, html, cls) { var d = el('div', null, 'dsum-row' + (cls ? ' ' + cls : '')); d.appendChild(el('span', icon)); d.appendChild(el('b', label));
+      var v = el('span'); v.textContent = html; d.appendChild(v); box.appendChild(d); }
+    row('📅', 'Today', tLists ? bn(tLists) + ' list(s) submitted · ' + bn(tWorkers) + ' workers' : 'no list submitted yet today');
+    row('👥', 'Workers', bn(workers) + ' in ' + bn(dash.rows.length) + ' current list(s)' + (dash.extrasOk ? (noAcc ? ' · ⚠ ' + bn(noAcc) + ' without account' : ' · ✓ all have an account') : ''), dash.extrasOk && noAcc ? 'warn' : '');
+    var vk = Object.keys(vs).sort(); row('🏘', 'Villages', vk.length ? vk.join(', ') : '—');
+    var draft = [], none = [];
+    dash.users.forEach(function (u) {
+      if (!u.active) return;
+      var ls = u.lists || [];
+      if (!ls.length) none.push(u.full_name || u.username);
+      else if (ls.some(function (l) { return l.submit_state === 'draft' && Number(l.workers || 0) > 0; })) draft.push(u.full_name || u.username);
+    });
+    row('⏳', 'Not submitted', draft.length ? draft.join(', ') : 'nobody — every list with workers is submitted', draft.length ? 'warn' : 'ok');
+    if (none.length) row('➖', 'No list yet', none.join(', '));
   }
 
   function userCard(u, lists) {

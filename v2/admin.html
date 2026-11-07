@@ -175,6 +175,10 @@
       .stack td[data-label=""]::before{display:none;}
       .modal{padding:0;} .modal-box{border-radius:0;min-height:100vh;}
     }
+    .dsum{border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:6px 10px;margin:4px 0 8px;display:grid;gap:4px;}
+    .dsum-row{display:grid;grid-template-columns:20px 110px 1fr;gap:6px;font-size:12.5px;align-items:baseline;}
+    .dsum-row b{color:#334155;} .dsum-row.warn span:last-child{color:#b45309;font-weight:700;} .dsum-row.ok span:last-child{color:#166534;}
+    @media (max-width:600px){ .dsum-row{grid-template-columns:20px 1fr;} .dsum-row span:last-child{grid-column:2;} }
   </style>
 </head>
 <body>
@@ -599,7 +603,7 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261107e"></script>
+<script src="./js/admin.js?v=20261107f"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 </body>
 </html>

@@ -8,6 +8,21 @@
   try { lang = localStorage.getItem(KEY) === 'en' ? 'en' : 'bn'; } catch (e) {}
 
   var D = {
+    // ③ Work / Supervisor page
+    'নাম ইংরেজিতে লিখুন (PDF-এ বাংলা অক্ষর ঠিক দেখায় না)।': 'Type names in English (Bengali letters do not show well in the PDF).',
+    '✅ নতুন list খোলা হয়েছে। প্রথমে worker খুঁজে বাছুন, তারপর Next চাপুন।': '✅ New list opened. First search and pick workers, then tap Next.',
+    '✅ কাজ save হয়েছে। এবার Supervisor বাছুন।': '✅ Work saved. Now pick the Supervisor.',
+    'Preview-এর আগে কাজ বাছুন।': 'Pick the work before Preview.',
+    'কাজের নাম বা Work Code-এর অংশ লিখে খুঁজুন, তালিকা থেকে বাছুন।': 'Type part of the work name or Work Code and pick from the list.',
+    'এখনো কোনো কাজ বাছা হয়নি — খুঁজে নিচের তালিকা থেকে বাছুন।': 'No work picked yet — search and pick from the list below.',
+    '🔍 কাজ খুঁজুন (নাম বা Work Code)': '🔍 Search work (name or Work Code)',
+    'যেমন: pukur অথবা 93393': 'e.g. pukur or 93393',
+    '🔍 নাম বা ID খুঁজুন (যেমন: arup অথবা 07)': '🔍 Search name or ID (e.g. arup or 07)',
+    '🔍 বদলাতে খুঁজুন': '🔍 Search to change',
+    'মেলেনি। তালিকায় নাম না থাকলে Admin-কে বলুন।': 'No match. If the name is not in the list, tell the Admin.',
+    ' (আগেই বাছা)': ' (already picked)',
+    'এই Supervisor আগেই বাছা হয়েছে। অন্য একজন বাছুন।': 'This Supervisor is already picked. Pick another one.',
+    'নিয়ম: প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)।': 'Rule: 1 Supervisor per 20 workers, at least 1 (40 → 2, 60 → 3).',
     // header, login
     'শ্রমিক নির্বাচন, তালিকা প্রস্তুতি ও ডিমান্ড ব্যবস্থাপনা': 'Worker selection, list making and demand management',
     'Username এবং PIN দিন।': 'Enter the username and PIN.',
@@ -350,7 +365,7 @@
     if (root.nodeType === 3) { var t = tr(root.nodeValue); if (t !== root.nodeValue) root.nodeValue = t; return; }
     if (root.nodeType !== 1) return;
     ['placeholder', 'title', 'aria-label'].forEach(function (a) {
-      var v = root.getAttribute(a); if (v && HAS_BN.test(v)) root.setAttribute(a, tr(v));
+      var v = root.getAttribute(a); if (v && HAS_BN.test(v)) { var t = tr(v); if (t !== v) root.setAttribute(a, t); }
     });
     for (var c = root.firstChild; c; c = c.nextSibling) walk(c);
   }

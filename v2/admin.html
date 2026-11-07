@@ -205,11 +205,50 @@
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
     <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
+    <button class="tab" data-tab="masters" id="mastersTab"><i>🏗</i><span>Works &amp; Supervisors</span></button>
   </div>
   <div class="side-foot">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
 </aside>
 <main class="main">
   <div id="status" class="status" role="status" aria-live="polite"></div>
+
+  <!-- ============ WORKS & SUPERVISORS (v185) ============ -->
+  <section id="tab-masters" class="hidden">
+    <div class="card">
+      <h2 style="margin:0;">🏗 Works &amp; Supervisors</h2>
+      <div class="muted">Enter the GP's works and supervisors once. In the phone app the supervisor then <b>searches and picks</b> the Work Name + Work Code and the supervisor <b>Name (ID)</b> from these lists instead of typing. While a list is empty, the phone app keeps the old typing boxes.</div>
+      <label class="f" for="msGp">Gram Panchayat</label>
+      <select id="msGp"></select>
+      <div class="muted" id="msSetup"></div>
+    </div>
+    <div class="card">
+      <h2>🏗 Works (Work Name + Work Code)</h2>
+      <div class="muted">One work per line: <b>Work Name</b>, then the <b>Work Code</b> (tab, comma or space between). Or choose an Excel / CSV file with the columns <b>Work Name</b> and <b>Work Code</b>. The same Work Name again updates its code.</div>
+      <textarea id="mwText" rows="5" style="width:100%;margin-top:8px;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font:12.5px ui-monospace,Consolas,monospace;" placeholder="Pukur Khanan at Village 002&#9;3206003006/IF/93393042892327&#10;Road from Baradakanta House, 3206003006/RC/93393042899999"></textarea>
+      <div class="grid3">
+        <div><label class="f" for="mwFile">or Excel / CSV file</label><input type="file" id="mwFile" accept=".xlsx,.xls,.csv"></div>
+      </div>
+      <div class="row" style="margin-top:8px;"><button class="btn-primary" id="mwSave">💾 Save works</button><span class="muted" id="mwParsed"></span></div>
+      <div id="mwResult" class="muted" style="margin-top:6px;white-space:pre-wrap;"></div>
+      <input type="search" id="mwFind" placeholder="🔍 Search works" style="margin-top:10px;width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:8px;">
+      <div class="table-wrap stack" style="margin-top:6px;max-height:60vh;"><table>
+        <thead><tr><th>#</th><th>Work Name</th><th>Work Code</th><th>Lists</th><th></th></tr></thead>
+        <tbody id="mwBody"></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>👤 Supervisors (Name + ID)</h2>
+      <div class="muted">One supervisor per line: <b>Name</b>, then the <b>ID</b>. An ID of only digits (1, 07) becomes <b id="msIdEx">S-&lt;job card prefix&gt;-01</b>; no ID = next free number. Names in English (the PDF does not show Bangla letters well). The same ID again updates the name.</div>
+      <textarea id="msText" rows="5" style="width:100%;margin-top:8px;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font:12.5px ui-monospace,Consolas,monospace;" placeholder="Arup Roy, 01&#10;Rina Barman&#9;02&#10;Hari Das"></textarea>
+      <div class="grid3">
+        <div><label class="f" for="msFile">or Excel / CSV file</label><input type="file" id="msFile" accept=".xlsx,.xls,.csv"></div>
+      </div>
+      <div class="row" style="margin-top:8px;"><button class="btn-primary" id="msSave">💾 Save supervisors</button><span class="muted" id="msParsed"></span></div>
+      <div id="msResult" class="muted" style="margin-top:6px;white-space:pre-wrap;"></div>
+      <div class="table-wrap stack" style="margin-top:6px;max-height:60vh;"><table>
+        <thead><tr><th>#</th><th>Name</th><th>ID</th><th></th></tr></thead>
+        <tbody id="msBody"></tbody></table></div>
+    </div>
+  </section>
 
   <!-- ============ DASHBOARD ============ -->
   <section id="tab-dash">
@@ -557,5 +596,6 @@
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/admin.js?v=20261107a"></script>
+<script src="./js/admin-masters.js?v=20261107m"></script>
 </body>
 </html>

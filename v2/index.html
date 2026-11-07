@@ -849,6 +849,22 @@
     .cfm-t{font-size:16px;font-weight:800;text-align:center;margin:4px 0 6px;white-space:pre-line;word-break:break-word;}
     .cfm-m{font-size:13px;color:#475569;text-align:center;white-space:pre-line;line-height:1.45;}
     .cfm-b{display:flex;gap:8px;margin-top:16px;} .cfm-b button{flex:1;padding:13px 8px;font-weight:800;font-size:15px;border-radius:12px;}
+    .wm-pick{display:none;}
+    .wm-on .wm-pick{display:block;}
+    .wm-on .wm-manual,.wm-on .wc-hint{display:none!important;}
+    .wm-pick input[type=search]{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px;font-size:15px;}
+    .wm-list{display:none;max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;margin-top:6px;background:#fff;}
+    .wm-item{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #f1f5f9;background:#fff;padding:9px 10px;cursor:pointer;font:inherit;}
+    .wm-item:hover,.wm-item:focus{background:#eff6ff;}
+    .wm-item b{display:block;font-size:14px;color:#0f172a;}
+    .wm-item span,.wm-sel span{display:block;font:12px ui-monospace,Consolas,monospace;color:#475569;word-break:break-all;}
+    .wm-empty{padding:10px;font-size:13px;color:#64748b;}
+    .wm-sel{margin:8px 0;padding:10px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;}
+    .wm-sel b{display:block;color:#166534;font-size:15px;}
+    .wm-sel .wm-none{font-size:13px;color:#9a3412;}
+    .wm-sel.empty{background:#fff7ed;border-color:#fed7aa;}
+    .sup-card select.sup-sel{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px;font-size:15px;background:#fff;}
+    .acc-sent{font-size:11px;color:#2563eb;font-weight:700;}
     .sup-card{border:1px solid #e2e8f0;border-left:5px solid #2563eb;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff;}
     .sup-card .sc-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:13px;color:#1e3a8a;margin-bottom:6px;}
     .sup-card .sc-h button{width:32px;height:32px;border-radius:9px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-weight:800;cursor:pointer;}
@@ -1402,11 +1418,17 @@
       <!-- NEW LIST (page, no popup) -->
       <div class="pg" id="pgNew">
         <div class="pg-h">➕ নতুন list (নতুন কাজ)</div>
-        <label for="nlName">Work Name — কোন কাজের list?</label>
-        <input type="text" id="nlName" maxlength="200" placeholder="যেমন: Pukur Khanan, Village 002">
-        <label for="nlCode">Work Code <span style="font-weight:400;color:#94a3b8;">(পরে দিলেও চলবে)</span></label>
-        <div class="wc-box"><span class="wc-pre" id="nlCodePre"></span><input type="text" id="nlCode" maxlength="90" autocomplete="off" placeholder="IF/93393042892327" oninput="wcCheck('nl')"></div>
-        <div class="wc-hint" id="nlCodeHint"></div>
+        <div class="wm-pick">
+          <label for="nlWmQ">🔍 কাজ খুঁজে বাছুন (নাম বা Work Code)</label>
+          <input type="search" id="nlWmQ" autocomplete="off" placeholder="যেমন: pukur অথবা 93393" oninput="wmSearch('nl')" onfocus="wmSearch('nl')">
+          <div class="wm-list" id="nlWmList"></div>
+          <div class="wm-sel" id="nlWmSel"></div>
+        </div>
+        <label for="nlName" class="wm-manual">Work Name — কোন কাজের list?</label>
+        <input type="text" id="nlName" class="wm-manual" maxlength="200" placeholder="যেমন: Pukur Khanan, Village 002">
+        <label for="nlCode" class="wm-manual">Work Code <span style="font-weight:400;color:#94a3b8;">(পরে দিলেও চলবে)</span></label>
+        <div class="wc-box wm-manual"><span class="wc-pre" id="nlCodePre"></span><input type="text" id="nlCode" maxlength="90" autocomplete="off" placeholder="IF/93393042892327" oninput="wcCheck('nl')"></div>
+        <div class="wc-hint wm-manual" id="nlCodeHint"></div>
         <div class="gm-note">একই গ্রামে একাধিক কাজ চললে প্রতি কাজের জন্য আলাদা list খুলুন (সর্বোচ্চ ৫টা)। একজন worker একসময়ে একটাই list-এ থাকতে পারেন।</div>
         <div class="pg-btns">
           <button class="btn-light" onclick="closeNewList()">বাতিল</button>
@@ -1430,11 +1452,17 @@
       <div class="pg" id="pgInfo">
         <div class="pg-h">① Work Name ও Work Code</div>
         <div class="gm-warn" id="liMsg" style="display:none;"></div>
-        <label for="liName">Work Name</label>
-        <input type="text" id="liName" maxlength="200">
-        <label for="liCode">Work Code</label>
-        <div class="wc-box"><span class="wc-pre" id="liCodePre"></span><input type="text" id="liCode" maxlength="90" autocomplete="off" placeholder="IF/93393042892327" oninput="wcCheck('li')"></div>
-        <div class="wc-hint" id="liCodeHint"></div>
+        <div class="wm-pick">
+          <div class="wm-sel" id="liWmSel"></div>
+          <label for="liWmQ">🔍 অন্য কাজ বাছতে খুঁজুন (নাম বা Work Code)</label>
+          <input type="search" id="liWmQ" autocomplete="off" placeholder="যেমন: pukur অথবা 93393" oninput="wmSearch('li')" onfocus="wmSearch('li')">
+          <div class="wm-list" id="liWmList"></div>
+        </div>
+        <label for="liName" class="wm-manual">Work Name</label>
+        <input type="text" id="liName" class="wm-manual" maxlength="200">
+        <label for="liCode" class="wm-manual">Work Code</label>
+        <div class="wc-box wm-manual"><span class="wc-pre" id="liCodePre"></span><input type="text" id="liCode" maxlength="90" autocomplete="off" placeholder="IF/93393042892327" oninput="wcCheck('li')"></div>
+        <div class="wc-hint wm-manual" id="liCodeHint"></div>
         <div class="pg-btns">
           <button class="btn-light" style="color:#dc2626;" onclick="deleteMyList()">🗑 List মুছুন</button>
           <button class="btn-primary" onclick="saveListInfo()">Save, Next: ② Worker →</button>
@@ -1448,7 +1476,7 @@
         <div class="gm-warn" id="supMsg" style="display:none;"></div>
         <div id="mmSups"></div>
         <button class="link-btn" type="button" onclick="addSupRow('')">+ আরেকজন Supervisor</button>
-        <div class="gm-note">নাম ইংরেজিতে লিখুন (PDF-এ বাংলা অক্ষর ঠিক দেখায় না)। নিয়ম: প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)।</div>
+        <div class="gm-note"><span id="supNoteTyped">নাম ইংরেজিতে লিখুন (PDF-এ বাংলা অক্ষর ঠিক দেখায় না)। </span>নিয়ম: প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)।</div>
         <div class="pg-btns">
           <button class="btn-light" onclick="setStep(2)">← ② Worker</button>
           <button class="btn-primary" onclick="saveSup(true)">Next: ④ Preview →</button>
@@ -1765,7 +1793,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261106a"></script>
+<script src="./js/gramg-adapter.js?v=20261107m"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3170,7 +3198,7 @@
       if(q&&!hay.includes(q))return; if(vf&&String(p?p.v:'')!==String(vf))return;
       shown++; if(!acc.accountNo||!acc.ifsc)missing++;
       const tr=document.createElement('tr'); if(!acc.accountNo||!acc.ifsc)tr.className='missing-account';
-      tr.innerHTML='<td>'+sl+++'</td><td>'+escapeHtml(item.jobCard)+'</td><td>'+escapeHtml(item.name)+'</td><td>'+badgeText(item.ekyc)+'</td><td>'+badgeText(item.abps)+'</td><td>'+escapeHtml(acc.accountNo||'⚠ Missing')+'</td><td>'+escapeHtml(acc.ifsc||'⚠ Missing')+'</td>'; body.appendChild(tr);
+      tr.innerHTML='<td>'+sl+++'</td><td>'+escapeHtml(item.jobCard)+'</td><td>'+escapeHtml(item.name)+'</td><td>'+badgeText(item.ekyc)+'</td><td>'+badgeText(item.abps)+'</td><td>'+escapeHtml(acc.accountNo||'⚠ Missing')+(acc.src==='sent'?' <span class="acc-sent" title="Supervisor-এর পাঠানো (📷 Account copy), data-তে এখনো নেই">📷</span>':'')+'</td><td>'+escapeHtml(acc.ifsc||'⚠ Missing')+'</td>'; body.appendChild(tr);
     });
     document.getElementById('previewSummary').innerHTML='<b>Total Selected:</b> '+previewRows.length+' &nbsp; | &nbsp; <b>Showing:</b> '+shown+' &nbsp; | &nbsp; <b>Missing Account:</b> '+missing;
     document.getElementById('previewSub').textContent=currentUser.name+' • '+currentUser.gp+' • '+previewRows.length+' workers';
@@ -3422,7 +3450,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests();
+  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters();
 }
 const AUTH_LOST_MSG={
   SESSION_REVOKED:'এই account-এ অন্য একটি device-এ নতুন Login হয়েছে। একটি account সর্বোচ্চ ২টি device-এ চালু থাকতে পারে, তাই এই device-এর session বন্ধ করা হয়েছে। আবার Login করুন।',
@@ -3580,14 +3608,16 @@ function closeGm(id){ document.getElementById(id).classList.remove('show'); }
 function openNewList(){
   if((listState.lists||[]).length>=5){ showStatus('একসঙ্গে সর্বোচ্চ ৫টা চলতি list রাখা যায়।','error'); return; }
   if(draftCount()>=MAX_DRAFTS){ showStatus('একসঙ্গে সর্বোচ্চ ৩টা Draft list রাখা যায়। আগে একটা Draft Submit করুন অথবা 🗑 দিয়ে মুছুন।','error'); return; }
-  document.getElementById('nlName').value=''; wcFill('nl',''); document.body.classList.add('nl-open'); renderNewListBtn(); if(typeof renderChrome==='function') renderChrome(); setTimeout(function(){ document.getElementById('nlName').focus(); },50);
+  document.getElementById('nlName').value=''; wcFill('nl',''); wmReset('nl'); document.body.classList.add('nl-open'); renderNewListBtn(); if(typeof renderChrome==='function') renderChrome();
+  if(!masters.works.length) setTimeout(function(){ document.getElementById('nlName').focus(); },50);
+  loadMasters();
 }
 function closeNewList(){ document.body.classList.remove('nl-open'); renderNewListBtn(); }
 function toggleNewList(){ if(document.body.classList.contains('nl-open')) closeNewList(); else openNewList(); }
 function renderNewListBtn(){ const b=document.getElementById('newListBtn'); if(b) b.textContent=document.body.classList.contains('nl-open')?'✕ নতুন list বন্ধ করুন':'➕ নতুন list'; }
 function saveNewList(){
   const name=document.getElementById('nlName').value.trim();
-  if(!name){ showStatus('Work Name লিখুন।','error'); return; }
+  if(!name){ showStatus(masters.works.length?'তালিকা থেকে কাজ খুঁজে বাছুন।':'Work Name লিখুন।','error'); return; }
   if(busySaving()) return;
   if(!wcCheck('nl')){ showStatus('Work Code-এর format মেলেনি। ঠিক করুন অথবা খালি রাখুন।','error'); return; }
   const code=wcFull('nl');
@@ -3603,13 +3633,16 @@ function supIdPrefix(){ const j=String((currentUser&&currentUser.jcPrefix)||'').
 function supSplit(v){ const m=String(v||'').match(/^(.*?)\s*\((S-[^()]*)\)\s*$/); return m?{name:m[1].trim(),id:m[2].trim()}:{name:String(v||'').trim(),id:''}; }
 function supNumber(rowEl){ const p=supIdPrefix(); let id=rowEl.querySelector('.sup-id').value.replace(/\s+/g,''); if(!id) return ''; if(id.toUpperCase().indexOf(p.toUpperCase())===0) id=id.slice(p.length); return p+id; }
 function supValues(){
+  const seen={};
   return Array.prototype.map.call(document.querySelectorAll('#mmSups .sup-card'),function(c){
+    const sel=c.querySelector('.sup-sel'); if(sel) return sel.value;   // picked from the Admin's list
     const name=c.querySelector('.sup-input').value.trim(); if(!name) return '';
     const id=supNumber(c); return id?name+' ('+id+')':name;
-  }).filter(Boolean);
+  }).filter(function(v){ if(!v||seen[v.toUpperCase()]) return false; seen[v.toUpperCase()]=1; return true; });
 }
 function renumberSups(){ Array.prototype.forEach.call(document.querySelectorAll('#mmSups .sup-card .sc-n'),function(e,i){ e.textContent='👤 Supervisor '+(i+1); }); }
 function addSupRow(v){
+  if(masters.supervisors.length){ addSupPick(v); return; }
   const box=document.getElementById('mmSups'), sp=supSplit(v), p=supIdPrefix();
   const c=document.createElement('div'); c.className='sup-card';
   c.innerHTML='<div class="sc-h"><span class="sc-n"></span><button type="button" title="বাদ দিন">✕</button></div>'+
@@ -3636,13 +3669,14 @@ function setStep(n, fromPreview){
 }
 function fillInfo(msg){
   const m=document.getElementById('liMsg'); m.textContent=msg||''; m.style.display=msg?'block':'none';
-  document.getElementById('liName').value=listState.workName||''; wcFill('li', listState.workCode||'');
+  document.getElementById('liName').value=listState.workName||''; wcFill('li', listState.workCode||''); wmReset('li');
 }
 function fillSup(msg){
   const req=requiredSupervisors(selected.size), sups=listState.supervisors||[];
   const m=document.getElementById('supMsg'); m.textContent=msg||''; m.style.display=msg?'block':'none';
   document.getElementById('supNeed').textContent='এখন '+selected.size+' জন worker, '+req+' জন Supervisor লাগবে।';
   const box=document.getElementById('mmSups'); box.innerHTML='';
+  const tn=document.getElementById('supNoteTyped'); if(tn) tn.style.display=masters.supervisors.length?'none':'';
   sups.forEach(addSupRow);
   for(let i=sups.length;i<Math.max(req,1);i++) addSupRow('');
 }
@@ -3667,7 +3701,7 @@ function previewSubmit(){ submitMyList(); }
 function saveListInfo(){
   if(listLocked(true)) return;
   const name=document.getElementById('liName').value.trim(), msg=document.getElementById('liMsg');
-  if(!name){ msg.textContent='Work Name লিখুন।'; msg.style.display='block'; return; }
+  if(!name){ msg.textContent=masters.works.length?'তালিকা থেকে কাজ খুঁজে বাছুন।':'Work Name লিখুন।'; msg.style.display='block'; return; }
   if(!wcCheck('li')){ msg.textContent='Work Code-এর format মেলেনি। ঠিক করুন অথবা খালি রাখুন।'; msg.style.display='block'; return; }
   const code=wcFull('li'), codeChanged=code!==(listState.workCode||''), nameChanged=name!==(listState.workName||'');
   if(!codeChanged && !nameChanged){ setStep(2); return; }
@@ -3825,6 +3859,75 @@ function stepClick(i){
   if(i===3){ openFinalPreview(); return; }
   if(listState.state!=='draft') return;
   setStep(i+1);
+}
+/* ---------- works (Name + Code) and supervisors (Name + ID) entered by the Admin (SQL v185) ----------
+   When the Admin has entered them, the supervisor searches + picks; otherwise the old typing boxes stay. */
+let masters={works:[],supervisors:[],loaded:false};
+function loadMasters(){
+  if(!window.gramgAdapter || !gramgAdapter.masters) return Promise.resolve(masters);
+  return gramgAdapter.masters().then(function(m){
+    const hadSups=masters.supervisors.length>0;
+    masters={works:m.works||[],supervisors:m.supervisors||[],loaded:true};
+    ['nl','li'].forEach(wmReset);
+    // step ③ open with the typing boxes and the list just arrived: switch to the dropdown
+    if(!hadSups && masters.supervisors.length && document.body.classList.contains('step-3') && !supValues().length) fillSup('');
+    return masters;
+  }, function(){ return masters; });
+}
+function supPickLabel(x){ return x.name+' ('+x.sup_id+')'; }
+function addSupPick(v){
+  const box=document.getElementById('mmSups');
+  const c=document.createElement('div'); c.className='sup-card';
+  c.innerHTML='<div class="sc-h"><span class="sc-n"></span><button type="button" title="বাদ দিন">✕</button></div>'+
+    '<label class="sc-l">Supervisor বাছুন (নাম ও ID)</label><select class="sup-sel"><option value="">— বাছুন —</option></select>';
+  const sel=c.querySelector('.sup-sel'); let found=false;
+  masters.supervisors.forEach(function(x){
+    const o=document.createElement('option'); o.value=o.textContent=supPickLabel(x);
+    if(v && o.value.toUpperCase()===String(v).toUpperCase()){ found=true; v=o.value; }
+    sel.appendChild(o);
+  });
+  if(v && !found){ const o=document.createElement('option'); o.value=v; o.textContent=v+' (আগের)'; sel.appendChild(o); }
+  sel.value=v||'';
+  sel.onchange=function(){
+    const val=sel.value; if(!val) return;
+    const dup=Array.prototype.some.call(document.querySelectorAll('#mmSups .sup-sel'),function(s){ return s!==sel && s.value===val; });
+    if(dup){ showStatus('এই Supervisor আগেই বাছা হয়েছে। অন্য একজন বাছুন।','error'); sel.value=''; }
+  };
+  c.querySelector('.sc-h button').onclick=function(){ c.remove(); renumberSups(); };
+  box.appendChild(c); renumberSups();
+}
+function wmReset(w){
+  const pg=document.getElementById(w==='nl'?'pgNew':'pgInfo'); if(!pg) return;
+  pg.classList.toggle('wm-on', masters.works.length>0);
+  const q=document.getElementById(w+'WmQ'), l=document.getElementById(w+'WmList');
+  if(q) q.value=''; if(l){ l.innerHTML=''; l.style.display='none'; }
+  wmShow(w);
+}
+function wmShow(w){
+  const box=document.getElementById(w+'WmSel'); if(!box) return;
+  const name=document.getElementById(w+'Name').value.trim(), code=wcFull(w);
+  box.classList.toggle('empty', !name);
+  box.innerHTML=name?('<b>✓ '+escapeHtml(name)+'</b><span>'+escapeHtml(code||'Work Code নেই')+'</span>')
+                    :'<span class="wm-none">এখনো কোনো কাজ বাছা হয়নি — খুঁজে নিচের তালিকা থেকে বাছুন।</span>';
+}
+function wmSearch(w){
+  const q=document.getElementById(w+'WmQ').value.trim().toLowerCase(), box=document.getElementById(w+'WmList');
+  const words=q.split(/\s+/).filter(Boolean), MAX=50;
+  const hits=masters.works.filter(function(x){ const h=(x.name+' '+(x.code||'')).toLowerCase(); return words.every(function(t){ return h.indexOf(t)>=0; }); });
+  box.innerHTML='';
+  if(!hits.length){ box.innerHTML='<div class="wm-empty">মেলেনি। নাম বা Code-এর অংশ লিখে খুঁজুন। তালিকায় কাজটা না থাকলে Admin-কে বলুন।</div>'; }
+  hits.slice(0,MAX).forEach(function(x){
+    const b=document.createElement('button'); b.type='button'; b.className='wm-item';
+    b.innerHTML='<b>'+escapeHtml(x.name)+'</b><span>'+escapeHtml(x.code||'Work Code নেই')+'</span>';
+    b.onclick=function(){ wmPick(w,x); }; box.appendChild(b);
+  });
+  if(hits.length>MAX){ const d=document.createElement('div'); d.className='wm-empty'; d.textContent='আরও '+(hits.length-MAX)+'টা কাজ আছে — আরও লিখে খুঁজুন।'; box.appendChild(d); }
+  box.style.display='block';
+}
+function wmPick(w,x){
+  document.getElementById(w+'Name').value=x.name; wcFill(w, x.code||'');
+  document.getElementById(w+'WmQ').value=''; const l=document.getElementById(w+'WmList'); l.innerHTML=''; l.style.display='none';
+  wmShow(w);
 }
 // Work Code: GP code + "/" is filled in, the supervisor types the rest
 function wcPrefix(){ const g=String(listState.gpCode||'').trim(); return g?g+'/':''; }

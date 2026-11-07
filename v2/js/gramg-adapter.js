@@ -309,7 +309,7 @@
       var out = {};
       (rows || []).forEach(function (r) {
         var k = st.keyByWid.get(r.worker_id);
-        if (k) out[k.toUpperCase()] = { accountNo: r.account_no || '', ifsc: r.ifsc || '' };
+        if (k) out[k.toUpperCase()] = { accountNo: r.account_no || '', ifsc: r.ifsc || '', src: r.src || '' };
       });
       return out;
     });
@@ -427,6 +427,15 @@
         e = e || {};
         if (e.status === 404 && /add_account_photo/.test(e.message || '')) e.code = 'PHOTO_SETUP';
         throw bnError(e);
+      });
+    },
+    // works (Work Name + Code) and supervisors (Name + ID) the Admin entered for this GP (SQL v185)
+    masters: function () {
+      return SB.rpc('get_gp_masters', {}, { retry: true }).then(function (r) {
+        return { works: (r && r.works) || [], supervisors: (r && r.supervisors) || [] };
+      }, function (e) {
+        if (e && e.status === 404) return { works: [], supervisors: [] };   // SQL v185 not run yet
+        throw bnError(e || {});
       });
     },
     workName: function () { return st.workName; },

@@ -1492,6 +1492,11 @@
   });
 
   // ---------- add a GP ----------
+  // From the "New GP Admin" form: jump to the New Gram Panchayat card (Data Import tab)
+  $('gaNewGp').addEventListener('click', function () {
+    var t = document.querySelector('.tab[data-tab="import"]'); if (t) t.click();
+    setTimeout(function () { $('gpAddCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('gpName').focus(); }, 80);
+  });
   $('gpPrefix').addEventListener('input', function () { var v = this.value.toUpperCase(); if (v !== this.value) this.value = v; });
   $('gpAddBtn').addEventListener('click', async function () {
     var name = $('gpName').value.trim(), prefix = $('gpPrefix').value.trim().toUpperCase();

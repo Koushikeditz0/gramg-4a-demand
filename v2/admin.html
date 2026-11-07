@@ -350,7 +350,7 @@
 
   <!-- ============ IMPORT ============ -->
   <section id="tab-import" class="hidden">
-    <div class="card super-only">
+    <div class="card super-only" id="gpAddCard">
       <h2>🏛 New Gram Panchayat</h2>
       <div class="muted">Add the GP here before importing its data and creating supervisors. Job Card prefix = the first 13 characters of the Job Card number, e.g. <code>WB-08-005-014</code>.</div>
       <div class="grid3" style="margin-top:6px;">
@@ -437,7 +437,7 @@
       <h2>🛡 New GP Admin (K-Desk login is made automatically)</h2>
       <div class="muted">A GP Admin opens this Admin panel but sees and controls only their own GP: lists, data import, supervisors, K-Desk login. They cannot see other GPs, add a GP or make another GP Admin. Give them the username and PIN below.</div>
       <div class="grid3" style="margin-top:6px;">
-        <div><label class="f" for="gaGp">GP</label><select id="gaGp"></select></div>
+        <div><label class="f" for="gaGp">GP</label><select id="gaGp"></select><button type="button" class="link-btn" id="gaNewGp" style="margin-top:4px;font-size:12px;background:none;border:0;color:#2563eb;cursor:pointer;padding:0;">GP not in the list? ➕ Add a new GP</button></div>
         <div><label class="f" for="gaName">GP Admin full name</label><input type="text" id="gaName" maxlength="100" placeholder="e.g. Petla GP Office"></div>
         <div><label class="f" for="gaUsername">GP Admin username</label><input type="text" id="gaUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. petla.admin"></div>
         <div><label class="f" for="gaPin">GP Admin PIN</label>
@@ -603,7 +603,7 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261107f"></script>
+<script src="./js/admin.js?v=20261107g"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 </body>
 </html>

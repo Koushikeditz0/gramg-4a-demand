@@ -830,8 +830,10 @@
       t.appendChild(tb); wrap.appendChild(t); det.appendChild(wrap); D.appendChild(det);
     }
 
-    document.querySelectorAll('#dashFilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.f === dash.filter); });
+    document.querySelectorAll('#dashFilters button[data-f]').forEach(function (b) { b.classList.toggle('active', b.dataset.f === dash.filter); });
+    document.querySelectorAll('#dashView button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === dashView); });
     var C = $('dashCards'); C.innerHTML = '';
+    if (dashView === 'list') { renderListTable(C); updateExportSummary(); return; }
     var shown = 0;
     dash.users.forEach(function (u) {
       var lists = (u.lists || []).filter(function (l) { return dash.filter === 'all' || l.submit_state === dash.filter; });
@@ -866,6 +868,66 @@
     });
     row('⏳', 'Not submitted', draft.length ? draft.join(', ') : 'nobody — every list with workers is submitted', draft.length ? 'warn' : 'ok');
     if (none.length) row('➖', 'No list yet', none.join(', '));
+  }
+
+  // ---------- ☰ List view: one row per list (Details view = the cards) ----------
+  var dashView = 'details';
+  try { dashView = localStorage.getItem('gramg2.adminDashView') || 'details'; } catch (e) {}
+  $('dashView').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-v]'); if (!b) return;
+    dashView = b.dataset.v; try { localStorage.setItem('gramg2.adminDashView', dashView); } catch (x) {}
+    renderDashboard();
+  });
+  function renderListTable(C) {
+    var rows = [];
+    dash.users.forEach(function (u) {
+      var ls = u.lists || [];
+      if (dash.filter === 'empty') { if (!ls.length) rows.push({ u: u, r: null }); return; }
+      ls.forEach(function (l) {
+        if (dash.filter !== 'all' && l.submit_state !== dash.filter) return;
+        rows.push({ u: u, r: dash.rows.filter(function (x) { return x.list_id === l.list_id; })[0] });
+      });
+      if (dash.filter === 'all' && !ls.length) rows.push({ u: u, r: null });
+    });
+    if (!rows.length) { C.appendChild(el('div', dash.users.length ? 'Nothing in this group.' : 'This GP has no supervisors yet. Add them from the Users tab.', 'card muted')); return; }
+    var wrap = el('div', null, 'lwrap'), t = el('table', null, 'ltable'), hr = el('tr');
+    ['', 'Supervisor', 'Work', 'Status', 'Workers', 'Date', 'Accounts', ''].forEach(function (h) { hr.appendChild(el('th', h)); });
+    var th = el('thead'); th.appendChild(hr); t.appendChild(th);
+    var tb = el('tbody');
+    function cell(tr, label, cls) { var c = el('td', null, cls || ''); c.setAttribute('data-label', label); tr.appendChild(c); return c; }
+    rows.forEach(function (x) {
+      var u = x.u, r = x.r, tr = el('tr', null, r && dash.picked.has(r.list_id) ? 'sel' : '');
+      var c0 = cell(tr, 'Export');
+      var n = r ? Number(r.workers || 0) : 0;
+      if (r && n > 0) {
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.title = 'Add to K-Desk export'; cb.checked = dash.picked.has(r.list_id);
+        cb.addEventListener('change', function () { if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id); tr.classList.toggle('sel', cb.checked); updateExportSummary(); });
+        c0.appendChild(cb);
+      }
+      var cs = cell(tr, 'Supervisor'); cs.appendChild(el('div', u.full_name || u.username)); cs.appendChild(el('div', '@' + u.username + (u.active ? '' : ' · disabled'), 'sub'));
+      if (!r) { var cn = cell(tr, 'Work', 'sub'); cn.textContent = 'No current list'; cn.colSpan = 6; tr.appendChild(el('td')); tb.appendChild(tr); return; }
+      var cw = cell(tr, 'Work', 'wk'); cw.appendChild(el('div', r.work_name || '(no Work Name)'));
+      cw.appendChild(el('div', r.work_code || 'no Work Code', 'sub'));
+      if (r.villages && r.villages.length) cw.appendChild(el('div', 'village ' + r.villages.map(vno).join(', '), 'sub'));
+      cell(tr, 'Status').appendChild(el('span', STATE_BN[r.submit_state], 'pill ' + r.submit_state));
+      var sups = (r.supervisors || []).length, need = reqSup(n);
+      var cwk = cell(tr, 'Workers'); cwk.appendChild(el('div', bn(n)));
+      if (sups < need) cwk.appendChild(el('div', '⚠ needs ' + need + ' sup.', 'sub warn'));
+      var cd = cell(tr, 'Date', r.from_date && r.work_days ? '' : 'sub');
+      if (r.from_date && r.work_days) { cd.appendChild(el('div', ddmmyyyy(r.from_date).slice(0, 5) + ' → ' + dateTo(r.from_date, Number(r.work_days)))); cd.appendChild(el('div', r.work_days + ' working days', 'sub')); }
+      else cd.textContent = '—';
+      var ca = cell(tr, 'Accounts');
+      if (dash.extrasOk && n) { var na = Number(r.no_account || 0); ca.textContent = na ? '⚠ ' + bn(na) + ' no A/C' : '✓ all'; ca.title = na ? bn(na) + ' worker(s) without Account No / IFSC' : 'Every worker has an account'; ca.className = na ? 'warn' : 'okc'; } else ca.textContent = '—';
+      var cact = cell(tr, '', 'acts');
+      function act(label, cls, fn, title) { var b = el('button', label, cls + ' btn-small'); if (title) b.title = title; b.addEventListener('click', fn); cact.appendChild(b); }
+      act('👁', 'btn-primary', function () { openPreview(r); }, 'View the list');
+      if ((r.submit_state === 'submitted' || r.submit_state === 'draft') && n > 0) act('🔒', 'btn-light', function () { listAction(r, 'lock'); }, 'Lock');
+      if (r.submit_state === 'submitted' || r.submit_state === 'locked') act('↩', 'btn-light', function () {
+        ask('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.').then(function (ok) { if (ok) listAction(r, 'reopen'); });
+      }, 'Send back (make it a draft again)');
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); wrap.appendChild(t); C.appendChild(wrap);
   }
 
   function userCard(u, lists) {
@@ -1004,7 +1066,7 @@
 
   $('dashGp').addEventListener('change', function () { dash.picked.clear(); loadDashboard(); });
   $('dashRefresh').addEventListener('click', loadDashboard);
-  document.querySelectorAll('#dashFilters button').forEach(function (b) {
+  document.querySelectorAll('#dashFilters button[data-f]').forEach(function (b) {
     b.addEventListener('click', function () { dash.filter = b.dataset.f; renderDashboard(); });
   });
   $('pickSubmitted').addEventListener('click', function () {

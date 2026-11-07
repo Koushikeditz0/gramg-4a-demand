@@ -1183,6 +1183,41 @@
 
     }
 
+    /* ===== 2026-11-07 sections: My List · Account · ABPS · Others ===== */
+    .secbar{display:flex;gap:4px;background:#fff;border-radius:12px;padding:4px;margin:0 0 8px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:sticky;top:0;z-index:40;}
+    .secbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;border-radius:9px;padding:6px 2px;font:inherit;font-size:11.5px;font-weight:800;color:#64748b;cursor:pointer;position:relative;}
+    .secbar button i{font-style:normal;font-size:18px;}
+    .secbar button.on{background:#2563eb;color:#fff;}
+    .sec-n{position:absolute;top:2px;right:12%;background:#f97316;color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;font-style:normal;}
+    .sec-n:empty{display:none;}
+    .sec-page{display:none;background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+    body.sec-abps #abpsPage,body.sec-other #otherPage{display:block;}
+    .sp-h{font-size:17px;font-weight:800;margin-bottom:2px;} .sp-sub{font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.4;}
+    body:not(.sec-list) #listPanel,body:not(.sec-list) .control-box,body:not(.sec-list) .action-bar,body:not(.sec-list) .wtabs,
+    body:not(.sec-list) .columns,body:not(.sec-list) #wBar,body:not(.sec-list) #previewOverlay{display:none !important;}
+    body:not(.sec-list){padding-bottom:0 !important;}
+    #acReqBar{display:none;}
+    body.sec-acc #acPage{display:block;position:static;inset:auto;z-index:auto;background:none;overflow:visible;}
+    body.sec-acc #acPage .ac-top button{display:none;}
+    .abv{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:8px;font:inherit;color:inherit;cursor:pointer;}
+    .abv .vn{font-weight:800;font-size:15px;min-width:76px;}
+    .abv .bars{flex:1;min-width:0;font-size:11.5px;color:#475569;}
+    .abv .bar{height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin:3px 0 5px;} .abv .bar div{height:100%;background:#16a34a;}
+    .abv .left{background:#fee2e2;color:#991b1b;font-weight:800;border-radius:20px;padding:3px 9px;font-size:12px;white-space:nowrap;}
+    .abv .left.ok{background:#dcfce7;color:#166534;}
+    .ab-top{display:flex;gap:8px;align-items:center;margin-bottom:8px;} .ab-top b{font-size:15px;flex:1;}
+    .ab-f{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;} .ab-f button{flex:0 0 auto;border:0;border-radius:20px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;background:#e2e8f0;color:#334155;cursor:pointer;} .ab-f button.on{background:#0f172a;color:#fff;}
+    .ab-q{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:14px;margin-bottom:8px;}
+    .ab-w{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 2px;}
+    .ab-w .nm{font-weight:700;font-size:14px;} .ab-w .jc{font-size:11.5px;color:#64748b;}
+    .ab-w .fl{display:flex;gap:4px;flex:0 0 auto;} .ab-w .fl span{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 6px;}
+    .fl .y{background:#dcfce7;color:#166534;} .fl .n{background:#fee2e2;color:#991b1b;}
+    .oth-who{background:#f8fafc;border-radius:10px;padding:10px;font-size:13px;margin-bottom:8px;line-height:1.5;}
+    .oth-row{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #f1f5f9;padding:12px 4px;font:inherit;color:inherit;cursor:pointer;}
+    .oth-row i{font-style:normal;font-size:20px;width:38px;height:38px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex:none;}
+    .oth-row b{display:block;font-size:14.5px;} .oth-row small{color:#64748b;font-size:12px;}
+    .oth-row.red b{color:#dc2626;} .oth-row.red i{background:#fee2e2;}
+    .oth-ver{font-size:11px;color:#94a3b8;text-align:center;margin-top:10px;}
   </style>
 
 </head>
@@ -1386,6 +1421,33 @@
     </div>
 
 
+
+    <!-- SECTIONS: My List · Account · ABPS · Others -->
+    <nav class="secbar" id="secBar" role="tablist">
+      <button type="button" data-sec="list" onclick="setSection('list')"><i>📋</i><span>My List</span></button>
+      <button type="button" data-sec="acc" onclick="setSection('acc')"><i>🏦</i><span>Account</span><b class="sec-n" id="secAccN"></b></button>
+      <button type="button" data-sec="abps" onclick="setSection('abps')"><i>✅</i><span>ABPS</span></button>
+      <button type="button" data-sec="other" onclick="setSection('other')"><i>⋯</i><span>Others</span></button>
+    </nav>
+
+    <!-- ABPS section -->
+    <div class="sec-page" id="abpsPage">
+      <div class="sp-h">✅ ABPS / eKYC</div>
+      <div class="sp-sub" id="abpsSub">আপনার GP-র কোন village-এ কতজনের ABPS আর eKYC হয়েছে। Village ছুঁয়ে বাকি থাকা worker-দের দেখুন।</div>
+      <div id="abpsBody"></div>
+    </div>
+
+    <!-- Others section -->
+    <div class="sec-page" id="otherPage">
+      <div class="sp-h">⋯ Others</div>
+      <div class="oth-who" id="othWho"></div>
+      <button type="button" class="oth-row" onclick="openUserGuide()"><i>📖</i><span><b>User Guide &amp; Help</b><small>App কীভাবে চালাবেন</small></span></button>
+      <button type="button" class="oth-row" id="othInstall" onclick="installApp()" style="display:none;"><i>📲</i><span><b>Phone-এ app হিসেবে রাখুন</b><small>Home screen-এ icon বসবে</small></span></button>
+      <button type="button" class="oth-row" onclick="toggleOthLang()"><i>🌐</i><span><b>ভাষা / Language</b><small id="othLang"></small></span></button>
+      <button type="button" class="oth-row" onclick="appUpdate()"><i>🔄</i><span><b>App update করুন</b><small>নতুন version এলে এটা চাপুন</small></span></button>
+      <button type="button" class="oth-row red" onclick="logout()"><i>🚪</i><span><b>Logout</b><small>এই phone থেকে বেরিয়ে যান</small></span></button>
+      <div class="oth-ver" id="othVer"></div>
+    </div>
 
     <!-- NOTICE (stays until closed) -->
     <div id="noticeBar" class="notice-bar" role="alert" style="display:none;">
@@ -1793,7 +1855,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261107m"></script>
+<script src="./js/gramg-adapter.js?v=20261107s"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -4118,6 +4180,112 @@ function sendPhoto(){
     if(e&&e.authLost) return; document.getElementById('phErr').textContent=(e&&e.message)||String(e);
   });
 }
+/* ---------- sections: My List · Account · ABPS · Others ---------- */
+let curSection='list';
+function setSection(sec){
+  if(sec===curSection && sec!=='abps') { window.scrollTo(0,0); return; }
+  if(curSection==='list' && sec!=='list' && document.getElementById('previewOverlay').classList.contains('show') && typeof curStep!=='undefined' && curStep!==4) closeFinalPreview();
+  curSection=sec;
+  ['list','acc','abps','other'].forEach(function(k){ document.body.classList.toggle('sec-'+k, k===sec); });
+  document.querySelectorAll('#secBar button').forEach(function(b){ b.classList.toggle('on', b.dataset.sec===sec); });
+  try{ localStorage.setItem('gramg2.sec', sec); }catch(e){}
+  if(sec==='acc'){ document.getElementById('acrSearch').value=''; renderAcReqList(); loadAcRequests(); }
+  if(sec==='abps') openAbps();
+  if(sec==='other') renderOthers();
+  window.scrollTo(0,0);
+}
+function renderSecBadge(){
+  const n=(typeof acReqs!=='undefined'?acReqs:[]).filter(function(r){ return r.status==='open'; }).length;
+  const e=document.getElementById('secAccN'); if(e) e.textContent=n?String(n):'';
+}
+// ABPS
+let abpsRows=null, abpsVillage=null, abpsList=[], abpsFilter='all';
+function openAbps(){
+  abpsVillage=null; const body=document.getElementById('abpsBody');
+  if(!abpsRows) body.innerHTML='<div class="ac-hint">আনছি...</div>';
+  else renderAbpsSummary();
+  gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; if(abpsVillage===null) renderAbpsSummary(); },
+    function(e){ if(e&&e.authLost) return;
+      body.innerHTML='<div class="selected-empty">'+(e&&e.code==='ABPS_SETUP'?'ABPS অংশ এখনো চালু হয়নি। Admin-কে বলুন (SQL v187)।':escapeHtml((e&&e.message)||String(e)))+'</div>'; });
+}
+function renderAbpsSummary(){
+  const body=document.getElementById('abpsBody'); body.innerHTML='';
+  document.getElementById('abpsSub').style.display='';
+  if(!abpsRows.length){ body.innerHTML='<div class="selected-empty">কোনো worker নেই।</div>'; return; }
+  let tw=0,tb=0; abpsRows.forEach(function(r){ tw+=r.workers; tb+=r.both; });
+  const t=document.createElement('div'); t.className='oth-who'; t.innerHTML='মোট <b>'+tw+'</b> জন worker · ABPS + eKYC দুটোই হয়েছে <b>'+tb+'</b> জনের · বাকি <b>'+(tw-tb)+'</b> জন'; body.appendChild(t);
+  abpsRows.forEach(function(r){
+    const left=r.workers-r.both, pc=r.workers?Math.round(r.both*100/r.workers):0;
+    const b=document.createElement('button'); b.type='button'; b.className='abv';
+    b.innerHTML='<span class="vn">Village '+String(r.village_no).padStart(3,'0')+'</span><span class="bars">'+r.workers+' জন · ABPS '+r.abps+' · eKYC '+r.ekyc+
+      '<div class="bar"><div style="width:'+pc+'%"></div></div></span><span class="left'+(left?'':' ok')+'">'+(left?left+' বাকি':'সব ✓')+'</span>';
+    b.onclick=function(){ openAbpsVillage(r.village_no); };
+    body.appendChild(b);
+  });
+}
+function openAbpsVillage(v){
+  abpsVillage=v; abpsFilter='all'; abpsList=[];
+  document.getElementById('abpsSub').style.display='none';
+  const body=document.getElementById('abpsBody');
+  body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>Village '+String(v).padStart(3,'0')+'</b></div><div class="ac-hint">আনছি...</div>';
+  window.scrollTo(0,0);
+  gramgAdapter.abpsVillage(v).then(function(rows){ if(abpsVillage!==v) return; abpsList=rows||[]; renderAbpsVillage(); },
+    function(e){ if(e&&e.authLost) return; body.lastChild.textContent=(e&&e.message)||String(e); });
+}
+function renderAbpsVillage(){
+  const v=abpsVillage, body=document.getElementById('abpsBody');
+  const q=(document.getElementById('abQ')||{}).value||'';
+  const cnt={all:abpsList.length, abps:abpsList.filter(function(x){return !x.abps;}).length, ekyc:abpsList.filter(function(x){return !x.ekyc;}).length, both:abpsList.filter(function(x){return !x.abps&&!x.ekyc;}).length};
+  body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>Village '+String(v).padStart(3,'0')+'</b></div>'+
+    '<div class="ab-f">'+[['all','সব বাকি'],['abps','ABPS নেই'],['ekyc','eKYC নেই'],['both','দুটোই নেই']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(abpsFilter===f[0]?'on':'')+'">'+f[1]+' ('+cnt[f[0]]+')</button>'; }).join('')+'</div>'+
+    '<input type="search" id="abQ" class="ab-q" placeholder="🔎 নাম বা Job Card খুঁজুন" autocomplete="off"><div id="abList"></div>';
+  const qi=document.getElementById('abQ'); qi.value=q; qi.oninput=paintAbpsList;
+  body.querySelectorAll('.ab-f button').forEach(function(b){ b.onclick=function(){ abpsFilter=b.dataset.f; renderAbpsVillage(); }; });
+  paintAbpsList();
+}
+function paintAbpsList(){
+  const box=document.getElementById('abList'); if(!box) return; box.innerHTML='';
+  const q=document.getElementById('abQ').value.trim().toLowerCase();
+  const rows=abpsList.filter(function(x){
+    if(abpsFilter==='abps' && x.abps) return false;
+    if(abpsFilter==='ekyc' && x.ekyc) return false;
+    if(abpsFilter==='both' && (x.abps||x.ekyc)) return false;
+    return !q || String(x.applicant_name||'').toLowerCase().indexOf(q)>=0 || String(x.job_card_no||'').toLowerCase().indexOf(q)>=0;
+  });
+  if(!rows.length){ box.innerHTML='<div class="selected-empty">'+(abpsList.length?'কেউ মেলেনি।':'এই village-এ সবার ABPS আর eKYC হয়ে গেছে ✓')+'</div>'; return; }
+  rows.forEach(function(x){
+    const d=document.createElement('div'); d.className='ab-w';
+    d.innerHTML='<div><div class="nm">'+escapeHtml(x.applicant_name||'')+'</div><div class="jc">'+escapeHtml(x.job_card_no||'')+(x.applicant_no?' · App '+escapeHtml(String(x.applicant_no)):'')+'</div></div>'+
+      '<div class="fl"><span class="'+(x.abps?'y':'n')+'">ABPS '+(x.abps?'✓':'✕')+'</span><span class="'+(x.ekyc?'y':'n')+'">eKYC '+(x.ekyc?'✓':'✕')+'</span></div>';
+    box.appendChild(d);
+  });
+}
+// Others
+function renderOthers(){
+  const u=currentUser||{};
+  document.getElementById('othWho').innerHTML='👤 <b>'+escapeHtml(u.name||u.username||'')+'</b>'+(u.username?' (@'+escapeHtml(u.username)+')':'')+'<br>🏛 GP: '+escapeHtml(u.gp||'')+
+    (u.jcPrefix?' · '+escapeHtml(u.jcPrefix):'')+'<br><span id="othData">'+escapeHtml((document.getElementById('dataStatus')||{}).textContent||'')+'</span>';
+  const ib=document.getElementById('installBtn'); document.getElementById('othInstall').style.display=(ib && ib.style.display!=='none')?'':'none';
+  let en=false; try{ en=localStorage.getItem('GramG2_lang')==='en'; }catch(e){}
+  document.getElementById('othLang').textContent=en?'এখন: English · বাংলা করতে চাপুন':'এখন: বাংলা · English করতে চাপুন';
+  const sw=document.querySelector('script[src*="gramg-adapter.js"]'); document.getElementById('othVer').textContent='Version '+((sw&&sw.getAttribute('src').split('v=')[1])||'');
+}
+function toggleOthLang(){
+  const b=document.querySelector('#langSwitch button:not(.on)')||document.querySelector('#langSwitch [data-lang]:not(.on)');
+  if(b){ b.click(); return; }
+  let en=false; try{ en=localStorage.getItem('GramG2_lang')==='en'; localStorage.setItem('GramG2_lang', en?'bn':'en'); }catch(e){}
+  location.reload();
+}
+function appUpdate(){
+  showLoading('App update হচ্ছে...');
+  const done=function(){ location.reload(); };
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations) navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.update().catch(function(){}); })); }).then(done,done);
+    else done();
+  }catch(e){ done(); }
+}
+(function(){ let s='list'; try{ s=localStorage.getItem('gramg2.sec')||'list'; }catch(e){} if(['list','acc','abps','other'].indexOf(s)<0) s='list'; curSection=''; document.body.classList.add('sec-'+s); curSection=s;
+  document.querySelectorAll('#secBar button').forEach(function(b){ b.classList.toggle('on', b.dataset.sec===s); }); })();
 /* ---------- account copy requests (account not frozen) ---------- */
 let acReqs=[], acOtherTimer=null;
 function loadAcRequests(){
@@ -4138,6 +4306,7 @@ function renderAcReqBar(){
     '</small></span>'+(open?'<span class="n">'+open+'</span>':'')+'</button>';
   bar.firstChild.classList.toggle('quiet',!open);
   bar.firstChild.onclick=openAcRequests;
+  renderSecBadge();
 }
 function openAcRequests(){
   document.getElementById('acrSearch').value='';
@@ -4259,7 +4428,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261106a"></script>
+<script src="./js/i18n.js?v=20261107s"></script>
 </body>
 
 </html>

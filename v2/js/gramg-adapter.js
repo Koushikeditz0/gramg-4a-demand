@@ -389,6 +389,16 @@
         throw bnError(e || {});
       });
     },
+    // ABPS section (SQL v187): per-village counts, and one village's workers without ABPS / eKYC
+    abpsSummary: function () {
+      return SB.rpc('get_abps_summary', {}, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) { var x = new Error('ABPS_SETUP'); x.code = 'ABPS_SETUP'; throw x; }
+        throw bnError(e || {});
+      });
+    },
+    abpsVillage: function (v) {
+      return SB.rpc('get_abps_village', { p_village: Number(v) }, { retry: true }).catch(function (e) { throw bnError(e || {}); });
+    },
     accountRequests: function () {
       return SB.rpc('get_account_requests', {}, { retry: true }).catch(function (e) {
         if (e && e.status === 404) return [];                         // SQL v181 not run yet

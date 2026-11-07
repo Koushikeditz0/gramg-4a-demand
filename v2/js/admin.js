@@ -239,6 +239,9 @@
         row.appendChild(el('span', '✕ Returned ' + fmtDate(r.done_at) + ' · ' + (r.return_reason || ''), 'pill off'));
       } else {
         row.appendChild(el('span', '✔ Verified ' + fmtDate(r.done_at) + ' · photo deleted', 'pill on'));
+        if (r.portal_status === 'ok') row.appendChild(el('span', '🏦 Portal updated ' + fmtDate(r.portal_at), 'pill on'));
+        else if (r.portal_status === 'fail') row.appendChild(el('span', '🏦 Portal: failed · ' + (r.portal_note || ''), 'pill off'));
+        else if (r.sent_account_no) row.appendChild(el('span', '🏦 Portal: pending (K-Desk)', 'pill neutral'));
       }
       c.appendChild(row);
       box.appendChild(c);

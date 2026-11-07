@@ -231,8 +231,9 @@
       <div class="row" style="margin-top:8px;"><button class="btn-primary" id="mwSave">💾 Save works</button><span class="muted" id="mwParsed"></span></div>
       <div id="mwResult" class="muted" style="margin-top:6px;white-space:pre-wrap;"></div>
       <input type="search" id="mwFind" placeholder="🔍 Search works" style="margin-top:10px;width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:8px;">
+      <div class="row ms-bar"><button class="btn-light btn-small" id="mwAll">☑ Select all shown</button><button class="btn-danger btn-small" id="mwDel" disabled>🗑 Delete selected (0)</button></div>
       <div class="table-wrap stack" style="margin-top:6px;max-height:60vh;"><table>
-        <thead><tr><th>#</th><th>Work Name</th><th>Work Code</th><th>Lists</th><th></th></tr></thead>
+        <thead><tr><th></th><th>#</th><th>Work Name</th><th>Work Code</th><th>Lists</th><th></th></tr></thead>
         <tbody id="mwBody"></tbody></table></div>
     </div>
     <div class="card">
@@ -244,8 +245,11 @@
       </div>
       <div class="row" style="margin-top:8px;"><button class="btn-primary" id="msSave">💾 Save supervisors</button><span class="muted" id="msParsed"></span></div>
       <div id="msResult" class="muted" style="margin-top:6px;white-space:pre-wrap;"></div>
+      <input type="search" id="msFind" placeholder="🔍 Search supervisors (name or ID)" style="margin-top:10px;width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:8px;">
+      <div class="filters" id="msFilters" style="margin-top:6px;"><button data-f="all" class="active">All</button><button data-f="portal">🔄 From portal sync</button><button data-f="typed">✍ Typed by hand</button></div>
+      <div class="row ms-bar"><button class="btn-light btn-small" id="msAll">☑ Select all shown</button><button class="btn-danger btn-small" id="msDel" disabled>🗑 Delete selected (0)</button></div>
       <div class="table-wrap stack" style="margin-top:6px;max-height:60vh;"><table>
-        <thead><tr><th>#</th><th>Name</th><th>ID</th><th></th></tr></thead>
+        <thead><tr><th></th><th>#</th><th>Name</th><th>ID</th><th>Source</th><th></th></tr></thead>
         <tbody id="msBody"></tbody></table></div>
     </div>
   </section>
@@ -596,6 +600,6 @@
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/admin.js?v=20261107e"></script>
-<script src="./js/admin-masters.js?v=20261107m"></script>
+<script src="./js/admin-masters.js?v=20261107e"></script>
 </body>
 </html>

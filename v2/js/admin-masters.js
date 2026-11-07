@@ -198,12 +198,54 @@
   // ---------- tables ----------
   function td(tr, text, label, cls) { var c = el('td', text, cls); c.setAttribute('data-label', label); tr.appendChild(c); return c; }
   function delBtn(onClick) { var b = el('button', '🗑', 'btn-light btn-small'); b.title = 'Delete'; b.onclick = onClick; return b; }
+  // ---------- selection + delete many (uses the one-by-one delete RPCs) ----------
+  var pick = { w: new Set(), s: new Set() }, supFilter = 'all';
+  function pickBox(kind, id) {
+    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = pick[kind].has(id);
+    cb.onchange = function () { if (cb.checked) pick[kind].add(id); else pick[kind].delete(id); paintDel(); };
+    return cb;
+  }
+  function paintDel() {
+    $('mwDel').textContent = '🗑 Delete selected (' + pick.w.size + ')'; $('mwDel').disabled = !pick.w.size;
+    $('msDel').textContent = '🗑 Delete selected (' + pick.s.size + ')'; $('msDel').disabled = !pick.s.size;
+  }
+  function deleteMany(kind) {
+    var ids = Array.from(pick[kind]), what = kind === 'w' ? 'work(s)' : 'supervisor(s)', fn = kind === 'w' ? 'admin_delete_work' : 'admin_delete_supervisor';
+    if (!ids.length) return;
+    ask('Delete ' + ids.length + ' ' + what + ' from the list? Lists already made with them stay as they are.', 'Delete').then(function (ok) {
+      if (!ok) return;
+      loading('Deleting ' + ids.length + ' ' + what + '...');
+      var done = 0;
+      ids.reduce(function (p, id) { return p.then(function () { return SB.rpc(fn, { p_id: id }).then(function () { done++; pick[kind].delete(id); }); }); }, Promise.resolve())
+        .then(function () { status('🗑 ' + done + ' ' + what + ' deleted.', 'ok'); },
+              function (e) { if (!e || !e.authLost) status(done + ' deleted, then: ' + errText(e), 'err'); })
+        .then(function () { loading(''); paintDel(); load(); });
+    });
+  }
+  $('mwDel').addEventListener('click', function () { deleteMany('w'); });
+  $('msDel').addEventListener('click', function () { deleteMany('s'); });
+  $('mwAll').addEventListener('click', function () { shownWorks().forEach(function (w) { pick.w.add(w.id); }); renderWorks(); paintDel(); });
+  $('msAll').addEventListener('click', function () { shownSups().forEach(function (x) { pick.s.add(x.id); }); renderSups(); paintDel(); });
+
+  function shownWorks() { var q = $('mwFind').value.trim().toLowerCase(); return ms.works.filter(function (w) { return !q || (w.name + ' ' + (w.code || '')).toLowerCase().indexOf(q) >= 0; }); }
+  // A portal mate ID (K-Desk Mate sync) has "/" in it: S-WB-08-005-014-011/1259172
+  function isPortal(x) { return String(x.sup_id || '').indexOf('/') >= 0; }
+  function shownSups() {
+    var q = $('msFind').value.trim().toLowerCase();
+    return ms.sups.filter(function (x) {
+      if (supFilter === 'portal' && !isPortal(x)) return false;
+      if (supFilter === 'typed' && isPortal(x)) return false;
+      return !q || (x.name + ' ' + x.sup_id).toLowerCase().indexOf(q) >= 0;
+    });
+  }
   function renderWorks() {
-    var body = $('mwBody'), q = $('mwFind').value.trim().toLowerCase(); body.innerHTML = '';
-    var rows = ms.works.filter(function (w) { return !q || (w.name + ' ' + (w.code || '')).toLowerCase().indexOf(q) >= 0; });
-    if (!rows.length) { var tr0 = el('tr'); var c0 = td(tr0, ms.works.length ? 'No match.' : 'No works yet — the phone app shows the typing boxes.', ''); c0.colSpan = 5; body.appendChild(tr0); return; }
+    var body = $('mwBody'); body.innerHTML = '';
+    var have = new Set(ms.works.map(function (w) { return w.id; })); pick.w.forEach(function (id) { if (!have.has(id)) pick.w.delete(id); });
+    var rows = shownWorks();
+    if (!rows.length) { var tr0 = el('tr'); var c0 = td(tr0, ms.works.length ? 'No match.' : 'No works yet — the phone app shows the typing boxes.', ''); c0.colSpan = 6; body.appendChild(tr0); paintDel(); return; }
     rows.forEach(function (w, i) {
       var tr = el('tr');
+      td(tr, null, '').appendChild(pickBox('w', w.id));
       td(tr, String(i + 1), '#'); td(tr, w.name, 'Work Name'); td(tr, w.code || '—', 'Work Code', 'mono'); td(tr, String(w.used || 0), 'Lists');
       td(tr, null, '').appendChild(delBtn(function () {
         ask('Delete the work "' + w.name + '" from the list? Lists already made with it stay as they are.', 'Delete').then(function (ok) {
@@ -213,14 +255,24 @@
       }));
       body.appendChild(tr);
     });
+    paintDel();
   }
   $('mwFind').addEventListener('input', renderWorks);
   function renderSups() {
     var body = $('msBody'); body.innerHTML = '';
-    if (!ms.sups.length) { var tr0 = el('tr'); var c0 = td(tr0, 'No supervisors yet — the phone app shows the typing boxes.', ''); c0.colSpan = 4; body.appendChild(tr0); return; }
-    ms.sups.forEach(function (s, i) {
+    var have = new Set(ms.sups.map(function (x) { return x.id; })); pick.s.forEach(function (id) { if (!have.has(id)) pick.s.delete(id); });
+    var nP = ms.sups.filter(isPortal).length;
+    [].forEach.call($('msFilters').querySelectorAll('button'), function (b) {
+      var n = b.dataset.f === 'all' ? ms.sups.length : b.dataset.f === 'portal' ? nP : ms.sups.length - nP;
+      b.textContent = b.textContent.replace(/\s*\(\d+\)$/, '') + ' (' + n + ')';
+    });
+    var rows = shownSups();
+    if (!rows.length) { var tr0 = el('tr'); var c0 = td(tr0, ms.sups.length ? 'No match.' : 'No supervisors yet — the phone app shows the typing boxes.', ''); c0.colSpan = 6; body.appendChild(tr0); paintDel(); return; }
+    rows.forEach(function (s, i) {
       var tr = el('tr');
+      td(tr, null, '').appendChild(pickBox('s', s.id));
       td(tr, String(i + 1), '#'); td(tr, s.name, 'Name'); td(tr, s.sup_id, 'ID', 'mono');
+      td(tr, isPortal(s) ? '🔄 Portal' : '✍ Typed', 'Source', isPortal(s) ? 'kdline' : 'muted');
       td(tr, null, '').appendChild(delBtn(function () {
         ask('Delete supervisor "' + s.name + ' (' + s.sup_id + ')" from the list? Lists that already name them stay as they are.', 'Delete').then(function (ok) {
           if (!ok) return;
@@ -229,5 +281,13 @@
       }));
       body.appendChild(tr);
     });
+    paintDel();
   }
+  $('msFind').addEventListener('input', renderSups);
+  $('msFilters').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    supFilter = b.dataset.f;
+    [].forEach.call(this.querySelectorAll('button'), function (x) { x.classList.toggle('active', x === b); });
+    renderSups();
+  });
 })();

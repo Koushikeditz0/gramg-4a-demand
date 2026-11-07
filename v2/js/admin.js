@@ -766,13 +766,16 @@
     dash.loading = true;
     return Promise.all([
       SB.rpc('admin_dashboard', { p_gp_id: gp }, { retry: true }),
-      SB.rpc('admin_list_duplicates', { p_gp_id: gp }, { retry: true })
+      SB.rpc('admin_list_duplicates', { p_gp_id: gp }, { retry: true }),
+      // dates + missing accounts per list (SQL v190); older database: nothing extra
+      SB.rpc('admin_list_extras', { p_gp_id: gp }, { retry: true }).catch(function () { return null; })
     ]).then(function (res) {
       dash.users = res[0] || []; dash.dups = res[1] || [];
+      var extra = {}; dash.extrasOk = Array.isArray(res[2]); (res[2] || []).forEach(function (x) { extra[x.list_id] = x; });
       dash.rows = [];
       dash.users.forEach(function (u) {
         (u.lists || []).forEach(function (l) {
-          var r = Object.assign({}, l); r.user_id = u.user_id; r.username = u.username; r.full_name = u.full_name; r.user_active = u.active;
+          var r = Object.assign({}, l, extra[l.list_id] || {}); r.user_id = u.user_id; r.username = u.username; r.full_name = u.full_name; r.user_active = u.active;
           dash.rows.push(r);
         });
       });
@@ -885,6 +888,10 @@
     line('Workers', bn(n) + (r.villages && r.villages.length ? ' · village ' + r.villages.map(vno).join(', ') : ''));
     line('Supervisors', (sups.length ? sups.join(', ') : '—') + (sups.length < need ? '  ⚠ ' + need + ' needed' : ''), sups.length < need ? 'warnline' : '');
     line('Work Code', r.work_code || '— (not set)', r.work_code ? 'mono' : 'muted');
+    if (dash.extrasOk) {
+      line('Date', r.from_date && r.work_days ? dateText(r.from_date, r.work_days) : '— (supervisor has not given it)', r.from_date && r.work_days ? '' : 'muted');
+      if (n > 0) line('Accounts', Number(r.no_account) ? '⚠ ' + bn(r.no_account) + ' of ' + bn(n) + ' workers have no Account No / IFSC' : '✓ all ' + bn(n) + ' have an account', Number(r.no_account) ? 'warnline' : 'kdline');
+    }
     if (r.submitted_at) line('Submitted', fmtDate(r.submitted_at));
     if (r.kdesk_loaded_at) line('🖥 K-Desk', 'loaded ' + fmtDate(r.kdesk_loaded_at) + (r.export_count > 1 ? ' (' + r.export_count + ' times in all)' : ''), 'kdline');
     else if (r.exported_at) line('Exported', fmtDate(r.exported_at) + (r.export_count > 1 ? ' (' + r.export_count + ' times)' : ''));
@@ -947,12 +954,13 @@
 
   function pickedRows() { return dash.rows.filter(function (r) { return dash.picked.has(r.list_id); }); }
   function updateExportSummary() {
-    var rows = pickedRows(), n = 0, notSub = 0, noCode = 0;
-    rows.forEach(function (r) { n += Number(r.workers || 0); if (r.submit_state === 'draft') notSub++; if (!r.work_code) noCode++; });
+    var rows = pickedRows(), n = 0, notSub = 0, noCode = 0, noDate = 0;
+    rows.forEach(function (r) { n += Number(r.workers || 0); if (r.submit_state === 'draft') notSub++; if (!r.work_code) noCode++; if (!(r.from_date && r.work_days)) noDate++; });
     $('expSummary').textContent = rows.length
       ? rows.length + ' list(s) selected (' + rows.map(function (r) { return (r.work_name || '—') + ' / ' + r.username; }).join(', ') + '), ' + bn(n) + ' workers in all.' +
         (notSub ? ' ⚠ ' + notSub + ' list(s) not submitted yet.' : '') +
-        (noCode ? ' ' + noCode + ' list(s) have no Work Code of their own: the Work code below is used for them.' : ' Every selected list has its own Work Code.')
+        (noCode ? ' ' + noCode + ' list(s) have no Work Code of their own: the Work code below is used for them.' : ' Every selected list has its own Work Code.') +
+        (noDate ? ' ' + noDate + ' list(s) have no date from the supervisor: From and Days below are used for them.' : ' Every selected list has its own From + Days.')
       : 'No list selected.';
     $('expBtn').disabled = !rows.length;
     $('expFloatN').textContent = rows.length; $('expFloat').classList.toggle('hidden', !rows.length);
@@ -1051,10 +1059,15 @@
   });
 
   // ---------- K-Desk export ----------
+  // Working days N → To date by the portal's 6+1 rule (N + floor(N/6) days in all)
+  function dateTo(iso, n) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m || !n) return ''; var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + n + Math.floor(n / 6) - 1));
+    return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear(); }
+  function dateText(iso, n) { return 'From ' + ddmmyyyy(iso) + ' · ' + n + ' working days · To ' + dateTo(iso, n); }
   function ddmmyyyy(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
   // Pure function (also used by tests): API rows -> K-Desk sheet rows + report.
   // codeByList (optional): list_id -> that list's own Work Code; workCode is used for the rest.
-  function buildKdeskRows(apiRows, from, days, workCode, codeByList) {
+  // dateByList (optional): list_id -> {from: 'dd/mm/yyyy', days: N} given by the supervisor; from/days are used for the rest.
+  function buildKdeskRows(apiRows, from, days, workCode, codeByList, dateByList) {
     var seen = new Set(), out = [], skipped = [], dupes = 0;
     apiRows.forEach(function (r) {
       if (seen.has(r.worker_id)) { dupes++; return; }
@@ -1067,7 +1080,8 @@
              (a.job_card_no < b.job_card_no ? -1 : a.job_card_no > b.job_card_no ? 1 : 0) || a.applicant_no - b.applicant_no;
     });
     var aoa = [['#', 'Reg', 'Applicant', 'From', 'Days', 'Work code']];
-    out.forEach(function (r, i) { aoa.push([i + 1, r.job_card_no, r.applicant_name, from, days, (codeByList && codeByList[r.list_id]) || workCode]); });
+    out.forEach(function (r, i) { var dl = dateByList && dateByList[r.list_id];
+      aoa.push([i + 1, r.job_card_no, r.applicant_name, dl ? dl.from : from, dl ? dl.days : days, (codeByList && codeByList[r.list_id]) || workCode]); });
     return { aoa: aoa, count: out.length, skipped: skipped, dupes: dupes };
   }
   window.GramgKdesk = { buildKdeskRows: buildKdeskRows, ddmmyyyy: ddmmyyyy };
@@ -1077,9 +1091,11 @@
     var from = ddmmyyyy($('expFrom').value), days = parseInt($('expDays').value, 10), work = $('expWork').value.trim();
     var codeByList = {}; rows.forEach(function (r) { if (r.work_code) codeByList[r.list_id] = r.work_code; });
     var needCode = rows.some(function (r) { return !r.work_code; });
+    var dateByList = {}; rows.forEach(function (r) { if (r.from_date && r.work_days) dateByList[r.list_id] = { from: ddmmyyyy(r.from_date), days: Number(r.work_days) }; });
+    var needDate = rows.some(function (r) { return !dateByList[r.list_id]; });
     if (!rows.length) { status('Select lists first.', 'err'); return; }
-    if (!from) { status('Enter From (work date).', 'err'); return; }
-    if (!(days >= 1 && days <= 366)) { status('Enter valid Days (1 to 366).', 'err'); return; }
+    if (needDate && !from) { status('Enter From (work date) — some selected lists have no date from the supervisor.', 'err'); return; }
+    if (needDate && !(days >= 1 && days <= 366)) { status('Enter valid Days (1 to 366) — some selected lists have no date from the supervisor.', 'err'); return; }
     if (needCode && !work) { status('Enter the Work code (some selected lists have no Work Code of their own).', 'err'); return; }
     var notSub = rows.filter(function (r) { return r.submit_state === 'draft'; });
     if (notSub.length && !await ask(notSub.map(function (r) { return r.username; }).join(', ') + ' has not submitted the list yet. Export anyway?')) return;
@@ -1089,13 +1105,13 @@
     loadXlsx().then(function () {
       return SB.rpc('admin_export_lists', { p_list_ids: rows.map(function (r) { return r.list_id; }) });
     }).then(function (apiRows) {
-      report = buildKdeskRows(apiRows || [], from, days, work, codeByList);
+      report = buildKdeskRows(apiRows || [], from, days, work, codeByList, dateByList);
       if (!report.count) throw { hint: 'There are no workers to export.' };
       var ws = XLSX.utils.aoa_to_sheet(report.aoa);
       ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 12 }, { wch: 6 }, { wch: 30 }];
       var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Demand');
       var safe = (work || rows[0].work_code || 'list').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 40);
-      XLSX.writeFile(wb, 'KDesk_Demand_' + safe + '_' + from.replace(/\//g, '-') + '.xlsx');
+      XLSX.writeFile(wb, 'KDesk_Demand_' + safe + '_' + (from || (dateByList[rows[0].list_id] || {}).from || '').replace(/\//g, '-') + '.xlsx');
       if (!doLock) return null;
       return rows.filter(function (r) { return r.submit_state !== 'locked'; }).reduce(function (p, r) {
         return p.then(function () { return SB.rpc('admin_set_list_state', { p_list_id: r.list_id, p_action: 'lock' }); });

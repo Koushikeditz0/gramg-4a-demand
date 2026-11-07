@@ -282,8 +282,8 @@
       <h2>📥 K-Desk Demand file</h2>
       <div class="muted">The lists you tick with <b>"Add to K-Desk export"</b> above go into one Excel file. Columns: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>. A worker who is in two lists appears only once. A list that has its own Work Code uses it; the Work code below is for lists without one.</div>
       <div class="grid3" style="margin-top:6px;">
-        <div><label class="f" for="expFrom">From (Work date)</label><input type="date" id="expFrom"></div>
-        <div><label class="f" for="expDays">Days</label><input type="number" id="expDays" min="1" max="366" inputmode="numeric" placeholder="e.g. 14"></div>
+        <div><label class="f" for="expFrom">From (lists without a date)</label><input type="date" id="expFrom"></div>
+        <div><label class="f" for="expDays">Days (lists without a date)</label><input type="number" id="expDays" min="1" max="366" inputmode="numeric" placeholder="e.g. 14"></div>
         <div><label class="f" for="expWork">Work code (for lists without one)</label><input type="text" id="expWork" maxlength="100" placeholder="e.g. 3206003006/IF/93393042892327"></div>
       </div>
       <label class="check"><input type="checkbox" id="expLock" checked><span><b>Lock</b> these lists after the export (supervisors can no longer change them).</span></label>
@@ -595,7 +595,7 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261107a"></script>
+<script src="./js/admin.js?v=20261107e"></script>
 <script src="./js/admin-masters.js?v=20261107m"></script>
 </body>
 </html>

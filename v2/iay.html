@@ -42,6 +42,9 @@
     .progress > div{height:100%;background:#16a34a;width:0;transition:width .2s;}
     .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
     .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
+    table.sum th{text-align:center;background:#1f4e79;color:#fff;border:1px solid #2d5f8f;}
+    table.sum td{text-align:right;border:1px solid #edf2f7;} table.sum td.g{text-align:left;font-weight:700;white-space:nowrap;}
+    table.sum td.f{background:#dcfce7;} table.sum td.p{background:#fee2e2;} table.sum tr.tot td{background:#e2e8f0;font-weight:700;}
     @media (max-width:600px){ .app{padding:6px;} .k .n{font-size:21px;} .cards{grid-template-columns:repeat(2,minmax(0,1fr));} th,td{padding:5px;} }
   </style>
 </head>
@@ -99,6 +102,19 @@
     </table></div>
   </div>
 
+  <div class="card" id="sumCard">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">📋 MR Summary — day-wise</h2>
+      <div class="row">
+        <select id="sumPast" style="min-width:0" aria-label="Past days"><option value="1">Past 1 day</option><option value="2" selected>Past 2 days</option><option value="3">Past 3 days</option><option value="7">Past 7 days</option></select>
+        <select id="sumAhead" style="min-width:0" aria-label="Next days"><option value="3">Next 3 days</option><option value="5" selected>Next 5 days</option><option value="7">Next 7 days</option></select>
+        <button class="btn-success btn-small" id="sumXlsx">⬇ Excel</button>
+      </div>
+    </div>
+    <div class="muted" id="sumNote" style="margin-top:4px">“Filled” = portal status Filled or WL Generated. “Pending” = MR ended but still Not Filled / Fill Today. “Upcoming” = MR running, ends that day.</div>
+    <div class="table-wrap" style="margin-top:6px"><table id="sumTable" class="sum"></table></div>
+  </div>
+
   <div class="card" id="gpCard">
     <h2>GP-wise summary</h2>
     <div class="table-wrap"><table>
@@ -107,6 +123,21 @@
       <tbody id="gpBody"></tbody>
     </table></div>
     <div class="row" style="margin-top:6px"><button class="btn-success btn-small" id="gpXlsx">⬇ Summary Excel</button></div>
+  </div>
+
+  <div class="card" id="shareCard">
+    <h2>🔗 Public report link</h2>
+    <div class="muted">A link anyone can open without login — shows only the day-wise MR Summary (GP-wise counts; no names, Job Cards or work codes). It always shows the latest synced data and refreshes itself.</div>
+    <div id="shareLine" style="font-size:13px;margin:8px 0"></div>
+    <div class="row">
+      <button class="btn-primary btn-small" id="shareNew">🔗 Make public link</button>
+      <button class="btn-light btn-small hidden" id="shareOff">Stop link</button>
+    </div>
+    <div id="shareBox" class="hidden" style="margin-top:8px;background:#e0e7ff;border-radius:8px;padding:8px 10px">
+      <div style="font-size:12.5px;font-weight:700;margin-bottom:6px">Your public link (shown only now — copy or share it):</div>
+      <div class="row"><input id="shareUrl" readonly class="mono" style="flex:1;min-width:220px;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:12px">
+        <button class="btn-success btn-small" id="shareCopy">Copy</button><button class="btn-success btn-small" id="shareWa">WhatsApp</button></div>
+    </div>
   </div>
 
   <div class="card" id="syncCard">
@@ -130,6 +161,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/iay.js?v=20261109c"></script>
+<script src="./js/iay-summary.js?v=20261109a"></script>
+<script src="./js/iay.js?v=20261109e"></script>
 </body>
 </html>

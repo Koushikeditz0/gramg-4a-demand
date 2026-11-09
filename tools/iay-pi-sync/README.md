@@ -51,6 +51,18 @@ docker logs -f iay-pi-sync      # log দেখা (Ctrl+C চাপলে শ�
 | `R42_URL`, `R44_URL`, `R612_URL` | Report-এর link; খালি রাখলে script-এর DINHATA-I link ব্যবহার হয় |
 | `EMP_URLS` | ঐচ্ছিক: GP-wise "Employment Provided" report-এর link (beneficiary-র নামের জন্য), যেমন `{"PETLA":"https://…"}`। না দিলে Tracker-এ আগে থেকে থাকা নাম রেখে দেওয়া হয় |
 
+## সকালের summary (ntfy)
+
+`.env`-এ `NTFY_URL` দিলে প্রতিদিন `DIGEST_TIME`-এ (default সকাল ৯টা) তোমার phone-এর ntfy app-এ একটা summary আসবে। তাতে থাকবে আগের pending, আজ আর কাল কতগুলো fill, WL বাকি, পরের MR কতগুলো লাগবে, কোন GP-তে সবচেয়ে বেশি pending, আর last update-এর সময়। Message-এ চাপলে public report খুলবে।
+
+1. ntfy app-এ (Android) তোমার server যোগ করো, তারপর `iay-report` topic subscribe করো।
+2. `.env`-এ `NTFY_URL=http://<Pi-র IP>:2586`, `PUBLIC_URL=<public link>` দাও।
+3. এখনই একবার পাঠিয়ে test করো:
+   ```bash
+   docker compose run --rm iay-pi-sync node iay-sync.js --digest-now
+   ```
+4. `docker compose up -d` চালাও।
+
 ## Update
 
 ```bash

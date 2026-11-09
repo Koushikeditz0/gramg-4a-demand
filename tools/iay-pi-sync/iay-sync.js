@@ -26,7 +26,14 @@ const CFG = {
   ua: env('USER_AGENT', 'Mozilla/5.0 (X11; Linux aarch64) GRAMG-IAY-Sync/1.0'),
   once: process.argv.includes('--once'),
   dry: process.argv.includes('--dry-run'),
-  dataDir: env('DATA_DIR', '/data')
+  dataDir: env('DATA_DIR', '/data'),
+  // morning message (ntfy)
+  ntfyUrl: env('NTFY_URL').replace(/\/+$/, ''),          // e.g. http://192.168.0.10:2586  (empty = off)
+  ntfyTopic: env('NTFY_TOPIC', 'iay-report'),
+  ntfyToken: env('NTFY_TOKEN'),
+  digestAt: env('DIGEST_TIME', '09:00'),                  // India time, HH:MM
+  publicUrl: env('PUBLIC_URL'),                           // the public report link (opens when the message is tapped)
+  digestNow: process.argv.includes('--digest-now')
 };
 const TRK_URL = 'https://wbzybizfpdalpukfzefk.supabase.co/rest/v1/rpc/iay_sync_gp';
 const TRK_PUB = 'sb_publishable_fCY9paYMNTyepXdI7YRhkw_2u85P7bn';   // public key (same as the website)
@@ -117,6 +124,43 @@ async function send(gp, p) {
   return j;
 }
 
+// ---------------- morning message (ntfy) ----------------
+const nfi = n => Number(n || 0).toLocaleString('en-IN');
+const istNow = () => { const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()); const g = t => (p.find(x => x.type === t) || {}).value; return { date: `${g('year')}-${g('month')}-${g('day')}`, hm: `${g('hour')}:${g('minute')}` }; };
+const fmtT = ts => ts ? new Date(ts).toLocaleString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+async function sendDigest() {
+  const r = await nodeFetch(TRK_URL.replace('iay_sync_gp', 'iay_sync_digest'), { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: TRK_PUB }, body: JSON.stringify({ p_key: CFG.key }) });
+  const d = await r.json().catch(() => null);
+  if (!r.ok || !d) throw new Error((d && d.message) || 'digest HTTP ' + r.status);
+  const t = d.total || {}, today = String(d.today || '').split('-').reverse().join('/');
+  const top = (d.gps || []).filter(g => g.overdue + g.today > 0).slice(0, 4).map(g => `${g.gp} ${nfi(g.overdue + g.today)}`).join(' · ');
+  const old = d.oldest_update && Date.now() - new Date(d.oldest_update).getTime() > 6 * 36e5;
+  const msg = [
+    `🔴 আগের pending (fill বাকি): ${nfi(t.overdue)}`,
+    `🟠 আজ MR শেষ — আজ fill: ${nfi(t.today)}`,
+    `🔵 কাল fill: ${nfi(t.tomorrow)}`,
+    `🟡 Wagelist বাকি: ${nfi(t.wl)}`,
+    `➕ ৫ দিনের মধ্যে পরের MR লাগবে: ${nfi(t.next_mr)}`,
+    top ? `\nবেশি pending: ${top}` : '',
+    `\nLast update: ${fmtT(d.last_update)}${old ? ' ⚠ কিছু GP-র data পুরোনো (' + fmtT(d.oldest_update) + ')' : ''}`
+  ].filter(Boolean).join('\n');
+  const body = { topic: CFG.ntfyTopic, title: `PBAY MR Summary — ${today}`, message: msg, tags: ['clipboard'], priority: 3 };
+  if (CFG.publicUrl) { body.click = CFG.publicUrl; body.actions = [{ action: 'view', label: 'Report খুলুন', url: CFG.publicUrl }]; }
+  const h = { 'Content-Type': 'application/json' }; if (CFG.ntfyToken) h.Authorization = 'Bearer ' + CFG.ntfyToken;
+  const n = await nodeFetch(CFG.ntfyUrl, { method: 'POST', headers: h, body: JSON.stringify(body) });
+  if (!n.ok) throw new Error('ntfy HTTP ' + n.status + ' ' + (await n.text()).slice(0, 120));
+  log(`🔔 Morning summary sent to ntfy topic “${CFG.ntfyTopic}”`);
+}
+const DIGEST_FILE = () => path.join(CFG.dataDir, 'digest.json');
+let digestDay = (() => { try { return JSON.parse(fs.readFileSync(DIGEST_FILE(), 'utf8')).day || ''; } catch (e) { return ''; } })();
+async function digestTick() {
+  if (!CFG.ntfyUrl || !CFG.key) return;
+  const n = istNow(); if (n.hm < CFG.digestAt || digestDay === n.date) return;
+  digestDay = n.date;                                    // once a day, even if sending fails
+  try { fs.mkdirSync(CFG.dataDir, { recursive: true }); fs.writeFileSync(DIGEST_FILE(), JSON.stringify({ day: n.date })); } catch (e) {}
+  try { await sendDigest(); } catch (e) { log('❌ Morning summary failed: ' + e.message); }
+}
+
 // ---------------- one full run ----------------
 const status = { lastStart: null, lastEnd: null, ok: [], failed: [], error: null };
 function saveStatus() { try { fs.mkdirSync(CFG.dataDir, { recursive: true }); fs.writeFileSync(path.join(CFG.dataDir, 'status.json'), JSON.stringify(status, null, 2)); } catch (e) {} }
@@ -157,6 +201,8 @@ function inHours() {
 async function loop() {
   if (!CFG.key && !CFG.dry) { log('❌ SYNC_KEY is missing. Put the key from IAY Tracker → “Tampermonkey live sync” in .env'); process.exit(1); }
   if (!/^iay_[0-9a-f]{48}$/.test(CFG.key) && !CFG.dry) { log('❌ SYNC_KEY does not look right (it starts with iay_).'); process.exit(1); }
+  if (CFG.digestNow) { if (!CFG.ntfyUrl) { log('❌ NTFY_URL is empty in .env'); process.exit(1); } try { await sendDigest(); } catch (e) { log('❌ ' + e.message); process.exit(1); } return; }
+  if (CFG.ntfyUrl && !CFG.once) { setInterval(digestTick, 60000); log(`🔔 Morning summary at ${CFG.digestAt} → ${CFG.ntfyUrl}/${CFG.ntfyTopic}`); }
   log(`IAY Pi Sync started — every ${CFG.every} min, hours ${CFG.hours} IST, ${CFG.gps.length ? CFG.gps.join(', ') : 'whole block'}${CFG.dry ? ' (dry run)' : ''}`);
   for (;;) {
     if (CFG.once || inHours()) {
@@ -168,4 +214,4 @@ async function loop() {
   }
 }
 if (require.main === module) loop();
-module.exports = { iayWorks, payload, phStatus, liveStage };
+module.exports = { iayWorks, payload, phStatus, liveStage, sendDigest };

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f4e79">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>PBAY Muster Roll Summary</title>
+  <style>
+    *{box-sizing:border-box;} html,body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#172033;}
+    .app{max-width:1200px;margin:auto;padding:8px;}
+    .header{background:#1f4e79;color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+    .header h1{font-size:17px;margin:0;} .header div{font-size:12px;opacity:.9;margin-top:4px;line-height:1.5;}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:8px;}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    select{border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:7px 9px;font-size:13px;}
+    button{border:0;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer;background:#e2e8f0;}
+    .btn-success{background:#16a34a;color:#fff;}
+    .muted{font-size:11.5px;color:#64748b;line-height:1.5;}
+    .table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:8px;}
+    table{width:100%;border-collapse:collapse;font-size:12.5px;}
+    th{text-align:center;background:#1f4e79;color:#fff;border:1px solid #2d5f8f;padding:6px;}
+    td{text-align:right;border:1px solid #edf2f7;padding:6px;} td.g{text-align:left;font-weight:700;white-space:nowrap;}
+    td.f{background:#dcfce7;} td.p{background:#fee2e2;} tr.tot td{background:#e2e8f0;font-weight:700;}
+    .err{background:#fee2e2;color:#991b1b;border-radius:8px;padding:12px;font-size:14px;}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>PBAY Muster Roll Summary</h1>
+    <div id="sub">Loading…</div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <select id="gp" aria-label="GP"><option value="">All GPs</option></select>
+        <select id="past" aria-label="Past days"><option value="1">Past 1 day</option><option value="2" selected>Past 2 days</option><option value="3">Past 3 days</option><option value="7">Past 7 days</option></select>
+        <select id="ahead" aria-label="Next days"><option value="3">Next 3 days</option><option value="5" selected>Next 5 days</option><option value="7">Next 7 days</option></select>
+        <button id="refresh">🔄 Refresh</button>
+      </div>
+      <button class="btn-success" id="xlsx">⬇ Excel</button>
+    </div>
+    <div class="muted" style="margin-top:6px">“Filled” = portal status Filled or WL Generated. “Pending” = MR ended but still Not Filled / Fill Today. “Upcoming” = MR running, ends that day. This page refreshes itself every 5 minutes.</div>
+  </div>
+  <div id="msg"></div>
+  <div class="card"><div class="table-wrap"><table id="tbl"></table></div></div>
+  <div class="muted" style="text-align:center;margin:10px 0 20px">G RAM-G 4A · IAY Tracker · Developed &amp; Maintained by Koushik Sarkar (VLE)</div>
+</div>
+<script src="./js/config.js?v=20261106b"></script>
+<script src="./js/iay-summary.js?v=20261109a"></script>
+<script src="./js/iay-report.js?v=20261109a"></script>
+</body>
+</html>

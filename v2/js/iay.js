@@ -6,8 +6,7 @@
 (function () {
   'use strict';
   var SB = window.GramgSB;
-  var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-  var GP_KEY = 'gramg2.iay.gp';
+    var GP_KEY = 'gramg2.iay.gp';
   var $ = function (id) { return document.getElementById(id); };
   var me = { role: null, scope: null };
   var ov = null;                       // last iay_overview result
@@ -44,7 +43,7 @@
     SB.rpc('get_my_context').then(function (ctx) {
       if (ctx.role !== 'super_admin' && ctx.role !== 'gp_admin') { location.replace('./index.html'); return; }
       me.role = ctx.role;
-      loadSync();
+      loadSync(); loadShare();
       return load(true);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -58,6 +57,7 @@
       fillGpSelect(all.gps, p);
       ov = all;
       render();
+      loadSummary();
     });
   }
   function readGp() { try { return localStorage.getItem(GP_KEY) || ''; } catch (e) { return ''; } }
@@ -151,6 +151,7 @@
     try { localStorage.setItem(GP_KEY, $('gpSel').value); } catch (e) {}
     $('listCard').classList.add('hidden');
     render();
+    renderSummary();
   }
   $('gpSel').addEventListener('change', onGp);
   $('refreshBtn').onclick = function () { loading('Refresh...'); loadSync(); load(false).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); }); };
@@ -181,6 +182,52 @@
   $('syncOff').onclick = function () {
     if (!window.confirm('Stop live sync? The Tampermonkey script will no longer be able to send data until a new key is made.')) return;
     SB.rpc('iay_sync_key_revoke', {}).then(function () { $('syncBox').classList.add('hidden'); $('syncKey').value = ''; loadSync(); })
+      .catch(function (e) { status(errText(e), 'err'); });
+  };
+
+
+  // ---------- day-wise MR Summary (SQL v193, js/iay-summary.js) ----------
+  var sumData = null, IS = window.IaySummary;
+  function loadSummary() {
+    return SB.rpc('iay_mr_summary', { p_past: +$('sumPast').value, p_ahead: +$('sumAhead').value }, { retry: true, timeout: 60000 })
+      .then(function (r) { sumData = r; renderSummary(); }, function (e) { status(errText(e), 'err'); });
+  }
+  function renderSummary() { if (sumData) IS.renderTable($('sumTable'), IS.model(sumData, selPrefix())); }
+  $('sumPast').onchange = $('sumAhead').onchange = function () { loadSummary(); };
+  $('sumXlsx').onclick = function () {
+    if (!sumData || !sumData.gps.length) return;
+    var m = IS.model(sumData, selPrefix()), one = selPrefix() && m.rows[0] ? m.rows[0].name : '';
+    loading('Preparing Excel...');
+    SB.rpc('iay_mr_window', { p_jc_prefix: selPrefix(), p_from: sumData.from, p_to: sumData.to }, { retry: true, timeout: 90000 })
+      .then(function (rows) { return IS.exportXlsx(m, rows || [], { titlePrefix: one ? one + ' — ' : '', fileTag: one }); })
+      .catch(function (e) { status(e.code ? errText(e) : (e.message || String(e)), 'err'); }).then(function () { loading(''); });
+  };
+
+  // ---------- public report link (SQL v194) ----------
+  var PUB_BASE = location.origin + location.pathname.replace(/[^\/]*$/, '') + 'iay-report.html#k=';
+  function loadShare() {
+    return SB.rpc('iay_share_status', {}, { retry: true }).then(function (st) {
+      var l = $('shareLine'); l.textContent = '';
+      $('shareOff').classList.toggle('hidden', !st.active);
+      l.textContent = st.active ? '🟢 Public link active (made ' + when(st.created_at) + ') · opened ' + nf(st.views) + ' times' + (st.last_view_at ? ', last ' + when(st.last_view_at) : '')
+                                : '⚪ No public link.';
+    }).catch(function (e) { $('shareLine').textContent = errText(e); });
+  }
+  $('shareNew').onclick = function () {
+    if (!window.confirm('Make a new public link? Anyone with the link can see the GP-wise MR counts (no names or Job Cards). Any older link stops working.')) return;
+    SB.rpc('iay_share_create', {}).then(function (r) {
+      $('shareUrl').value = PUB_BASE + r.token; $('shareBox').classList.remove('hidden'); $('shareUrl').select(); loadShare();
+    }).catch(function (e) { status(errText(e), 'err'); });
+  };
+  $('shareCopy').onclick = function () {
+    var v = $('shareUrl').value; if (!v) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { $('shareCopy').textContent = 'Copied ✓'; },
+      function () { $('shareUrl').select(); document.execCommand('copy'); $('shareCopy').textContent = 'Copied ✓'; });
+  };
+  $('shareWa').onclick = function () { var v = $('shareUrl').value; if (v) window.open('https://wa.me/?text=' + encodeURIComponent('PBAY Muster Roll Summary (live): ' + v), '_blank'); };
+  $('shareOff').onclick = function () {
+    if (!window.confirm('Stop the public link? Everyone who has it will lose access.')) return;
+    SB.rpc('iay_share_revoke', {}).then(function () { $('shareBox').classList.add('hidden'); $('shareUrl').value = ''; loadShare(); })
       .catch(function (e) { status(errText(e), 'err'); });
   };
 
@@ -222,16 +269,7 @@
   $('listClose').onclick = function () { $('listCard').classList.add('hidden'); };
 
   // ---------- Excel ----------
-  var xlsxLoading = null;
-  function needXlsx() {
-    if (window.XLSX) return Promise.resolve();
-    if (!xlsxLoading) xlsxLoading = new Promise(function (res, rej) {
-      var s = document.createElement('script'); s.src = XLSX_URL; s.onload = res;
-      s.onerror = function () { xlsxLoading = null; rej(new Error('Excel library did not load. Check the internet.')); };
-      document.head.appendChild(s);
-    });
-    return xlsxLoading;
-  }
+  function needXlsx() { return window.IaySummary.needXlsx(); }
   function safeName(s) { return String(s || '').replace(/[\\\/?*\[\]:]/g, '').slice(0, 31) || 'Sheet1'; }
   $('listXlsx').onclick = function () {
     if (!list.rows.length) return;

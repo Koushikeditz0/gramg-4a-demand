@@ -1,0 +1,10 @@
+{
+  "name": "iay-pi-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reads VB-G RAM G public reports on a schedule and sends IAY data to the G RAM-G 4A IAY Tracker",
+  "main": "iay-sync.js",
+  "scripts": { "start": "node iay-sync.js", "once": "node iay-sync.js --once", "dry": "node iay-sync.js --once --dry-run" },
+  "dependencies": { "jsdom": "^24.1.0" },
+  "engines": { "node": ">=20" }
+}

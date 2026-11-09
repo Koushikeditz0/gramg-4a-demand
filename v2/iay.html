@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -50,7 +50,7 @@
   <div class="header">
     <div>
       <div class="header-title">🏠 IAY Tracker</div>
-      <div class="header-sub" id="sub">State Scheme House · target 6 MR × 15 দিন = 90 দিন</div>
+      <div class="header-sub" id="sub">State Scheme House · target 6 MRs × 15 days = 90 days</div>
     </div>
     <a href="./admin.html">← Admin panel</a>
   </div>
@@ -64,7 +64,7 @@
         <button class="btn-light btn-small" id="refreshBtn">🔄 Refresh</button>
       </div>
       <div class="row">
-        <button class="btn-success btn-small" id="uploadBtn">📤 Phase Report upload</button>
+        <button class="btn-success btn-small" id="uploadBtn">📤 Upload Phase Report</button>
         <input type="file" id="fileIn" accept=".xlsx,.xls" class="hidden">
       </div>
     </div>
@@ -73,9 +73,9 @@
   </div>
 
   <div class="card">
-    <h2>আজকের কাজ</h2>
+    <h2>Today's work</h2>
     <div class="cards" id="cards"></div>
-    <div class="muted" style="margin-top:6px">কোনো ঘরে চাপ দিলে সেই work / MR-গুলোর list খুলবে, সেখান থেকে Excel নামানো যাবে।</div>
+    <div class="muted" style="margin-top:6px">Tap any box to open the list of those works / MRs and download it as Excel.</div>
   </div>
 
   <div class="card hidden" id="listCard">
@@ -91,10 +91,10 @@
   </div>
 
   <div class="card">
-    <h2>আগামী 35 দিনের calendar</h2>
-    <div class="muted">“MR fill” = সেদিন MR শেষ, সেদিনই fill করতে হবে। “নতুন MR শুরু” = সেদিন থেকে পরের MR লাগবে, তার আগে demand → allocation → MR generate সেরে রাখতে হবে।</div>
+    <h2>Next 35 days</h2>
+    <div class="muted">“MR fill” = the MR ends that day and must be filled the same day. “New MR start” = the next MR must start that day, so finish demand → allocation → MR generation before it.</div>
     <div class="table-wrap" style="margin-top:6px;max-height:none"><table>
-      <thead><tr><th>তারিখ</th><th class="n">MR fill</th><th class="n">নতুন MR শুরু</th></tr></thead>
+      <thead><tr><th>Date</th><th class="n">MR fill</th><th class="n">New MR start</th></tr></thead>
       <tbody id="calBody"></tbody>
     </table></div>
   </div>
@@ -102,8 +102,8 @@
   <div class="card" id="gpCard">
     <h2>GP-wise summary</h2>
     <div class="table-wrap"><table>
-      <thead><tr><th>GP</th><th class="n">IAY works</th><th class="n">Fill overdue</th><th class="n">আজ fill</th><th class="n">কাল fill</th>
-        <th class="n">MR ফাঁক</th><th class="n">৫ দিনে MR লাগবে</th><th class="n">WL বাকি</th><th class="n">MR নেই</th><th class="n">গড় MR</th><th class="n">6 MR পূর্ণ</th><th>Report</th></tr></thead>
+      <thead><tr><th>GP</th><th class="n">IAY works</th><th class="n">Fill overdue</th><th class="n">Fill today</th><th class="n">Fill tomorrow</th>
+        <th class="n">MR gap</th><th class="n">MR due in 5 days</th><th class="n">WL pending</th><th class="n">No MR</th><th class="n">Avg MRs</th><th class="n">6 MRs done</th><th>Report</th></tr></thead>
       <tbody id="gpBody"></tbody>
     </table></div>
     <div class="row" style="margin-top:6px"><button class="btn-success btn-small" id="gpXlsx">⬇ Summary Excel</button></div>
@@ -115,6 +115,6 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/iay.js?v=20261109a"></script>
+<script src="./js/iay.js?v=20261109b"></script>
 </body>
 </html>

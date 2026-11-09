@@ -44,19 +44,20 @@
     sum.cells.forEach(function (c) { cell[c.jc_prefix + '|' + c.date] = c; });
     var gps = sum.gps.filter(function (g) { return !prefix || g.jc_prefix === prefix; });
     var rows = gps.map(function (g) {
-      var o = { name: g.gp_name, at: g.report_at, past: [], fut: [], up: 0, pend: 0 };
+      var o = { name: g.gp_name, at: g.report_at, older: g.older || 0, wl: g.wl || 0, past: [], fut: [], up: 0, pend: g.older || 0 };
       past.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x] || { total: 0, filled: 0 }; o.past.push({ t: c.total, f: c.filled, p: c.total - c.filled }); o.pend += c.total - c.filled; });
       fut.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x]; var n = c ? c.total : 0; o.fut.push(n); o.up += n; });
       return o;
     });
-    var tot = { name: rows.length > 1 ? 'BLOCK TOTAL' : 'TOTAL', past: past.map(function () { return { t: 0, f: 0, p: 0 }; }), fut: fut.map(function () { return 0; }), up: 0, pend: 0 };
+    var tot = { name: rows.length > 1 ? 'BLOCK TOTAL' : 'TOTAL', older: 0, wl: 0, past: past.map(function () { return { t: 0, f: 0, p: 0 }; }), fut: fut.map(function () { return 0; }), up: 0, pend: 0 };
     rows.forEach(function (o) {
       o.past.forEach(function (c, i) { tot.past[i].t += c.t; tot.past[i].f += c.f; tot.past[i].p += c.p; });
-      o.fut.forEach(function (n, i) { tot.fut[i] += n; }); tot.up += o.up; tot.pend += o.pend;
+      o.fut.forEach(function (n, i) { tot.fut[i] += n; }); tot.up += o.up; tot.pend += o.pend; tot.older += o.older; tot.wl += o.wl;
     });
     var label = function (x) { return dShort(x) + ' (' + (x === t ? 'Today' : x === addDays(t, -1) ? 'Yesterday' : WD[new Date(x + 'T00:00:00').getDay()]) + ')'; };
     var reps = gps.map(function (g) { return g.report_at; }).filter(Boolean).sort();
-    return { sum: sum, t: t, past: past, fut: fut, rows: rows, tot: tot, label: label, oldest: reps[0], newest: reps[reps.length - 1] };
+    var before = past.length ? past[0].slice(8, 10) + '/' + past[0].slice(5, 7) : '';
+    return { sum: sum, t: t, before: before, past: past, fut: fut, rows: rows, tot: tot, label: label, oldest: reps[0], newest: reps[reps.length - 1] };
   }
 
   function renderTable(table, m) {
@@ -64,17 +65,21 @@
     if (!m.rows.length) { var tr0 = el('tr'), td0 = el('td', 'No data yet.'); tr0.appendChild(td0); table.appendChild(tr0); return; }
     var th = el('thead'), r1 = el('tr'), r2 = el('tr');
     var g = el('th', 'GP'); g.rowSpan = 2; r1.appendChild(g);
+    var ol = el('th', 'Earlier pending (before ' + m.before + ')'); ol.rowSpan = 2; r1.appendChild(ol);
     m.past.forEach(function (x) { var c = el('th', m.label(x) + (x === m.t ? ' — ending' : ' — ended')); c.colSpan = 3; r1.appendChild(c); ['Total', 'Filled', 'Pending'].forEach(function (k) { r2.appendChild(el('th', k)); }); });
     if (m.fut.length) { var f = el('th', 'Next ' + m.fut.length + ' days — MRs ending (running)'); f.colSpan = m.fut.length + 1; r1.appendChild(f); m.fut.forEach(function (x) { r2.appendChild(el('th', m.label(x))); }); r2.appendChild(el('th', 'Upcoming total')); }
     var tp = el('th', 'Total pending'); tp.rowSpan = 2; r1.appendChild(tp);
+    var wl = el('th', 'WL pending (filled, no wagelist)'); wl.rowSpan = 2; r1.appendChild(wl);
     var lu = el('th', 'Last update'); lu.rowSpan = 2; r1.appendChild(lu);
     th.appendChild(r1); th.appendChild(r2); table.appendChild(th);
     var body = el('tbody');
     m.rows.concat(m.rows.length > 1 ? [m.tot] : []).forEach(function (o) {
       var tr = el('tr', null, o === m.tot ? 'tot' : ''); tr.appendChild(el('td', o.name, 'g'));
+      tr.appendChild(el('td', nf(o.older), 'p'));
       o.past.forEach(function (c) { tr.appendChild(el('td', nf(c.t))); tr.appendChild(el('td', nf(c.f), 'f')); tr.appendChild(el('td', nf(c.p), 'p')); });
       if (m.fut.length) { o.fut.forEach(function (n) { tr.appendChild(el('td', nf(n))); }); tr.appendChild(el('td', nf(o.up))); }
       tr.appendChild(el('td', nf(o.pend), 'p'));
+      tr.appendChild(el('td', nf(o.wl), 'w'));
       var u = o === m.tot ? el('td', '') : el('td', hm(o.at), 'u ' + fresh(o.at));
       if (o !== m.tot) u.title = ago(o.at);
       tr.appendChild(u);
@@ -84,17 +89,17 @@
   }
 
   function headRows(m) {
-    var h1 = ['GP'], h2 = [''];
+    var h1 = ['GP', 'Earlier pending (before ' + m.before + ')'], h2 = ['', ''];
     m.past.forEach(function (x) { h1.push(m.label(x) + (x === m.t ? ' — MRs ending' : ' — MRs ended'), '', ''); h2.push('Total', 'Filled', 'Pending'); });
     if (m.fut.length) { h1.push('Next ' + m.fut.length + ' days — MRs ending per day (running)'); for (var i = 1; i <= m.fut.length; i++) h1.push(''); m.fut.forEach(function (x) { h2.push(m.label(x)); }); h2.push('Upcoming total'); }
-    h1.push('Total pending (' + m.past.map(function (x) { return x.slice(8, 10) + '/' + x.slice(5, 7); }).join(' + ') + ')'); h2.push('');
+    h1.push('Total pending (earlier + ' + m.past.map(function (x) { return x.slice(8, 10) + '/' + x.slice(5, 7); }).join(' + ') + ')', 'WL pending (filled, no wagelist)'); h2.push('', '');
     return [h1, h2];
   }
   function rowOf(o) {
-    var a = [o.name];
+    var a = [o.name, o.older];
     o.past.forEach(function (c) { a.push(c.t, c.f, c.p); });
     if (o.fut.length) { o.fut.forEach(function (n) { a.push(n); }); a.push(o.up); }
-    a.push(o.pend); return a;
+    a.push(o.pend, o.wl); return a;
   }
 
   // mrRows: MR rows for "Pending List" / "MR Details" sheets, or null for the summary sheet only
@@ -110,14 +115,16 @@
       if (m.rows.length > 1) aoa.push(rowOf(m.tot));
       var noteAt = aoa.length + 1;
       aoa.push([], ['Note:'], ['• "Pending" = MR period has ended but status on the portal is still Not Filled / Fill Today.'],
-        ['• "Upcoming" = MR is still Running and ends on that date; it must be filled after it ends.']);
+        ['• "Upcoming" = MR is still Running and ends on that date; it must be filled after it ends.'],
+        ['• "Earlier pending" = MRs that ended before ' + m.before + ' and are still not filled. "WL pending" = MR filled but wagelist not generated yet.']);
       if (mrRows) aoa.push(['• Beneficiary-wise lists: "MR Details" (all MRs, filterable) and "Pending List" (pending MRs only).']);
       var ws = X.utils.aoa_to_sheet(aoa);
-      var merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: nc - 1 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: nc - 1 } }, { s: { r: 3, c: 0 }, e: { r: 4, c: 0 } }, { s: { r: 3, c: nc - 1 }, e: { r: 4, c: nc - 1 } }];
-      var col = 1; m.past.forEach(function () { merges.push({ s: { r: 3, c: col }, e: { r: 3, c: col + 2 } }); col += 3; });
+      var merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: nc - 1 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: nc - 1 } }, { s: { r: 3, c: 0 }, e: { r: 4, c: 0 } },
+                    { s: { r: 3, c: 1 }, e: { r: 4, c: 1 } }, { s: { r: 3, c: nc - 2 }, e: { r: 4, c: nc - 2 } }, { s: { r: 3, c: nc - 1 }, e: { r: 4, c: nc - 1 } }];
+      var col = 2; m.past.forEach(function () { merges.push({ s: { r: 3, c: col }, e: { r: 3, c: col + 2 } }); col += 3; });
       if (m.fut.length) merges.push({ s: { r: 3, c: col }, e: { r: 3, c: col + m.fut.length } });
       ws['!merges'] = merges;
-      ws['!cols'] = [{ wch: 20 }].concat(Array.from({ length: nc - 1 }, function () { return { wch: 11 }; }));
+      ws['!cols'] = [{ wch: 20 }].concat(Array.from({ length: nc - 1 }, function (x, i) { return { wch: i === 0 || i >= nc - 3 ? 14 : 11 }; }));
       ws['!rows'] = [{ hpt: 22 }, {}, {}, { hpt: 34 }, { hpt: 30 }];
       var B = { style: 'thin', color: { rgb: 'BFBFBF' } }, border = { top: B, bottom: B, left: B, right: B };
       var head = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1F4E79' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: border };
@@ -128,8 +135,8 @@
       for (var r = 5; r <= last; r++) {
         var isTot = m.rows.length > 1 && r === last;
         for (c = 0; c < nc; c++) {
-          var k = c >= 1 && c <= m.past.length * 3 ? (c - 1) % 3 : -1;
-          var fill = isTot ? 'D9D9D9' : c === nc - 1 ? 'FFC7CE' : k === 1 ? 'C6EFCE' : k === 2 ? 'FFC7CE' : null;
+          var k = c >= 2 && c <= m.past.length * 3 + 1 ? (c - 2) % 3 : -1;
+          var fill = isTot ? 'D9D9D9' : c === nc - 1 ? 'FFEB9C' : (c === nc - 2 || c === 1) ? 'FFC7CE' : k === 1 ? 'C6EFCE' : k === 2 ? 'FFC7CE' : null;
           var st = { border: border, alignment: { horizontal: c ? 'center' : 'left' }, font: { bold: isTot || c === 0 } };
           if (fill) st.fill = { fgColor: { rgb: fill } };
           setS(r, c, st);
@@ -147,7 +154,7 @@
           for (var i = 0; i < H.length; i++) s2[X.utils.encode_cell({ r: 0, c: i })].s = head;
           X.utils.book_append_sheet(wb, s2, name);
         };
-        mk(mrRows.filter(function (x) { return x.end <= m.t && x.status !== 'Filled' && x.status !== 'WL Generated'; }), 'Pending List');
+        mk((opts.extraPending || []).concat(mrRows.filter(function (x) { return x.end <= m.t && x.status !== 'Filled' && x.status !== 'WL Generated'; })), 'Pending List');
         mk(mrRows, 'MR Details');
       }
       X.writeFile(wb, 'PBAY_MR_Summary_' + (opts.fileTag ? safeName(opts.fileTag) + '_' : '') + dShort(sum.from).replace(/\//g, '-') + '_to_' + dShort(sum.to).replace(/\//g, '-') + '.xlsx');

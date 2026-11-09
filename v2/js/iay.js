@@ -198,8 +198,16 @@
     if (!sumData || !sumData.gps.length) return;
     var m = IS.model(sumData, selPrefix()), one = selPrefix() && m.rows[0] ? m.rows[0].name : '';
     loading('Preparing Excel...');
-    SB.rpc('iay_mr_window', { p_jc_prefix: selPrefix(), p_from: sumData.from, p_to: sumData.to }, { retry: true, timeout: 90000 })
-      .then(function (rows) { return IS.exportXlsx(m, rows || [], { titlePrefix: one ? one + ' — ' : '', fileTag: one }); })
+    Promise.all([
+      SB.rpc('iay_mr_window', { p_jc_prefix: selPrefix(), p_from: sumData.from, p_to: sumData.to }, { retry: true, timeout: 90000 }),
+      SB.rpc('iay_list', { p_jc_prefix: selPrefix(), p_kind: 'fill_overdue', p_date: null }, { retry: true, timeout: 90000 })
+    ]).then(function (r) {
+      // MR Details = window; Pending List also gets MRs that ended before the window and are still not filled
+      var rows = r[0] || [], seen = {}, extra = [];
+      rows.forEach(function (x) { seen[x.work_code + '|' + x.mr_no] = 1; });
+      (r[1] || []).forEach(function (x) { if (!seen[x.work_code + '|' + x.mr_no]) extra.push(x); });
+      return IS.exportXlsx(m, rows, { titlePrefix: one ? one + ' — ' : '', fileTag: one, extraPending: extra });
+    })
       .catch(function (e) { status(e.code ? errText(e) : (e.message || String(e)), 'err'); }).then(function () { loading(''); });
   };
 

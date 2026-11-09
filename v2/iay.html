@@ -45,7 +45,7 @@
     table.sum th{text-align:center;background:#1f4e79;color:#fff;border:1px solid #2d5f8f;}
     table.sum td{text-align:right;border:1px solid #edf2f7;} table.sum td.g{text-align:left;font-weight:700;white-space:nowrap;}
     table.sum td.f{background:#dcfce7;} table.sum td.w{background:#fef3c7;} table.sum td.p{background:#fee2e2;} table.sum tr.tot td{background:#e2e8f0;font-weight:700;}
-    table.sum td.g.z-red{background:#fecaca;} table.sum td.g.z-yellow{background:#fef9c3;} table.sum td.g.z-green{background:#dcfce7;}
+    table.sum td .pct{font-size:11px;color:#991b1b;} table.sum td.g.z-red{background:#fecaca;} table.sum td.g.z-yellow{background:#fef9c3;} table.sum td.g.z-green{background:#dcfce7;}
     table.sum td.u{white-space:nowrap;font-size:11.5px;} table.sum td.u.ok{color:#166534;} table.sum td.u.warn{color:#92400e;background:#fef3c7;} table.sum td.u.old{color:#991b1b;background:#fee2e2;}
     @media (max-width:600px){ .app{padding:6px;} .k .n{font-size:21px;} .cards{grid-template-columns:repeat(2,minmax(0,1fr));} th,td{padding:5px;} }
   </style>
@@ -116,7 +116,7 @@
     <div class="muted" id="sumNote" style="margin-top:4px">“Filled” = portal status Filled or WL Generated. “Pending” = MR ended but still Not Filled / Fill Today. “Upcoming” = MR running, ends that day.</div>
     <div id="sumLegend" style="font-size:13px;font-weight:700;margin-top:6px"></div>
     <div class="table-wrap" style="margin-top:6px"><table id="sumTable" class="sum"></table></div>
-    <div class="muted" style="margin-top:4px">🟢 nothing pending · 🟡 only today's MRs to fill, or up to 10% of earlier MRs pending · 🔴 more than 10% of earlier MRs pending, or older MRs still pending. Tap a pending number for its MR list.</div>
+    <div class="muted" style="margin-top:4px">Zone by Total pending: 🟢 nothing pending · 🟡 up to 10% pending · 🔴 more than 10% pending. Tap a pending number for its MR list.</div>
     <div id="sumList" class="hidden" style="margin-top:8px">
       <div class="row" style="justify-content:space-between"><b id="sumListTitle" style="font-size:13.5px"></b>
         <div class="row"><button class="btn-success btn-small" id="sumListXlsx">⬇ Excel</button><button class="btn-light btn-small" id="sumListClose">✕</button></div></div>
@@ -171,7 +171,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/iay-summary.js?v=20261109e"></script>
+<script src="./js/iay-summary.js?v=20261109f"></script>
 <script src="./js/iay.js?v=20261109g"></script>
 </body>
 </html>

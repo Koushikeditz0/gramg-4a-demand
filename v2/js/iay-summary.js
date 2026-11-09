@@ -49,13 +49,13 @@
       fut.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x]; var n = c ? c.total : 0; o.fut.push(n); o.up += n; });
       return o;
     });
-    // zone: red = MRs from earlier days pending (>10%, or any from before the chosen days);
-    //       yellow = a little earlier pending (<=10%) or only TODAY's MRs still to fill; green = nothing pending
+    // zone on TOTAL pending (earlier + chosen days incl. today) out of all those MRs:
+    // green = 0 pending, yellow = up to 10%, red = more than 10%
     var zones = { red: 0, yellow: 0, green: 0 };
     rows.forEach(function (o) {
-      var ended = o.older, pend = o.older, todayPend = 0;
-      past.forEach(function (x, i) { if (x < t) { ended += o.past[i].t; pend += o.past[i].p; } else if (x === t) todayPend += o.past[i].p; });
-      o.zone = pend === 0 ? (todayPend ? 'yellow' : 'green') : (o.older > 0 || pend / Math.max(ended, 1) > 0.10) ? 'red' : 'yellow';
+      var all = o.older; o.past.forEach(function (c) { all += c.t; });
+      o.pct = all ? Math.round(o.pend * 1000 / all) / 10 : 0;
+      o.zone = o.pend === 0 ? 'green' : o.pend / Math.max(all, 1) > 0.10 ? 'red' : 'yellow';
       zones[o.zone]++;
     });
     var tot = { jc: prefix || null, name: rows.length > 1 ? 'BLOCK TOTAL' : 'TOTAL', older: 0, wl: 0, past: past.map(function () { return { t: 0, f: 0, p: 0 }; }), fut: fut.map(function () { return 0; }), up: 0, pend: 0 };
@@ -96,7 +96,9 @@
       tr.appendChild(pick(el('td', nf(o.older), 'p'), o.older, 'older', o, null, 'pending from before ' + m.before));
       o.past.forEach(function (c, i) { var d = m.past[i]; tr.appendChild(el('td', nf(c.t))); tr.appendChild(el('td', nf(c.f), 'f')); tr.appendChild(pick(el('td', nf(c.p), 'p'), c.p, 'day', o, d, 'pending MRs that ended ' + dShort(d))); });
       if (m.fut.length) { o.fut.forEach(function (n) { tr.appendChild(el('td', nf(n))); }); tr.appendChild(el('td', nf(o.up))); }
-      tr.appendChild(pick(el('td', nf(o.pend), 'p'), o.pend, 'all', o, null, 'all pending MRs'));
+      var tpd = pick(el('td', nf(o.pend), 'p'), o.pend, 'all', o, null, 'all pending MRs');
+      if (o.zone && o.pend) tpd.appendChild(el('span', ' (' + o.pct + '%)', 'pct'));
+      tr.appendChild(tpd);
       tr.appendChild(pick(el('td', nf(o.wl), 'w'), o.wl, 'wl', o, null, 'filled, wagelist pending'));
       var u = o === m.tot ? el('td', '') : el('td', hm(o.at), 'u ' + fresh(o.at));
       if (o !== m.tot) u.title = ago(o.at);

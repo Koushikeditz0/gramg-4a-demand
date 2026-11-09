@@ -1,0 +1,340 @@
+/* =====================================================================
+   IAY Tracker (v191) — reads the IAY Phase Report (Tampermonkey Excel),
+   stores it GP-wise in Supabase and shows what must be done and when.
+   Database: supabase/2026-11-09_iay_tracker_v191.sql
+   ===================================================================== */
+(function () {
+  'use strict';
+  var SB = window.GramgSB;
+  var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  var GP_KEY = 'gramg2.iay.gp';
+  var $ = function (id) { return document.getElementById(id); };
+  var me = { role: null, scope: null };
+  var ov = null;                       // last iay_overview result
+  var list = { kind: null, date: null, rows: [], title: '' };
+
+  // ---------- small helpers ----------
+  function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+  function nf(n) { return Number(n || 0).toLocaleString('en-IN'); }
+  function dmy(iso) { if (!iso) return ''; var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso); }
+  var WD = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
+  function dayName(iso) { var p = String(iso).split('-'); return WD[new Date(+p[0], p[1] - 1, +p[2]).getDay()]; }
+  function when(ts) { if (!ts) return '—'; var d = new Date(ts); return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+  function status(msg, kind) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (msg ? ' show ' + (kind || 'info') : ''); }
+  function loading(t) { $('loadingText').textContent = t || ''; $('loading').classList.toggle('show', !!t); }
+  function errText(e) {
+    var map = {
+      NOT_AUTHORIZED: 'এই GP-র data দেখার / upload করার অনুমতি নেই।',
+      SESSION_REVOKED: 'এই device থেকে logout হয়ে গেছে। আবার login করুন।',
+      NOT_LOGGED_IN: 'আবার login করুন।',
+      WRONG_GP_ROWS: 'এই GP-র sheet-এ অন্য GP-র Job Card পাওয়া গেছে।',
+      NO_WORKS: 'Sheet-এ কোনো IAY work নেই।',
+      BAD_GP: 'GP বোঝা যায়নি (Job Card থেকে)।',
+      NETWORK: 'Internet connection দেখে আবার চেষ্টা করুন।'
+    };
+    return map[e.code] || ('Error: ' + (e.message || e));
+  }
+  function selPrefix() { return me.scope || $('gpSel').value || null; }
+
+  // ---------- boot ----------
+  SB.onAuthLost = function () { location.replace('./index.html'); };
+  function boot() {
+    if (!SB.hasSession()) { location.replace('./index.html'); return; }
+    loading('IAY Tracker খোলা হচ্ছে...');
+    SB.rpc('get_my_context').then(function (ctx) {
+      if (ctx.role !== 'super_admin' && ctx.role !== 'gp_admin') { location.replace('./index.html'); return; }
+      me.role = ctx.role;
+      return load(true);
+    }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
+
+  // ---------- overview ----------
+  function load(first) {
+    var p = first ? (me.role === 'super_admin' ? readGp() : null) : selPrefix();
+    return SB.rpc('iay_overview', { p_jc_prefix: null }, { retry: true, timeout: 60000 }).then(function (all) {
+      me.scope = all.scope || null;
+      fillGpSelect(all.gps, p);
+      ov = all;
+      render();
+    });
+  }
+  function readGp() { try { return localStorage.getItem(GP_KEY) || ''; } catch (e) { return ''; } }
+  function fillGpSelect(gps, keep) {
+    var s = $('gpSel'), cur = keep != null ? keep : s.value;
+    s.innerHTML = '';
+    if (!me.scope) { var o = el('option', 'সব GP (Block)'); o.value = ''; s.appendChild(o); }
+    gps.forEach(function (g) { var o = el('option', g.gp_name); o.value = g.jc_prefix; s.appendChild(o); });
+    if (me.scope) { s.value = me.scope; s.disabled = true; }
+    else s.value = gps.some(function (g) { return g.jc_prefix === cur; }) ? cur : '';
+  }
+
+  function picked() {
+    var p = selPrefix(), gps = (ov && ov.gps) || [];
+    return p ? gps.filter(function (g) { return g.jc_prefix === p; }) : gps;
+  }
+  function sum(gps, k) { return gps.reduce(function (s, g) { return s + Number(g[k] || 0); }, 0); }
+
+  var CARDS = [
+    ['fill_overdue', 'Fill overdue — MR শেষ, এখনও fill হয়নি', 'red'],
+    ['fill_today', 'আজ MR শেষ — আজই fill', 'red'],
+    ['fill_tomorrow', 'কাল MR শেষ — কাল fill', 'blue'],
+    ['mr_gap', 'MR ফাঁক — পরের MR এখনই লাগবে', 'red'],
+    ['mr_due5', '৫ দিনের মধ্যে পরের MR লাগবে', 'amber'],
+    ['wl_pending', 'MR filled, Wagelist বাকি', 'amber'],
+    ['no_mr', 'একটাও MR নেই', 'gray'],
+    ['done6', '6 MR (90 দিন) পূর্ণ', 'green']
+  ];
+  function render() {
+    var gps = picked(), p = selPrefix();
+    // cards
+    var box = $('cards'); box.innerHTML = '';
+    CARDS.forEach(function (c) {
+      var n = sum(gps, c[0]), d = el('div', null, 'k ' + c[2] + (n ? '' : ' zero'));
+      d.appendChild(el('div', nf(n), 'n')); d.appendChild(el('div', c[1], 'l'));
+      d.onclick = function () { openList(c[0], null, c[1]); };
+      box.appendChild(d);
+    });
+    // report line
+    var reps = gps.map(function (g) { return g.report_at; }).filter(Boolean).sort();
+    var oldest = reps[0], todayIso = ov.today;
+    var stale = !oldest || new Date(oldest).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) !== todayIso;
+    $('repLine').innerHTML = '';
+    $('repLine').appendChild(document.createTextNode('আজ ' + dmy(todayIso) + ' · ' + (p ? '' : gps.length + 'টা GP · ') +
+      'IAY works: ' + nf(sum(gps, 'works')) + ' · Report: ' + (oldest ? when(oldest) : 'এখনও upload হয়নি')));
+    if (stale) {
+      var w = el('b', '  ⚠ আজকের report নয় — portal-এ Phase Report Update করে নতুন Excel upload করুন।');
+      w.style.color = '#b91c1c'; $('repLine').appendChild(w);
+    }
+    if (!gps.length) status('এখনও কোনো data নেই। Portal-এর IAY Phase Report Excel (Full) টা “📤 Phase Report upload” দিয়ে দিন।', 'info');
+    // calendar
+    var cb = $('calBody'); cb.innerHTML = '';
+    calendarFor(p).then(function (cal) {
+      cb.innerHTML = '';
+      if (!cal.length) { var tr0 = el('tr'); var td0 = el('td', 'আগামী 35 দিনে কিছু নেই'); td0.colSpan = 3; tr0.appendChild(td0); cb.appendChild(tr0); return; }
+      cal.forEach(function (c) {
+        var tr = el('tr', null, c.date === todayIso ? 'today' : '');
+        tr.appendChild(el('td', dmy(c.date) + ' (' + dayName(c.date) + ')' + (c.date === todayIso ? ' · আজ' : ''), 'nw'));
+        tr.appendChild(cntCell(c.fill, function () { openList('fill_on', c.date, dmy(c.date) + ' — MR fill'); }));
+        tr.appendChild(cntCell(c.mr_start, function () { openList('mr_start_on', c.date, dmy(c.date) + ' থেকে নতুন MR লাগবে'); }));
+        cb.appendChild(tr);
+      });
+    });
+    // GP table
+    $('gpCard').classList.toggle('hidden', !!me.scope);
+    var gb = $('gpBody'); gb.innerHTML = '';
+    ((ov && ov.gps) || []).forEach(function (g) {
+      var tr = el('tr', null, g.jc_prefix === p ? 'today' : '');
+      var a = el('a', g.gp_name, 'c'); a.onclick = function () { $('gpSel').value = g.jc_prefix; onGp(); };
+      var td = el('td'); td.appendChild(a); tr.appendChild(td);
+      ['works', 'fill_overdue', 'fill_today', 'fill_tomorrow', 'mr_gap', 'mr_due5', 'wl_pending', 'no_mr', 'avg_mrs', 'done6'].forEach(function (k) {
+        tr.appendChild(el('td', k === 'avg_mrs' ? String(g[k] || 0) : nf(g[k]), 'n'));
+      });
+      tr.appendChild(el('td', when(g.report_at), 'nw'));
+      gb.appendChild(tr);
+    });
+  }
+  function cntCell(n, fn) {
+    var td = el('td', null, 'n');
+    if (n) { var a = el('a', nf(n), 'c'); a.onclick = fn; td.appendChild(a); } else td.textContent = '—';
+    return td;
+  }
+  // the overview call was for all GPs; ask for the calendar of the chosen GP
+  function calendarFor(p) {
+    if (!p || me.scope) return Promise.resolve(ov.calendar || []);
+    return SB.rpc('iay_overview', { p_jc_prefix: p }, { retry: true, timeout: 60000 })
+      .then(function (r) { return r.calendar || []; }, function (e) { status(errText(e), 'err'); return []; });
+  }
+
+  function onGp() {
+    try { localStorage.setItem(GP_KEY, $('gpSel').value); } catch (e) {}
+    $('listCard').classList.add('hidden');
+    render();
+  }
+  $('gpSel').addEventListener('change', onGp);
+  $('refreshBtn').onclick = function () { loading('Refresh...'); load(false).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); }); };
+
+  // ---------- drill-down list ----------
+  var MR_KINDS = ['fill_overdue', 'fill_on', 'wl_pending'];
+  var MR_COLS = [['gp', 'GP'], ['work_code', 'Work Code'], ['reg_no', 'Reg No.'], ['name', 'Beneficiary'], ['jcn', 'Job Card'], ['village', 'Village'],
+                 ['mr_no', 'MR No'], ['seq', 'Phase'], ['start', 'MR Start'], ['end', 'MR End'], ['status', 'Status']];
+  var W_COLS = [['gp', 'GP'], ['work_code', 'Work Code'], ['reg_no', 'Reg No.'], ['name', 'Beneficiary'], ['jcn', 'Job Card'], ['village', 'Village'],
+                ['mrs', 'MR হয়েছে'], ['remaining', 'MR বাকি'], ['last_end', 'শেষ MR শেষ'], ['next_start', 'পরের MR শুরু'], ['finish_by', '90 দিন শেষ (আন্দাজ)']];
+  function cols() { return MR_KINDS.indexOf(list.kind) >= 0 ? MR_COLS : W_COLS; }
+  function openList(kind, date, title) {
+    loading('List আনা হচ্ছে...');
+    SB.rpc('iay_list', { p_jc_prefix: selPrefix(), p_kind: kind, p_date: date }, { retry: true, timeout: 60000 }).then(function (rows) {
+      list = { kind: kind, date: date, rows: rows || [], title: title };
+      var gpn = selPrefix() ? ($('gpSel').selectedOptions[0] || {}).textContent : 'সব GP';
+      $('listTitle').textContent = title + ' · ' + gpn + ' (' + nf(list.rows.length) + ')';
+      $('listNote').textContent = list.rows.length > 500 ? 'Screen-এ প্রথম 500টা দেখাচ্ছে; Excel-এ সব ' + nf(list.rows.length) + 'টা থাকবে।' : '';
+      var c = cols(), hr = el('tr');
+      hr.appendChild(el('th', '#'));
+      c.forEach(function (x) { hr.appendChild(el('th', x[1])); });
+      $('listHead').innerHTML = ''; $('listHead').appendChild(hr);
+      var body = $('listBody'); body.innerHTML = '';
+      var todayIso = ov.today;
+      list.rows.slice(0, 500).forEach(function (r, i) {
+        var tr = el('tr', null, (r.end && r.end < todayIso && list.kind !== 'wl_pending') || (r.next_start && r.next_start <= todayIso) ? 'late' : '');
+        tr.appendChild(el('td', String(i + 1), 'n'));
+        c.forEach(function (x) {
+          var v = r[x[0]];
+          if (/start|end|finish_by/.test(x[0]) && v) v = dmy(v);
+          tr.appendChild(el('td', v == null ? '' : String(v), /work_code|jcn|reg_no|mr_no/.test(x[0]) ? 'mono nw' : (/start|end|finish/.test(x[0]) ? 'nw' : '')));
+        });
+        body.appendChild(tr);
+      });
+      if (!list.rows.length) { var tr0 = el('tr'), td0 = el('td', 'কিছু নেই ✅'); td0.colSpan = c.length + 1; tr0.appendChild(td0); body.appendChild(tr0); }
+      $('listCard').classList.remove('hidden');
+      $('listCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); });
+  }
+  $('listClose').onclick = function () { $('listCard').classList.add('hidden'); };
+
+  // ---------- Excel ----------
+  var xlsxLoading = null;
+  function needXlsx() {
+    if (window.XLSX) return Promise.resolve();
+    if (!xlsxLoading) xlsxLoading = new Promise(function (res, rej) {
+      var s = document.createElement('script'); s.src = XLSX_URL; s.onload = res;
+      s.onerror = function () { xlsxLoading = null; rej(new Error('Excel library load হয়নি। Internet দেখুন।')); };
+      document.head.appendChild(s);
+    });
+    return xlsxLoading;
+  }
+  function safeName(s) { return String(s || '').replace(/[\\\/?*\[\]:]/g, '').slice(0, 31) || 'Sheet1'; }
+  $('listXlsx').onclick = function () {
+    if (!list.rows.length) return;
+    needXlsx().then(function () {
+      var c = cols();
+      var aoa = [c.map(function (x) { return x[1]; })].concat(list.rows.map(function (r) {
+        return c.map(function (x) { var v = r[x[0]]; return /start|end|finish_by/.test(x[0]) && v ? dmy(v) : (v == null ? '' : v); });
+      }));
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = c.map(function (x) { return { wch: x[0] === 'work_code' ? 28 : x[0] === 'name' ? 24 : x[0] === 'jcn' ? 24 : 13 }; });
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: c.length - 1 } }) };
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, safeName(list.kind));
+      var gpn = selPrefix() ? ($('gpSel').selectedOptions[0] || {}).textContent : 'Block';
+      XLSX.writeFile(wb, 'IAY_' + safeName(gpn) + '_' + list.kind + (list.date ? '_' + list.date : '') + '_' + ov.today + '.xlsx');
+    }).catch(function (e) { status(e.message, 'err'); });
+  };
+  $('gpXlsx').onclick = function () {
+    var gps = (ov && ov.gps) || []; if (!gps.length) return;
+    needXlsx().then(function () {
+      var H = ['GP', 'IAY works', 'Fill overdue', 'আজ fill', 'কাল fill', 'MR ফাঁক', '৫ দিনে MR লাগবে', 'WL বাকি', 'MR নেই', 'গড় MR', '6 MR পূর্ণ', 'Report time'];
+      var rows = gps.map(function (g) { return [g.gp_name, g.works, g.fill_overdue, g.fill_today, g.fill_tomorrow, g.mr_gap, g.mr_due5, g.wl_pending, g.no_mr, Number(g.avg_mrs || 0), g.done6, when(g.report_at)]; });
+      var tot = ['TOTAL'].concat([1, 2, 3, 4, 5, 6, 7, 8].map(function (i) { return rows.reduce(function (s, r) { return s + Number(r[i] || 0); }, 0); }), ['', rows.reduce(function (s, r) { return s + Number(r[10] || 0); }, 0), '']);
+      var ws = XLSX.utils.aoa_to_sheet([['IAY Tracker — GP-wise summary · ' + dmy(ov.today)], [], H].concat(rows, [tot]));
+      ws['!cols'] = H.map(function (h, i) { return { wch: i === 0 ? 20 : i === 11 ? 18 : 12 }; });
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+      XLSX.writeFile(wb, 'IAY_Block_Summary_' + ov.today + '.xlsx');
+    }).catch(function (e) { status(e.message, 'err'); });
+  };
+
+  // ---------- upload: IAY Phase Report Excel ----------
+  $('uploadBtn').onclick = function () { $('fileIn').value = ''; $('fileIn').click(); };
+  $('fileIn').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    loading('Excel পড়া হচ্ছে...');
+    needXlsx().then(function () { return f.arrayBuffer(); }).then(function (buf) {
+      var wb = XLSX.read(buf, { type: 'array' });
+      var parsed = parseReport(wb, f.name);
+      if (!parsed.gps.length) throw new Error('এই file-এ IAY Phase Report-এর GP sheet পাওয়া যায়নি। Tampermonkey script-এর “Full” Excel দিন।');
+      loading('');
+      return importAll(parsed, f.name);
+    }).catch(function (e) { loading(''); status(e.code ? errText(e) : (e.message || String(e)), 'err'); });
+  });
+
+  function txt(v) { return v == null ? '' : String(v).replace(/\s+/g, ' ').trim(); }
+  function isoOf(s) { var m = txt(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : ''; }
+  function reportTime(wb, fileName) {
+    var sh = wb.Sheets['Summary'];
+    if (sh) {
+      var rows = XLSX.utils.sheet_to_json(sh, { header: 1, raw: false, defval: '' }).slice(0, 5);
+      for (var i = 0; i < rows.length; i++) {
+        var m = txt(rows[i][0]).match(/Generated:\s*(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i);
+        if (m) {
+          var h = +m[4]; if (m[7]) { var pm = /pm/i.test(m[7]); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+          return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) + 'T' + ('0' + h).slice(-2) + ':' + m[5] + ':' + (m[6] || '00') + '+05:30';
+        }
+      }
+    }
+    var f = String(fileName).match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+    if (f) return f[3] + '-' + ('0' + f[2]).slice(-2) + '-' + ('0' + f[1]).slice(-2) + 'T12:00:00+05:30';
+    return new Date().toISOString();
+  }
+  function parseReport(wb, fileName) {
+    var out = { reportAt: reportTime(wb, fileName), gps: [] };
+    wb.SheetNames.forEach(function (name) {
+      if (/^summary$/i.test(name)) return;
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+      var hi = -1;
+      for (var i = 0; i < Math.min(rows.length, 10); i++) if (rows[i].map(txt).indexOf('Work Code') >= 0) { hi = i; break; }
+      if (hi < 0) return;
+      var H = rows[hi].map(txt), ix = function (n) { return H.indexOf(n); };
+      var c = { gp: ix('GP'), code: ix('Work Code'), reg: ix('Reg No.'), name: ix('Beneficiary Name'), jcn: ix('Job Card (JCN)'),
+                vill: ix('Village'), ws: ix('Work Status'), md: ix('Mandays'), wl: ix('Wagelist Generated'), wlno: ix('WageList No.'), wld: ix('WL Date') };
+      var ph = [];
+      H.forEach(function (h, j) { var m = h.match(/^P(\d+) MR No$/); if (m) ph.push({ seq: +m[1], no: j, dates: ix('P' + m[1] + ' Dates'), st: ix('P' + m[1] + ' Status') }); });
+      if (c.code < 0 || c.jcn < 0) return;
+      var works = [], mrs = [], pre = {};
+      rows.slice(hi + 1).forEach(function (r) {
+        var code = txt(r[c.code]); if (!code || code.indexOf('/') < 0) return;      // TOTAL / blank rows
+        var jcn = txt(r[c.jcn]);
+        works.push({ work_code: code, reg_no: txt(r[c.reg]), ben_name: c.name >= 0 ? txt(r[c.name]) : '', jcn: jcn,
+                     village: c.vill >= 0 ? txt(r[c.vill]) : '', work_status: c.ws >= 0 ? txt(r[c.ws]) : '',
+                     mandays: c.md >= 0 ? txt(r[c.md]) : '', wl_info: c.wl >= 0 ? txt(r[c.wl]) : '',
+                     wl_no: c.wlno >= 0 ? txt(r[c.wlno]) : '', wl_date: c.wld >= 0 ? isoOf(r[c.wld]) : '' });
+        var p13 = jcn.slice(0, 13); if (/^WB-\d{2}-\d{3}-\d{3}$/.test(p13)) pre[p13] = (pre[p13] || 0) + 1;
+        ph.forEach(function (p) {
+          var no = txt(r[p.no]).replace(/\.0+$/, ''), d = txt(r[p.dates]).split('--');
+          if (!/^\d+$/.test(no) || d.length !== 2) return;
+          var s = isoOf(d[0]), e = isoOf(d[1]); if (!s || !e) return;
+          mrs.push({ work_code: code, mr_no: no, seq: String(p.seq), start_date: s, end_date: e, status: txt(r[p.st]) });
+        });
+      });
+      if (!works.length) return;
+      var prefix = Object.keys(pre).sort(function (a, b) { return pre[b] - pre[a]; })[0];
+      if (!prefix) return;
+      var keep = works.filter(function (w) { return w.jcn.slice(0, 13) === prefix; });
+      var codes = {}; keep.forEach(function (w) { codes[w.work_code] = 1; });
+      out.gps.push({ name: txt(rows[hi + 1] && c.gp >= 0 ? rows[hi + 1][c.gp] : '') || name, prefix: prefix, works: keep,
+                     mrs: mrs.filter(function (m) { return codes[m.work_code]; }), skipped: works.length - keep.length });
+    });
+    return out;
+  }
+
+  function importAll(parsed, fileName) {
+    var gps = parsed.gps.filter(function (g) { return !me.scope || g.prefix === me.scope; });
+    if (!gps.length) { status('এই file-এ আপনার GP-র sheet নেই।', 'err'); return Promise.resolve(); }
+    var msg = 'Report time: ' + when(parsed.reportAt) + '\n' + gps.length + 'টা GP, ' +
+      nf(gps.reduce(function (s, g) { return s + g.works.length; }, 0)) + ' works, ' +
+      nf(gps.reduce(function (s, g) { return s + g.mrs.length; }, 0)) + ' MR।\nআগের data-র জায়গায় এই report বসবে। Upload করবেন?';
+    if (!window.confirm(msg)) return Promise.resolve();
+    var done = [], fail = [], i = 0;
+    $('prog').classList.remove('hidden'); $('progBar').style.width = '0';
+    function one(g, force) {
+      status('Upload: ' + g.name + ' (' + (i + 1) + '/' + gps.length + ')...', 'info');
+      return SB.rpc('iay_import_gp', { p_jc_prefix: g.prefix, p_gp_name: g.name, p_report_at: parsed.reportAt, p_file_name: fileName,
+                                       p_works: g.works, p_mrs: g.mrs, p_force: !!force }, { timeout: 120000 })
+        .then(function (r) { done.push(g.name + ': ' + nf(r.works) + ' works, ' + nf(r.mrs) + ' MR' + (g.skipped ? ' (' + g.skipped + 'টা অন্য GP-র row বাদ)' : '')); },
+          function (e) {
+            if (e.code === 'OLDER_REPORT' && !force) {
+              if (window.confirm(g.name + ': এখানে এর চেয়ে নতুন report আগে থেকেই আছে। তবুও এই পুরোনো report বসাবেন?')) return one(g, true);
+              fail.push(g.name + ': বাদ (নতুন report আগে থেকেই আছে)'); return;
+            }
+            if (e.authLost) throw e;
+            fail.push(g.name + ': ' + errText(e));
+          });
+    }
+    return gps.reduce(function (p, g) {
+      return p.then(function () { return one(g); }).then(function () { i++; $('progBar').style.width = Math.round(i * 100 / gps.length) + '%'; });
+    }, Promise.resolve()).then(function () {
+      $('prog').classList.add('hidden');
+      status('✅ Upload শেষ\n' + done.join('\n') + (fail.length ? '\n\n❌ ' + fail.join('\n❌ ') : ''), fail.length ? 'err' : 'ok');
+      return load(false);
+    });
+  }
+
+  boot();
+})();

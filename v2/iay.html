@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#7a3b00">
+  <title>IAY Tracker — G RAM-G 4A</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#172033;}
+    .app{max-width:1100px;margin:auto;padding:8px;}
+    .header{background:#7a3b00;color:#fff;border-radius:12px;padding:11px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+    .header-title{font-size:17px;font-weight:700;} .header-sub{font-size:11px;opacity:.85;margin-top:3px;}
+    .header a{color:#fff;font-size:12px;text-decoration:none;background:rgba(255,255,255,.15);border-radius:8px;padding:6px 9px;}
+    button{border:0;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer;}
+    button:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-primary{background:#2563eb;color:#fff;} .btn-success{background:#16a34a;color:#fff;} .btn-light{background:#e2e8f0;color:#172033;}
+    .btn-small{padding:6px 9px;font-size:12px;}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:8px;}
+    .card h2{font-size:15px;margin:0 0 8px;}
+    .muted{font-size:11.5px;color:#64748b;line-height:1.5;}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    select{border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:8px 10px;font-size:14px;min-width:180px;}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;}
+    .k{border-radius:10px;padding:10px;cursor:pointer;border:1px solid transparent;background:#f8fafc;}
+    .k .n{font-size:24px;font-weight:800;} .k .l{font-size:12px;margin-top:3px;line-height:1.35;}
+    .k:hover{border-color:#94a3b8;} .k.zero{opacity:.55;}
+    .k.red{background:#fee2e2;color:#991b1b;} .k.amber{background:#fef3c7;color:#92400e;}
+    .k.blue{background:#e0e7ff;color:#3730a3;} .k.green{background:#dcfce7;color:#166534;} .k.gray{background:#f1f5f9;color:#334155;}
+    .table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:8px;max-height:60vh;}
+    table{width:100%;border-collapse:collapse;font-size:12.5px;}
+    th{position:sticky;top:0;background:#e2e8f0;text-align:left;padding:6px 7px;white-space:nowrap;}
+    td{padding:6px 7px;border-top:1px solid #edf2f7;vertical-align:top;}
+    td.n,th.n{text-align:right;} td.nw{white-space:nowrap;} .mono{font-family:Consolas,monospace;font-size:12px;}
+    td a.c{color:#1d4ed8;font-weight:700;text-decoration:none;cursor:pointer;display:inline-block;min-width:28px;}
+    tr.today td{background:#fff7ed;} tr.late td{background:#fef2f2;}
+    .status{display:none;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-bottom:8px;white-space:pre-line;}
+    .status.show{display:block;} .status.ok{background:#dcfce7;color:#166534;} .status.err{background:#fee2e2;color:#991b1b;} .status.info{background:#e0e7ff;color:#3730a3;}
+    .hidden{display:none!important;}
+    .progress{height:8px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin:8px 0;}
+    .progress > div{height:100%;background:#16a34a;width:0;transition:width .2s;}
+    .loading{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:99;}
+    .loading.show{display:flex;} .loading > div{background:#fff;padding:16px 20px;border-radius:12px;font-weight:700;font-size:13px;}
+    @media (max-width:600px){ .app{padding:6px;} .k .n{font-size:21px;} .cards{grid-template-columns:repeat(2,minmax(0,1fr));} th,td{padding:5px;} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="header-title">🏠 IAY Tracker</div>
+      <div class="header-sub" id="sub">State Scheme House · target 6 MR × 15 দিন = 90 দিন</div>
+    </div>
+    <a href="./admin.html">← Admin panel</a>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <select id="gpSel" aria-label="GP"></select>
+        <button class="btn-light btn-small" id="refreshBtn">🔄 Refresh</button>
+      </div>
+      <div class="row">
+        <button class="btn-success btn-small" id="uploadBtn">📤 Phase Report upload</button>
+        <input type="file" id="fileIn" accept=".xlsx,.xls" class="hidden">
+      </div>
+    </div>
+    <div class="muted" id="repLine" style="margin-top:6px"></div>
+    <div class="progress hidden" id="prog"><div id="progBar"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>আজকের কাজ</h2>
+    <div class="cards" id="cards"></div>
+    <div class="muted" style="margin-top:6px">কোনো ঘরে চাপ দিলে সেই work / MR-গুলোর list খুলবে, সেখান থেকে Excel নামানো যাবে।</div>
+  </div>
+
+  <div class="card hidden" id="listCard">
+    <div class="row" style="justify-content:space-between;margin-bottom:6px">
+      <h2 id="listTitle" style="margin:0"></h2>
+      <div class="row">
+        <button class="btn-success btn-small" id="listXlsx">⬇ Excel</button>
+        <button class="btn-light btn-small" id="listClose">✕</button>
+      </div>
+    </div>
+    <div class="muted" id="listNote"></div>
+    <div class="table-wrap" style="margin-top:6px"><table><thead id="listHead"></thead><tbody id="listBody"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>আগামী 35 দিনের calendar</h2>
+    <div class="muted">“MR fill” = সেদিন MR শেষ, সেদিনই fill করতে হবে। “নতুন MR শুরু” = সেদিন থেকে পরের MR লাগবে, তার আগে demand → allocation → MR generate সেরে রাখতে হবে।</div>
+    <div class="table-wrap" style="margin-top:6px;max-height:none"><table>
+      <thead><tr><th>তারিখ</th><th class="n">MR fill</th><th class="n">নতুন MR শুরু</th></tr></thead>
+      <tbody id="calBody"></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" id="gpCard">
+    <h2>GP-wise summary</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>GP</th><th class="n">IAY works</th><th class="n">Fill overdue</th><th class="n">আজ fill</th><th class="n">কাল fill</th>
+        <th class="n">MR ফাঁক</th><th class="n">৫ দিনে MR লাগবে</th><th class="n">WL বাকি</th><th class="n">MR নেই</th><th class="n">গড় MR</th><th class="n">6 MR পূর্ণ</th><th>Report</th></tr></thead>
+      <tbody id="gpBody"></tbody>
+    </table></div>
+    <div class="row" style="margin-top:6px"><button class="btn-success btn-small" id="gpXlsx">⬇ Summary Excel</button></div>
+  </div>
+
+  <div class="muted" style="text-align:center;margin:10px 0 20px">Developed &amp; Maintained by Koushik Sarkar (VLE)</div>
+</div>
+<div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
+
+<script src="./js/config.js?v=20261106b"></script>
+<script src="./js/sb-client.js?v=20261106a"></script>
+<script src="./js/iay.js?v=20261109a"></script>
+</body>
+</html>

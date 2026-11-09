@@ -31,8 +31,13 @@
     if (!data) return;
     var m = IS.model(data, $('gp').value || null);
     IS.renderTable($('tbl'), m);
-    $('sub').textContent = 'Today ' + m.t.split('-').reverse().join('/') + ' · portal data of ' + IS.when(m.oldest) +
-      (m.newest && m.newest !== m.oldest ? ' – ' + IS.when(m.newest) : '') + ' · page refreshed ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    $('sub').textContent = 'Today ' + m.t.split('-').reverse().join('/') + ' · page refreshed ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    // Last update = when the newest portal data reached the tracker; warn if some GPs are older
+    var lb = $('lastBox'), f = IS.fresh(m.newest);
+    lb.className = 'last ' + f;
+    $('lastTxt').textContent = IS.when(m.newest) + ' (' + IS.ago(m.newest) + ')' +
+      (m.oldest && m.oldest !== m.newest && IS.fresh(m.oldest) !== 'ok' ? ' · some GPs older: ' + IS.when(m.oldest) : '') +
+      (f === 'old' ? ' — data may be out of date' : '');
   }
   $('gp').onchange = function () { try { localStorage.setItem(GPK, $('gp').value); } catch (e) {} render(); };
   $('past').onchange = $('ahead').onchange = $('refresh').onclick = load;
@@ -42,6 +47,7 @@
     IS.exportXlsx(m, null, { titlePrefix: one ? one + ' — ' : '', fileTag: one }).catch(function (e) { fail(e.message); });
   };
   setInterval(function () { if (!document.hidden) load(); }, 5 * 60 * 1000);
+  setInterval(render, 60 * 1000);   // keep “x min ago” current
   document.addEventListener('visibilitychange', function () { if (!document.hidden && data) load(); });
   load();
 })();

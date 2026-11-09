@@ -14,6 +14,15 @@
   function dShort(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0].slice(2); }
   function dmy(iso) { if (!iso) return ''; var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso); }
   function when(ts) { if (!ts) return '—'; var d = new Date(ts); return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+  function ago(ts) {
+    if (!ts) return '';
+    var m = Math.round((Date.now() - new Date(ts).getTime()) / 60000);
+    if (m < 1) return 'just now'; if (m < 60) return m + ' min ago';
+    var h = Math.floor(m / 60); if (h < 24) return h + ' h ' + (m % 60) + ' min ago';
+    return Math.floor(h / 24) + ' day(s) ago';
+  }
+  function fresh(ts) { if (!ts) return 'old'; var h = (Date.now() - new Date(ts).getTime()) / 36e5; return h <= 2 ? 'ok' : h <= 6 ? 'warn' : 'old'; }
+  function hm(ts) { if (!ts) return '—'; var d = new Date(ts); return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ', ' + d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }); }
   function safeName(s) { return String(s || '').replace(/[\\\/?*\[\]:]/g, '').slice(0, 31) || 'Sheet1'; }
 
   var loadingXlsx = null;
@@ -35,7 +44,7 @@
     sum.cells.forEach(function (c) { cell[c.jc_prefix + '|' + c.date] = c; });
     var gps = sum.gps.filter(function (g) { return !prefix || g.jc_prefix === prefix; });
     var rows = gps.map(function (g) {
-      var o = { name: g.gp_name, past: [], fut: [], up: 0, pend: 0 };
+      var o = { name: g.gp_name, at: g.report_at, past: [], fut: [], up: 0, pend: 0 };
       past.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x] || { total: 0, filled: 0 }; o.past.push({ t: c.total, f: c.filled, p: c.total - c.filled }); o.pend += c.total - c.filled; });
       fut.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x]; var n = c ? c.total : 0; o.fut.push(n); o.up += n; });
       return o;
@@ -58,6 +67,7 @@
     m.past.forEach(function (x) { var c = el('th', m.label(x) + (x === m.t ? ' — ending' : ' — ended')); c.colSpan = 3; r1.appendChild(c); ['Total', 'Filled', 'Pending'].forEach(function (k) { r2.appendChild(el('th', k)); }); });
     if (m.fut.length) { var f = el('th', 'Next ' + m.fut.length + ' days — MRs ending (running)'); f.colSpan = m.fut.length + 1; r1.appendChild(f); m.fut.forEach(function (x) { r2.appendChild(el('th', m.label(x))); }); r2.appendChild(el('th', 'Upcoming total')); }
     var tp = el('th', 'Total pending'); tp.rowSpan = 2; r1.appendChild(tp);
+    var lu = el('th', 'Last update'); lu.rowSpan = 2; r1.appendChild(lu);
     th.appendChild(r1); th.appendChild(r2); table.appendChild(th);
     var body = el('tbody');
     m.rows.concat(m.rows.length > 1 ? [m.tot] : []).forEach(function (o) {
@@ -65,6 +75,9 @@
       o.past.forEach(function (c) { tr.appendChild(el('td', nf(c.t))); tr.appendChild(el('td', nf(c.f), 'f')); tr.appendChild(el('td', nf(c.p), 'p')); });
       if (m.fut.length) { o.fut.forEach(function (n) { tr.appendChild(el('td', nf(n))); }); tr.appendChild(el('td', nf(o.up))); }
       tr.appendChild(el('td', nf(o.pend), 'p'));
+      var u = o === m.tot ? el('td', '') : el('td', hm(o.at), 'u ' + fresh(o.at));
+      if (o !== m.tot) u.title = ago(o.at);
+      tr.appendChild(u);
       body.appendChild(tr);
     });
     table.appendChild(body);
@@ -141,5 +154,5 @@
     });
   }
 
-  window.IaySummary = { model: model, renderTable: renderTable, exportXlsx: exportXlsx, needXlsx: needXlsx, when: when };
+  window.IaySummary = { model: model, renderTable: renderTable, exportXlsx: exportXlsx, needXlsx: needXlsx, when: when, ago: ago, fresh: fresh };
 })();

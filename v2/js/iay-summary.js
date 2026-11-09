@@ -44,12 +44,20 @@
     sum.cells.forEach(function (c) { cell[c.jc_prefix + '|' + c.date] = c; });
     var gps = sum.gps.filter(function (g) { return !prefix || g.jc_prefix === prefix; });
     var rows = gps.map(function (g) {
-      var o = { name: g.gp_name, at: g.report_at, older: g.older || 0, wl: g.wl || 0, past: [], fut: [], up: 0, pend: g.older || 0 };
+      var o = { jc: g.jc_prefix, name: g.gp_name, at: g.report_at, older: g.older || 0, wl: g.wl || 0, past: [], fut: [], up: 0, pend: g.older || 0 };
       past.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x] || { total: 0, filled: 0 }; o.past.push({ t: c.total, f: c.filled, p: c.total - c.filled }); o.pend += c.total - c.filled; });
       fut.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x]; var n = c ? c.total : 0; o.fut.push(n); o.up += n; });
       return o;
     });
-    var tot = { name: rows.length > 1 ? 'BLOCK TOTAL' : 'TOTAL', older: 0, wl: 0, past: past.map(function () { return { t: 0, f: 0, p: 0 }; }), fut: fut.map(function () { return 0; }), up: 0, pend: 0 };
+    // zone: today's MRs are not counted until the day is over
+    var zones = { red: 0, yellow: 0, green: 0 };
+    rows.forEach(function (o) {
+      var ended = o.older, pend = o.older;
+      past.forEach(function (x, i) { if (x < t) { ended += o.past[i].t; pend += o.past[i].p; } });
+      o.zone = pend === 0 ? 'green' : (o.older > 0 || pend / Math.max(ended, 1) > 0.10) ? 'red' : 'yellow';
+      zones[o.zone]++;
+    });
+    var tot = { jc: prefix || null, name: rows.length > 1 ? 'BLOCK TOTAL' : 'TOTAL', older: 0, wl: 0, past: past.map(function () { return { t: 0, f: 0, p: 0 }; }), fut: fut.map(function () { return 0; }), up: 0, pend: 0 };
     rows.forEach(function (o) {
       o.past.forEach(function (c, i) { tot.past[i].t += c.t; tot.past[i].f += c.f; tot.past[i].p += c.p; });
       o.fut.forEach(function (n, i) { tot.fut[i] += n; }); tot.up += o.up; tot.pend += o.pend; tot.older += o.older; tot.wl += o.wl;
@@ -57,10 +65,18 @@
     var label = function (x) { return dShort(x) + ' (' + (x === t ? 'Today' : x === addDays(t, -1) ? 'Yesterday' : WD[new Date(x + 'T00:00:00').getDay()]) + ')'; };
     var reps = gps.map(function (g) { return g.report_at; }).filter(Boolean).sort();
     var before = past.length ? past[0].slice(8, 10) + '/' + past[0].slice(5, 7) : '';
-    return { sum: sum, t: t, before: before, past: past, fut: fut, rows: rows, tot: tot, label: label, oldest: reps[0], newest: reps[reps.length - 1] };
+    return { sum: sum, t: t, before: before, zones: zones, prefix: prefix || null, past: past, fut: fut, rows: rows, tot: tot, label: label, oldest: reps[0], newest: reps[reps.length - 1] };
   }
 
-  function renderTable(table, m) {
+  // opts.onPick(kind, jc_prefix|null, date|null, title) makes the pending numbers clickable
+  function renderTable(table, m, opts) {
+    opts = opts || {};
+    var pick = function (td, n, kind, o, date, title) {
+      if (!opts.onPick || !n) return td;
+      td.textContent = ''; var a = el('a', nf(n), 'c'); a.href = '#';
+      a.onclick = function (e) { e.preventDefault(); opts.onPick(kind, o.jc, date, (o === m.tot ? (m.rows.length > 1 ? 'All GPs' : o.name) : o.name) + ' — ' + title); };
+      td.appendChild(a); return td;
+    };
     table.innerHTML = '';
     if (!m.rows.length) { var tr0 = el('tr'), td0 = el('td', 'No data yet.'); tr0.appendChild(td0); table.appendChild(tr0); return; }
     var th = el('thead'), r1 = el('tr'), r2 = el('tr');
@@ -74,18 +90,51 @@
     th.appendChild(r1); th.appendChild(r2); table.appendChild(th);
     var body = el('tbody');
     m.rows.concat(m.rows.length > 1 ? [m.tot] : []).forEach(function (o) {
-      var tr = el('tr', null, o === m.tot ? 'tot' : ''); tr.appendChild(el('td', o.name, 'g'));
-      tr.appendChild(el('td', nf(o.older), 'p'));
-      o.past.forEach(function (c) { tr.appendChild(el('td', nf(c.t))); tr.appendChild(el('td', nf(c.f), 'f')); tr.appendChild(el('td', nf(c.p), 'p')); });
+      var tr = el('tr', null, o === m.tot ? 'tot' : '');
+      var gtd = el('td', (o.zone ? ZDOT[o.zone] + ' ' : '') + o.name, 'g' + (o.zone ? ' z-' + o.zone : '')); tr.appendChild(gtd);
+      tr.appendChild(pick(el('td', nf(o.older), 'p'), o.older, 'older', o, null, 'pending from before ' + m.before));
+      o.past.forEach(function (c, i) { var d = m.past[i]; tr.appendChild(el('td', nf(c.t))); tr.appendChild(el('td', nf(c.f), 'f')); tr.appendChild(pick(el('td', nf(c.p), 'p'), c.p, 'day', o, d, 'pending MRs that ended ' + dShort(d))); });
       if (m.fut.length) { o.fut.forEach(function (n) { tr.appendChild(el('td', nf(n))); }); tr.appendChild(el('td', nf(o.up))); }
-      tr.appendChild(el('td', nf(o.pend), 'p'));
-      tr.appendChild(el('td', nf(o.wl), 'w'));
+      tr.appendChild(pick(el('td', nf(o.pend), 'p'), o.pend, 'all', o, null, 'all pending MRs'));
+      tr.appendChild(pick(el('td', nf(o.wl), 'w'), o.wl, 'wl', o, null, 'filled, wagelist pending'));
       var u = o === m.tot ? el('td', '') : el('td', hm(o.at), 'u ' + fresh(o.at));
       if (o !== m.tot) u.title = ago(o.at);
       tr.appendChild(u);
       body.appendChild(tr);
     });
     table.appendChild(body);
+    if (opts.legendEl) opts.legendEl.textContent = m.rows.length > 1
+      ? '🔴 ' + m.zones.red + ' GP · 🟡 ' + m.zones.yellow + ' GP · 🟢 ' + m.zones.green + ' GP'
+      : '';
+  }
+  var ZDOT = { red: '🔴', yellow: '🟡', green: '🟢' };
+
+  // ---------- MR list (pending / WL) ----------
+  var LH = ['GP', 'Work Code', 'Reg No.', 'Beneficiary', 'Job Card', 'Village', 'MR No', 'Phase', 'MR Start', 'MR End', 'Status'];
+  var lrow = function (x) { return [x.gp, x.work_code, x.reg_no || '', x.name || '', x.jcn || '', x.village || '', x.mr_no, x.seq, dmy(x.start), dmy(x.end), x.status || '']; };
+  function renderList(table, rows, max) {
+    table.innerHTML = ''; max = max || 500;
+    var th = el('thead'), hr = el('tr'); hr.appendChild(el('th', '#')); LH.forEach(function (h) { hr.appendChild(el('th', h)); }); th.appendChild(hr); table.appendChild(th);
+    var b = el('tbody');
+    rows.slice(0, max).forEach(function (x, i) {
+      var tr = el('tr'); tr.appendChild(el('td', String(i + 1)));
+      lrow(x).forEach(function (v, j) { tr.appendChild(el('td', v == null ? '' : String(v), j === 1 || j === 4 ? 'mono' : '')); });
+      b.appendChild(tr);
+    });
+    if (!rows.length) { var tr0 = el('tr'), td0 = el('td', 'Nothing pending ✅'); td0.colSpan = LH.length + 1; tr0.appendChild(td0); b.appendChild(tr0); }
+    table.appendChild(b);
+  }
+  function exportList(rows, title, file) {
+    return needXlsx().then(function () {
+      var X = window.XLSX, ws = X.utils.aoa_to_sheet([[title], [], LH].concat(rows.map(lrow)));
+      ws['!cols'] = [16, 28, 14, 26, 24, 16, 9, 7, 11, 11, 13].map(function (w) { return { wch: w }; });
+      ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 2, c: 0 }, e: { r: Math.max(rows.length + 2, 3), c: LH.length - 1 } }) };
+      var B = { style: 'thin', color: { rgb: 'BFBFBF' } };
+      for (var i = 0; i < LH.length; i++) ws[X.utils.encode_cell({ r: 2, c: i })].s = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1F4E79' } }, border: { top: B, bottom: B, left: B, right: B } };
+      ws.A1.s = { font: { bold: true, sz: 13 } };
+      var wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'MR List');
+      X.writeFile(wb, safeName(file || 'IAY_MR_List').replace(/\s+/g, '_') + '.xlsx');
+    });
   }
 
   function headRows(m) {
@@ -161,5 +210,5 @@
     });
   }
 
-  window.IaySummary = { model: model, renderTable: renderTable, exportXlsx: exportXlsx, needXlsx: needXlsx, when: when, ago: ago, fresh: fresh };
+  window.IaySummary = { renderList: renderList, exportList: exportList, model: model, renderTable: renderTable, exportXlsx: exportXlsx, needXlsx: needXlsx, when: when, ago: ago, fresh: fresh };
 })();

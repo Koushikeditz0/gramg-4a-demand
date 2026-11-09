@@ -109,12 +109,27 @@
     <div class="row" style="margin-top:6px"><button class="btn-success btn-small" id="gpXlsx">⬇ Summary Excel</button></div>
   </div>
 
+  <div class="card" id="syncCard">
+    <h2>📡 Tampermonkey live sync</h2>
+    <div class="muted">With a sync key, the IAY Phase Report Tampermonkey script (v1.5+) sends every portal “🔄 Update” here automatically — no Excel upload needed. The key works only for IAY data and only for the GP(s) you manage.</div>
+    <div id="syncLine" style="font-size:13px;margin:8px 0"></div>
+    <div class="row">
+      <button class="btn-primary btn-small" id="syncNew">🔑 Create sync key</button>
+      <button class="btn-light btn-small" id="syncOff">Stop sync</button>
+    </div>
+    <div id="syncBox" class="hidden" style="margin-top:8px;background:#fef3c7;border-radius:8px;padding:8px 10px">
+      <div style="font-size:12.5px;font-weight:700;margin-bottom:6px">Copy this key now — it is shown only once:</div>
+      <div class="row"><input id="syncKey" readonly class="mono" style="flex:1;min-width:220px;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:12px"><button class="btn-success btn-small" id="syncCopy">Copy</button></div>
+      <div class="muted" style="margin-top:6px">On the portal: open the IAY panel → 📡 IAY Tracker → <b>Connect</b> → paste. Keep it private; anyone with this key can change the tracker's IAY data. Creating a new key stops the old one.</div>
+    </div>
+  </div>
+
   <div class="muted" style="text-align:center;margin:10px 0 20px">Developed &amp; Maintained by Koushik Sarkar (VLE)</div>
 </div>
 <div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/iay.js?v=20261109b"></script>
+<script src="./js/iay.js?v=20261109c"></script>
 </body>
 </html>

@@ -44,6 +44,7 @@
     SB.rpc('get_my_context').then(function (ctx) {
       if (ctx.role !== 'super_admin' && ctx.role !== 'gp_admin') { location.replace('./index.html'); return; }
       me.role = ctx.role;
+      loadSync();
       return load(true);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
@@ -152,7 +153,36 @@
     render();
   }
   $('gpSel').addEventListener('change', onGp);
-  $('refreshBtn').onclick = function () { loading('Refresh...'); load(false).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); }); };
+  $('refreshBtn').onclick = function () { loading('Refresh...'); loadSync(); load(false).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); }); };
+
+
+  // ---------- Tampermonkey live sync key (SQL v192) ----------
+  function loadSync() {
+    return SB.rpc('iay_sync_key_status', {}, { retry: true }).then(function (st) {
+      var l = $('syncLine'); l.innerHTML = '';
+      if (!st.active) { l.appendChild(el('span', '⚪ Not connected — create a key and paste it in the Tampermonkey script.')); $('syncOff').classList.add('hidden'); return; }
+      $('syncOff').classList.remove('hidden');
+      l.appendChild(el('span', '🟢 Key active (created ' + when(st.created_at) + ') · ' +
+        (st.last_used_at ? 'last sync ' + when(st.last_used_at) + (st.last_gp ? ' — ' + st.last_gp : '') : 'no sync received yet')));
+    }).catch(function (e) { $('syncLine').textContent = errText(e); });
+  }
+  $('syncNew').onclick = function () {
+    if (!window.confirm('Create a new sync key? Any older key stops working at once, so paste the new one in the Tampermonkey script.')) return;
+    SB.rpc('iay_sync_key_create', {}).then(function (r) {
+      $('syncKey').value = r.key; $('syncBox').classList.remove('hidden'); $('syncKey').select();
+      loadSync();
+    }).catch(function (e) { status(errText(e), 'err'); });
+  };
+  $('syncCopy').onclick = function () {
+    var v = $('syncKey').value; if (!v) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { $('syncCopy').textContent = 'Copied ✓'; },
+      function () { $('syncKey').select(); document.execCommand('copy'); $('syncCopy').textContent = 'Copied ✓'; });
+  };
+  $('syncOff').onclick = function () {
+    if (!window.confirm('Stop live sync? The Tampermonkey script will no longer be able to send data until a new key is made.')) return;
+    SB.rpc('iay_sync_key_revoke', {}).then(function () { $('syncBox').classList.add('hidden'); $('syncKey').value = ''; loadSync(); })
+      .catch(function (e) { status(errText(e), 'err'); });
+  };
 
   // ---------- drill-down list ----------
   var MR_KINDS = ['fill_overdue', 'fill_on', 'wl_pending'];

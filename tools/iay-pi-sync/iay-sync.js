@@ -129,7 +129,8 @@ const nfi = n => Number(n || 0).toLocaleString('en-IN');
 const istNow = () => { const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()); const g = t => (p.find(x => x.type === t) || {}).value; return { date: `${g('year')}-${g('month')}-${g('day')}`, hm: `${g('hour')}:${g('minute')}` }; };
 const fmtT = ts => ts ? new Date(ts).toLocaleString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
 async function sendDigest() {
-  const r = await nodeFetch(TRK_URL.replace('iay_sync_gp', 'iay_sync_digest'), { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: TRK_PUB }, body: JSON.stringify({ p_key: CFG.key }) });
+  const why = (where, e) => new Error(where + ': ' + (e.cause ? (e.cause.code || '') + ' ' + (e.cause.message || '') : e.message).trim());
+  const r = await nodeFetch(TRK_URL.replace('iay_sync_gp', 'iay_sync_digest'), { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: TRK_PUB }, body: JSON.stringify({ p_key: CFG.key }) }).catch(e => { throw why('Tracker', e); });
   const d = await r.json().catch(() => null);
   if (!r.ok || !d) throw new Error((d && d.message) || 'digest HTTP ' + r.status);
   const t = d.total || {}, today = String(d.today || '').split('-').reverse().join('/');
@@ -147,7 +148,7 @@ async function sendDigest() {
   const body = { topic: CFG.ntfyTopic, title: `PBAY MR Summary — ${today}`, message: msg, tags: ['clipboard'], priority: 3 };
   if (CFG.publicUrl) { body.click = CFG.publicUrl; body.actions = [{ action: 'view', label: 'Report খুলুন', url: CFG.publicUrl }]; }
   const h = { 'Content-Type': 'application/json' }; if (CFG.ntfyToken) h.Authorization = 'Bearer ' + CFG.ntfyToken;
-  const n = await nodeFetch(CFG.ntfyUrl, { method: 'POST', headers: h, body: JSON.stringify(body) });
+  const n = await nodeFetch(CFG.ntfyUrl, { method: 'POST', headers: h, body: JSON.stringify(body) }).catch(e => { throw why('ntfy (' + CFG.ntfyUrl + ')', e); });
   if (!n.ok) throw new Error('ntfy HTTP ' + n.status + ' ' + (await n.text()).slice(0, 120));
   log(`🔔 Morning summary sent to ntfy topic “${CFG.ntfyTopic}”`);
 }

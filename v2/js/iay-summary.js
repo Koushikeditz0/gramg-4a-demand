@@ -49,12 +49,13 @@
       fut.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x]; var n = c ? c.total : 0; o.fut.push(n); o.up += n; });
       return o;
     });
-    // zone: today's MRs are not counted until the day is over
+    // zone: red = MRs from earlier days pending (>10%, or any from before the chosen days);
+    //       yellow = a little earlier pending (<=10%) or only TODAY's MRs still to fill; green = nothing pending
     var zones = { red: 0, yellow: 0, green: 0 };
     rows.forEach(function (o) {
-      var ended = o.older, pend = o.older;
-      past.forEach(function (x, i) { if (x < t) { ended += o.past[i].t; pend += o.past[i].p; } });
-      o.zone = pend === 0 ? 'green' : (o.older > 0 || pend / Math.max(ended, 1) > 0.10) ? 'red' : 'yellow';
+      var ended = o.older, pend = o.older, todayPend = 0;
+      past.forEach(function (x, i) { if (x < t) { ended += o.past[i].t; pend += o.past[i].p; } else if (x === t) todayPend += o.past[i].p; });
+      o.zone = pend === 0 ? (todayPend ? 'yellow' : 'green') : (o.older > 0 || pend / Math.max(ended, 1) > 0.10) ? 'red' : 'yellow';
       zones[o.zone]++;
     });
     var tot = { jc: prefix || null, name: rows.length > 1 ? 'BLOCK TOTAL' : 'TOTAL', older: 0, wl: 0, past: past.map(function () { return { t: 0, f: 0, p: 0 }; }), fut: fut.map(function () { return 0; }), up: 0, pend: 0 };

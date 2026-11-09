@@ -192,7 +192,20 @@
     return SB.rpc('iay_mr_summary', { p_past: +$('sumPast').value, p_ahead: +$('sumAhead').value }, { retry: true, timeout: 60000 })
       .then(function (r) { sumData = r; renderSummary(); }, function (e) { status(errText(e), 'err'); });
   }
-  function renderSummary() { if (sumData) IS.renderTable($('sumTable'), IS.model(sumData, selPrefix())); }
+  function renderSummary() { if (sumData) IS.renderTable($('sumTable'), IS.model(sumData, selPrefix()), { onPick: pickPending, legendEl: $('sumLegend') }); }
+  var pend = { rows: [], title: '' };
+  function pickPending(kind, jc, date, title) {
+    $('sumList').classList.remove('hidden'); $('sumListTitle').textContent = title + ' — loading…'; $('sumListTbl').innerHTML = ''; $('sumListNote').textContent = '';
+    SB.rpc('iay_pending_list', { p_jc_prefix: jc, p_kind: kind, p_date: date, p_past: +$('sumPast').value }, { retry: true, timeout: 90000 }).then(function (rows) {
+      pend = { rows: rows || [], title: title };
+      $('sumListTitle').textContent = title + ' (' + nf(pend.rows.length) + ')';
+      $('sumListNote').textContent = pend.rows.length > 500 ? 'Showing the first 500 here; the Excel has all ' + nf(pend.rows.length) + '.' : '';
+      IS.renderList($('sumListTbl'), pend.rows, 500);
+      $('sumList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }).catch(function (e) { $('sumListTitle').textContent = title; status(errText(e), 'err'); });
+  }
+  $('sumListClose').onclick = function () { $('sumList').classList.add('hidden'); };
+  $('sumListXlsx').onclick = function () { if (pend.rows.length) IS.exportList(pend.rows, pend.title, 'IAY_' + pend.title.replace(/[^A-Za-z0-9-]+/g, '_')).catch(function (e) { status(e.message, 'err'); }); };
   $('sumPast').onchange = $('sumAhead').onchange = function () { loadSummary(); };
   $('sumXlsx').onclick = function () {
     if (!sumData || !sumData.gps.length) return;

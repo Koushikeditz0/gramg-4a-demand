@@ -30,7 +30,7 @@
   function render() {
     if (!data) return;
     var m = IS.model(data, $('gp').value || null);
-    IS.renderTable($('tbl'), m);
+    IS.renderTable($('tbl'), m, { onPick: openList, legendEl: $('legend') });
     $('sub').textContent = 'Today ' + m.t.split('-').reverse().join('/') + ' · page refreshed ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     // Last update = when the newest portal data reached the tracker; warn if some GPs are older
     var lb = $('lastBox'), f = IS.fresh(m.newest);
@@ -39,6 +39,26 @@
       (m.oldest && m.oldest !== m.newest && IS.fresh(m.oldest) !== 'ok' ? ' · some GPs older: ' + IS.when(m.oldest) : '') +
       (f === 'old' ? ' — data may be out of date' : '');
   }
+  // pending list behind a number
+  var list = { rows: [], title: '' };
+  function rpc(fn, args) {
+    return fetch(CFG.SUPABASE_URL + '/rest/v1/rpc/' + fn, { method: 'POST', cache: 'no-store',
+      headers: { apikey: CFG.SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(args)
+    }).then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { if (!r.ok) throw new Error(j && /BAD_LINK/.test(j.message || '') ? 'This link has been stopped.' : 'Could not load the list (' + r.status + ').'); return j; }); });
+  }
+  function openList(kind, jc, date, title) {
+    $('listCard').classList.remove('hidden'); $('listTitle').textContent = title + ' — loading…'; $('listTbl').innerHTML = ''; $('listNote').textContent = '';
+    $('listCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    rpc('iay_public_list', { p_token: token, p_jc_prefix: jc, p_kind: kind, p_date: date, p_past: +$('past').value }).then(function (rows) {
+      list = { rows: rows || [], title: title };
+      $('listTitle').textContent = title + ' (' + list.rows.length.toLocaleString('en-IN') + ')';
+      $('listNote').textContent = list.rows.length > 500 ? 'Showing the first 500 here; the Excel has all ' + list.rows.length.toLocaleString('en-IN') + '.' : '';
+      IS.renderList($('listTbl'), list.rows, 500);
+    }).catch(function (e) { $('listTitle').textContent = title; $('listNote').textContent = e.message; });
+  }
+  $('listClose').onclick = function () { $('listCard').classList.add('hidden'); };
+  $('listXlsx').onclick = function () { if (list.rows.length) IS.exportList(list.rows, list.title, 'IAY_' + list.title.replace(/[^A-Za-z0-9-]+/g, '_')).catch(function (e) { fail(e.message); }); };
+
   $('gp').onchange = function () { try { localStorage.setItem(GPK, $('gp').value); } catch (e) {} render(); };
   $('past').onchange = $('ahead').onchange = $('refresh').onclick = load;
   $('xlsx').onclick = function () {

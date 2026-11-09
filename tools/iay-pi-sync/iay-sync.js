@@ -31,7 +31,8 @@ const CFG = {
   ntfyUrl: env('NTFY_URL').replace(/\/+$/, ''),          // e.g. http://192.168.0.10:2586  (empty = off)
   ntfyTopic: env('NTFY_TOPIC', 'iay-report'),
   ntfyToken: env('NTFY_TOKEN'),
-  digestAt: env('DIGEST_TIME', '09:00'),                  // India time, HH:MM
+  digestAt: env('DIGEST_TIME', '09:00'),
+  digestGp: env('DIGEST_GP').toUpperCase(),                // e.g. PETLA = message only for this GP; empty = whole block                  // India time, HH:MM
   publicUrl: env('PUBLIC_URL'),                           // the public report link (opens when the message is tapped)
   digestNow: process.argv.includes('--digest-now')
 };
@@ -133,9 +134,14 @@ async function sendDigest() {
   const r = await nodeFetch(TRK_URL.replace('iay_sync_gp', 'iay_sync_digest'), { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: TRK_PUB }, body: JSON.stringify({ p_key: CFG.key }) }).catch(e => { throw why('Tracker', e); });
   const d = await r.json().catch(() => null);
   if (!r.ok || !d) throw new Error((d && d.message) || 'digest HTTP ' + r.status);
-  const t = d.total || {}, today = String(d.today || '').split('-').reverse().join('/');
-  const top = (d.gps || []).filter(g => g.overdue + g.today > 0).slice(0, 4).map(g => `${g.gp} ${nfi(g.overdue + g.today)}`).join(' · ');
-  const old = d.oldest_update && Date.now() - new Date(d.oldest_update).getTime() > 6 * 36e5;
+  const today = String(d.today || '').split('-').reverse().join('/');
+  let t = d.total || {}, top = '', last = d.last_update, oldest = d.oldest_update, name = '';
+  if (CFG.digestGp) {                                    // only my GP
+    const g = (d.gps || []).find(x => String(x.gp).toUpperCase() === CFG.digestGp);
+    if (!g) throw new Error('DIGEST_GP “' + CFG.digestGp + '” not found in the Tracker data');
+    t = g; last = oldest = g.last_update; name = g.gp + ' — ';
+  } else top = (d.gps || []).filter(g => g.overdue + g.today > 0).slice(0, 4).map(g => `${g.gp} ${nfi(g.overdue + g.today)}`).join(' · ');
+  const old = oldest && Date.now() - new Date(oldest).getTime() > 6 * 36e5;
   const msg = [
     `🔴 আগের pending (fill বাকি): ${nfi(t.overdue)}`,
     `🟠 আজ MR শেষ — আজ fill: ${nfi(t.today)}`,
@@ -143,9 +149,9 @@ async function sendDigest() {
     `🟡 Wagelist বাকি: ${nfi(t.wl)}`,
     `➕ ৫ দিনের মধ্যে পরের MR লাগবে: ${nfi(t.next_mr)}`,
     top ? `\nবেশি pending: ${top}` : '',
-    `\nLast update: ${fmtT(d.last_update)}${old ? ' ⚠ কিছু GP-র data পুরোনো (' + fmtT(d.oldest_update) + ')' : ''}`
+    `\nLast update: ${fmtT(last)}${old ? (CFG.digestGp ? ' ⚠ data পুরোনো' : ' ⚠ কিছু GP-র data পুরোনো (' + fmtT(oldest) + ')') : ''}`
   ].filter(Boolean).join('\n');
-  const body = { topic: CFG.ntfyTopic, title: `PBAY MR Summary — ${today}`, message: msg, tags: ['clipboard'], priority: 3 };
+  const body = { topic: CFG.ntfyTopic, title: `${name}PBAY MR Summary — ${today}`, message: msg, tags: ['clipboard'], priority: 3 };
   if (CFG.publicUrl) { body.click = CFG.publicUrl; body.actions = [{ action: 'view', label: 'Report খুলুন', url: CFG.publicUrl }]; }
   const h = { 'Content-Type': 'application/json' }; if (CFG.ntfyToken) h.Authorization = 'Bearer ' + CFG.ntfyToken;
   const n = await nodeFetch(CFG.ntfyUrl, { method: 'POST', headers: h, body: JSON.stringify(body) }).catch(e => { throw why('ntfy (' + CFG.ntfyUrl + ')', e); });

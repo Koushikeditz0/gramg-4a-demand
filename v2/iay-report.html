@@ -27,7 +27,7 @@
     .last.ok{background:#dcfce7;color:#166534;border-color:#bbf7d0;} .last.warn{background:#fef3c7;color:#92400e;border-color:#fde68a;} .last.old{background:#fee2e2;color:#991b1b;border-color:#fecaca;}
     .hidden{display:none;}
     td.u{white-space:nowrap;font-size:11.5px;} td.u.ok{color:#166534;} td.u.warn{color:#92400e;background:#fef3c7;} td.u.old{color:#991b1b;background:#fee2e2;}
-    td a.c{color:#1d4ed8;font-weight:700;text-decoration:underline;}
+    td a.c{color:#1d4ed8;font-weight:700;text-decoration:underline;} td .pct{font-size:11px;color:#991b1b;}
     td.g.z-red{background:#fecaca;} td.g.z-yellow{background:#fef9c3;} td.g.z-green{background:#dcfce7;}
     table.list th{background:#e2e8f0;color:#172033;border:1px solid #e2e8f0;position:sticky;top:0;} table.list td{text-align:left;white-space:nowrap;}
     .mono{font-family:Consolas,monospace;font-size:12px;}
@@ -57,7 +57,7 @@
   <div class="card">
     <div id="legend" style="font-size:13px;font-weight:700;margin-bottom:6px"></div>
     <div class="table-wrap"><table id="tbl"></table></div>
-    <div class="muted" style="margin-top:6px">🟢 nothing pending · 🟡 only today's MRs to fill, or up to 10% of earlier ended MRs pending · 🔴 more than 10% of earlier ended MRs pending, or MRs from before the chosen days still pending. Tap a pending number to see its MR list.</div>
+    <div class="muted" style="margin-top:6px">Zone by Total pending: 🟢 nothing pending · 🟡 up to 10% of the MRs pending · 🔴 more than 10% pending. Tap a pending number to see its MR list.</div>
   </div>
   <div class="card hidden" id="listCard">
     <div class="row" style="justify-content:space-between;margin-bottom:6px">
@@ -70,7 +70,7 @@
   <div class="muted" style="text-align:center;margin:10px 0 20px">G RAM-G 4A · IAY Tracker · Developed &amp; Maintained by Koushik Sarkar (VLE)</div>
 </div>
 <script src="./js/config.js?v=20261106b"></script>
-<script src="./js/iay-summary.js?v=20261109e"></script>
+<script src="./js/iay-summary.js?v=20261109f"></script>
 <script src="./js/iay-report.js?v=20261109c"></script>
 </body>
 </html>

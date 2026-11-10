@@ -155,7 +155,8 @@
   document.querySelectorAll('.tab').forEach(function (b) {
     b.addEventListener('click', function () {
       document.querySelectorAll('.tab').forEach(function (x) { x.classList.toggle('active', x === b); });
-      ['dash', 'photos', 'import', 'history', 'users'].forEach(function (t) { $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab); });
+      ['dash', 'iay', 'photos', 'import', 'history', 'users'].forEach(function (t) { $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab); });
+      if (b.dataset.tab === 'iay' && window.IayDash) window.IayDash.show();
       if (b.dataset.tab === 'photos') loadPhotos(true);
       if (b.dataset.tab === 'dash') loadDashboard();
       if (b.dataset.tab === 'history') loadHistory();

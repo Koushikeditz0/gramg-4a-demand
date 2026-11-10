@@ -8,7 +8,7 @@
   'use strict';
   var SB = window.GramgSB;
   var $ = function (id) { return document.getElementById(id); };
-  var RATE_KEY = 'gramg2.iayRate', GP_KEY = 'gramg2.iayDashGp';
+  var RATE_KEY = 'gramg2.iayRate', GP_KEY = 'gramg2.iayDashGp', BRK_KEY = 'gramg2.iayBrkOpen';
   var ctx = { gps: [], fixed: null, role: null }, last = null, busy = false;
 
   function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
@@ -18,9 +18,17 @@
   function rate() { try { var v = parseFloat(localStorage.getItem(RATE_KEY)); return v > 0 ? v : 0; } catch (e) { return 0; } }
   function prefixOf(id) { var g = ctx.gps.filter(function (x) { return x.id === id; })[0]; return g ? g.jc_prefix : null; }
 
+  function visible() { var t = $('tab-iay'); return !!t && !t.classList.contains('hidden'); }
+  // admin.js: called whenever the view (GP Admin view / GP list) changes; fetches only while the IAY tab is open
   function load(o) {
-    if (o) { ctx.gps = o.gps || []; ctx.fixed = o.fixedGpId || null; ctx.role = o.role; }
+    if (o) { ctx.gps = o.gps || []; ctx.fixed = o.fixedGpId || null; ctx.role = o.role; ctx.dirty = true; }
+    if (!visible()) return Promise.resolve();
+    return show();
+  }
+  function show() {
     var card = $('iayDash'); if (!card) return Promise.resolve();
+    if (!ctx.dirty && last) return Promise.resolve();
+    ctx.dirty = false;
     var sel = $('idGp');
     // GP picker: GP Admin / GP Admin view = fixed; Super Admin = block or any GP
     sel.innerHTML = '';
@@ -30,8 +38,9 @@
     sel.value = ctx.fixed ? prefixOf(ctx.fixed) || '' : ([].some.call(sel.options, function (x) { return x.value === keep; }) ? keep : '');
     sel.disabled = !!ctx.fixed;
     $('idRate').value = rate() || '';
-    return fetch();
+    return refresh();
   }
+  function refresh() { return Promise.all([fetch(), loadWorks()]); }
   function fetch() {
     if (busy) return Promise.resolve(); busy = true;
     $('idLine').textContent = 'Loading…';
@@ -116,7 +125,7 @@
     (d.breakdown || []).forEach(function (b) {
       var tr = el('tr');
       var nm = el('td', b.name === '—' ? 'No village (approved, no MR yet)' : b.name, 'g');
-      if (b.jc) { nm.style.cursor = 'pointer'; nm.style.color = '#1d4ed8'; nm.title = 'Open this GP'; nm.onclick = function () { $('idGp').value = b.jc; save(); fetch(); }; }
+      if (b.jc) { nm.style.cursor = 'pointer'; nm.style.color = '#1d4ed8'; nm.title = 'Open this GP'; nm.onclick = function () { $('idGp').value = b.jc; save(); refresh(); }; }
       tr.appendChild(nm);
       [b.works, b.avg_mrs, b.pend, b.gap, b.wl_wait, b.wl_done, b.done6].forEach(function (v, i) {
         var td = el('td', i === 1 ? String(v) : nf(v), 'n');
@@ -127,12 +136,161 @@
     });
     if (!(d.breakdown || []).length) { var t0 = el('tr'), c0 = el('td', 'No IAY data yet — upload / sync the Phase Report in the IAY Tracker.'); c0.colSpan = 8; t0.appendChild(c0); tb.appendChild(t0); }
   }
+
+  /* ---------------------- All IAY works (SQL v201 iay_works_full) ---------------------- */
+  var wv = { rows: [], prefix: null, page: 0, shown: [] }, PAGE = 100;
+  var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  function dm(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] : ''; }
+  function dmy(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
+  var DONE = { 'Filled': 1, 'WL Generated': 1, 'Zero': 1 };
+  function phCls(x, today) {
+    if (x.s === 'WL Generated') return 'wl';
+    if (DONE[x.s]) return 'ok';
+    if (x.t && x.t <= today) return 'due';
+    if (x.s === 'Not Started' || (x.f && x.f > today)) return 'fut';
+    return 'run';
+  }
+  function phases(r) {   // phase number → MR (by seq; else by order)
+    var out = [];
+    (r.mrs || []).forEach(function (x, i) { var q = +x.q || i + 1; if (q >= 1 && q <= 6 && !out[q - 1]) out[q - 1] = x; });
+    return out;
+  }
+  function flags(r, today) {
+    var f = { pend: 0, run: 0, wlw: 0, wl: 0 };
+    (r.mrs || []).forEach(function (x) {
+      if (x.s === 'WL Generated') f.wl = 1; else if (x.s === 'Filled') f.wlw = 1;
+      else if (!DONE[x.s] && x.t && x.t <= today) f.pend = 1;
+      else if (x.s === 'Running') f.run = 1;
+    });
+    return f;
+  }
+  function loadWorks(force) {
+    var p = $('idGp').value || null, body = $('iwBody');
+    if (!p) {
+      wv.rows = []; wv.prefix = null; body.innerHTML = '';
+      $('iwInfo').textContent = 'Pick one GP above to see every work (the whole block is too large for one table).';
+      $('iwPager').classList.add('hidden'); return Promise.resolve();
+    }
+    if (!force && wv.prefix === p && wv.rows.length) { drawWorks(); return Promise.resolve(); }
+    $('iwInfo').textContent = 'Loading all works…'; body.innerHTML = '';
+    return SB.rpc('iay_works_full', { p_jc_prefix: p }, { retry: true, timeout: 90000 }).then(function (rows) {
+      wv.rows = rows || []; wv.prefix = p; wv.page = 0;
+      var vs = {}, sel = $('iwVill'), keep = sel.value; wv.rows.forEach(function (r) { vs[r.vill] = 1; });
+      sel.innerHTML = '<option value="">All villages</option>';
+      Object.keys(vs).sort().forEach(function (v) { var o = el('option', v === '—' ? 'No village (approved)' : v); o.value = v; sel.appendChild(o); });
+      if (vs[keep]) sel.value = keep;
+      drawWorks();
+    }).catch(function (e) {
+      $('iwInfo').textContent = /iay_works_full|PGRST202/.test((e.code || '') + (e.message || '')) ? 'Works table is not installed on the server yet (SQL v201).' : 'Could not load: ' + (e.message || e.code);
+    });
+  }
+  function filtered() {
+    var today = (last && last.today) || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    var q = String($('iwQ').value || '').trim().toLowerCase(), v = $('iwVill').value, st = $('iwSt').value;
+    return wv.rows.filter(function (r) {
+      if (v && r.vill !== v) return false;
+      if (st) {
+        var f = flags(r, today);
+        if (st === 'pend' && !f.pend) return false;
+        if (st === 'run' && !f.run) return false;
+        if (st === 'wlw' && !f.wlw) return false;
+        if (st === 'wl' && !f.wl) return false;
+        if (st === 'gap' && !(r.next && r.next <= today && r.left > 0)) return false;
+        if (st === 'nomr' && (r.mrs || []).length) return false;
+        if (st === 'done6' && !(r.n >= 6)) return false;
+        if (st === 'nomb' && r.mb) return false;
+      }
+      if (q) {
+        var hay = [r.jcn, r.name, r.wc, r.reg].join(' ').toLowerCase();
+        if (hay.indexOf(q) < 0 && !(r.mrs || []).some(function (x) { return String(x.no) === q; })) return false;
+      }
+      return true;
+    });
+  }
+  function drawWorks() {
+    var today = (last && last.today) || '', list = filtered(), body = $('iwBody');
+    wv.shown = list;
+    var pages = Math.max(1, Math.ceil(list.length / PAGE)); if (wv.page >= pages) wv.page = pages - 1;
+    var part = list.slice(wv.page * PAGE, wv.page * PAGE + PAGE);
+    $('iwInfo').textContent = nf(list.length) + ' of ' + nf(wv.rows.length) + ' works' + (list.length > PAGE ? ' · showing ' + nf(wv.page * PAGE + 1) + '–' + nf(wv.page * PAGE + part.length) : '');
+    $('iwPager').classList.toggle('hidden', pages < 2);
+    $('iwPage').textContent = 'Page ' + (wv.page + 1) + ' / ' + pages;
+    $('iwPrev').disabled = wv.page === 0; $('iwNext').disabled = wv.page >= pages - 1;
+    body.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    part.forEach(function (r, i) {
+      var tr = el('tr');
+      tr.appendChild(el('td', String(wv.page * PAGE + i + 1), 'n'));
+      var c = el('td'); c.appendChild(el('div', r.jcn || '', 'jc')); c.appendChild(el('div', r.name || '', 'nm')); tr.appendChild(c);
+      tr.appendChild(el('td', r.vill === '—' ? '' : r.vill));
+      var w = el('td'); w.appendChild(el('div', r.wc, 'jc')); w.appendChild(el('div', r.st || '', 'muted')); tr.appendChild(w);
+      tr.appendChild(el('td', r.mb ? r.mb + ' · p' + r.pg + '–' + (r.pg + 9) : (r.st === 'Ongoing' ? 'not yet' : '')));
+      tr.appendChild(el('td', String(r.n || 0) + '/6', 'n'));
+      var ph = phases(r);
+      for (var k = 0; k < 6; k++) {
+        var td = el('td'), x = ph[k];
+        if (!x) { td.appendChild(el('div', '—', 'ph none')); }
+        else {
+          var d = el('div', null, 'ph ' + phCls(x, today));
+          d.appendChild(el('b', 'MR ' + x.no));
+          d.appendChild(el('small', dm(x.f) + '–' + dm(x.t)));
+          d.appendChild(el('small', (x.s || '?') + (r.mb ? ' · p' + (r.pg + k) : '')));
+          td.appendChild(d);
+        }
+        tr.appendChild(td);
+      }
+      var wl = el('td');
+      if (r.wlno || r.wl) { wl.appendChild(el('div', r.wlno || '', 'jc')); wl.appendChild(el('small', [r.wl, dmy(r.wld)].filter(Boolean).join(' · '))); }
+      tr.appendChild(wl);
+      tr.appendChild(el('td', r.left > 0 ? dmy(r.next) : (r.n >= 6 ? '✅ done' : '')));
+      frag.appendChild(tr);
+    });
+    body.appendChild(frag);
+    if (!part.length) { var t0 = el('tr'), c0 = el('td', wv.rows.length ? 'Nothing matches.' : 'No works.'); c0.colSpan = 14; t0.appendChild(c0); body.appendChild(t0); }
+  }
+  function needXlsx() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise(function (res, rej) { var sc = document.createElement('script'); sc.src = XLSX_URL; sc.onload = res; sc.onerror = function () { rej(new Error('Excel library did not load')); }; document.head.appendChild(sc); });
+  }
+  function worksXlsx() {
+    var list = wv.shown || []; if (!list.length) return;
+    needXlsx().then(function () {
+      var H = ['#', 'Village', 'Job Card', 'Beneficiary', 'Reg No', 'Work Code', 'Work Status', 'MB No', 'MB Pages', 'MRs done'];
+      for (var k = 1; k <= 6; k++) H.push('P' + k + ' MR No', 'P' + k + ' From', 'P' + k + ' To', 'P' + k + ' Status', 'P' + k + ' MB Page');
+      H.push('Wagelist', 'WageList No', 'WL Date', 'Next MR from');
+      var aoa = [H];
+      list.forEach(function (r, i) {
+        var row = [i + 1, r.vill === '—' ? '' : r.vill, r.jcn, r.name, r.reg, r.wc, r.st, r.mb || '', r.mb ? r.pg + '–' + (r.pg + 9) : '', r.n || 0];
+        var ph = phases(r);
+        for (var k = 0; k < 6; k++) { var x = ph[k]; row.push(x ? x.no : '', x ? dmy(x.f) : '', x ? dmy(x.t) : '', x ? x.s || '' : '', x && r.mb ? r.pg + k : ''); }
+        row.push(r.wl || '', r.wlno || '', dmy(r.wld), r.left > 0 ? dmy(r.next) : '');
+        aoa.push(row);
+      });
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = H.map(function (h) { return { wch: /Work Code|Job Card|Beneficiary|WageList No/.test(h) ? 24 : /Status/.test(h) ? 12 : 10 }; });
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: H.length - 1 } }) };
+      ws['!freeze'] = { xSplit: 4, ySplit: 1 };
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'IAY works');
+      var g = $('idGp').selectedOptions[0];
+      XLSX.writeFile(wb, 'IAY_All_Works_' + String(g ? g.textContent : 'GP').replace(/[^A-Za-z0-9]+/g, '_') + '_' + ((last && last.today) || 'today') + '.xlsx');
+    }).catch(function (e) { $('iwInfo').textContent = e.message; });
+  }
   function save() { try { if (!ctx.fixed) localStorage.setItem(GP_KEY, $('idGp').value); } catch (e) {} }
 
   document.addEventListener('DOMContentLoaded', function () {
     if (!$('iayDash')) return;
-    $('idGp').addEventListener('change', function () { save(); fetch(); });
-    $('idRefresh').addEventListener('click', function () { fetch(); });
+    $('idGp').addEventListener('change', function () { save(); refresh(); });
+    $('idRefresh').addEventListener('click', function () { refresh(); });
+    try { if (localStorage.getItem(BRK_KEY) === '0') $('idBrkBox').open = false; } catch (e) {}
+    $('idBrkBox').addEventListener('toggle', function () { try { localStorage.setItem(BRK_KEY, this.open ? '1' : '0'); } catch (e) {} });
+    $('iwReload').addEventListener('click', function () { loadWorks(true); });
+    $('iwXlsx').addEventListener('click', worksXlsx);
+    var qt = null;
+    $('iwQ').addEventListener('input', function () { clearTimeout(qt); qt = setTimeout(function () { wv.page = 0; drawWorks(); }, 250); });
+    $('iwVill').addEventListener('change', function () { wv.page = 0; drawWorks(); });
+    $('iwSt').addEventListener('change', function () { wv.page = 0; drawWorks(); });
+    $('iwPrev').addEventListener('click', function () { if (wv.page > 0) { wv.page--; drawWorks(); } });
+    $('iwNext').addEventListener('click', function () { wv.page++; drawWorks(); });
     $('idRate').addEventListener('change', function () {
       var v = parseFloat(this.value); try { if (v > 0) localStorage.setItem(RATE_KEY, String(v)); else localStorage.removeItem(RATE_KEY); } catch (e) {}
       render();
@@ -142,5 +300,5 @@
       try { if (!ctx.fixed) localStorage.setItem('gramg2.iay.gp', $('idGp').value); } catch (e) {}
     });
   });
-  window.IayDash = { load: load };
+  window.IayDash = { load: load, show: show };
 })();

@@ -23,6 +23,7 @@
   }
   function fresh(ts) { if (!ts) return 'old'; var h = (Date.now() - new Date(ts).getTime()) / 36e5; return h <= 2 ? 'ok' : h <= 6 ? 'warn' : 'old'; }
   function hm(ts) { if (!ts) return '—'; var d = new Date(ts); return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ', ' + d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }); }
+  function hhmm(ts) { if (!ts) return ''; return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
   function safeName(s) { return String(s || '').replace(/[\\\/?*\[\]:]/g, '').slice(0, 31) || 'Sheet1'; }
 
   var loadingXlsx = null;
@@ -47,6 +48,8 @@
       var o = { jc: g.jc_prefix, name: g.gp_name, at: g.report_at, older: g.older || 0, wl: g.wl || 0, past: [], fut: [], up: 0, pend: g.older || 0 };
       past.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x] || { total: 0, filled: 0 }; o.past.push({ t: c.total, f: c.filled, p: c.total - c.filled }); o.pend += c.total - c.filled; });
       fut.forEach(function (x) { var c = cell[g.jc_prefix + '|' + x]; var n = c ? c.total : 0; o.fut.push(n); o.up += n; });
+      // change since the newest sync at least ~1 hour old (SQL v202); negative = pending went down
+      if (g.pend_prev != null) { o.delta = o.pend - g.pend_prev; o.prevAt = g.prev_at; }
       return o;
     });
     // zone on TOTAL pending (earlier + chosen days incl. today) out of all those MRs:
@@ -62,6 +65,7 @@
     rows.forEach(function (o) {
       o.past.forEach(function (c, i) { tot.past[i].t += c.t; tot.past[i].f += c.f; tot.past[i].p += c.p; });
       o.fut.forEach(function (n, i) { tot.fut[i] += n; }); tot.up += o.up; tot.pend += o.pend; tot.older += o.older; tot.wl += o.wl;
+      if (o.delta != null) { tot.delta = (tot.delta || 0) + o.delta; if (!tot.prevAt || o.prevAt < tot.prevAt) tot.prevAt = o.prevAt; }
     });
     var label = function (x) { return dShort(x) + ' (' + (x === t ? 'Today' : x === addDays(t, -1) ? 'Yesterday' : WD[new Date(x + 'T00:00:00').getDay()]) + ')'; };
     var reps = gps.map(function (g) { return g.report_at; }).filter(Boolean).sort();
@@ -98,10 +102,20 @@
       if (m.fut.length) { o.fut.forEach(function (n) { tr.appendChild(el('td', nf(n))); }); tr.appendChild(el('td', nf(o.up))); }
       var tpd = pick(el('td', nf(o.pend), 'p'), o.pend, 'all', o, null, 'all pending MRs');
       if (o.zone && o.pend) tpd.appendChild(el('span', ' (' + o.pct + '%)', 'pct'));
+      if (o.delta != null) {
+        var dl = el('div', (o.delta < 0 ? '▼' + nf(-o.delta) : o.delta > 0 ? '▲' + nf(o.delta) : '±0') + ' since ' + hhmm(o.prevAt), 'dl ' + (o.delta < 0 ? 'down' : o.delta > 0 ? 'up' : 'same'));
+        dl.title = 'Total pending then: ' + nf(o.pend - o.delta) + ' (' + when(o.prevAt) + '), now: ' + nf(o.pend) +
+          (o.delta > 0 ? '. It can go up when new MRs end (e.g. after midnight) or when MRs are not filled.' : '');
+        tpd.appendChild(dl);
+      }
       tr.appendChild(tpd);
       tr.appendChild(pick(el('td', nf(o.wl), 'w'), o.wl, 'wl', o, null, 'filled, wagelist pending'));
-      var u = o === m.tot ? el('td', '') : el('td', hm(o.at), 'u ' + fresh(o.at));
-      if (o !== m.tot) u.title = ago(o.at);
+      var u;
+      if (o === m.tot) {   // block total: newest data in, and how long ago; the oldest GP in the tooltip
+        u = el('td', m.newest ? hm(m.newest) : '—', 'u ' + fresh(m.newest));
+        if (m.newest) u.appendChild(el('div', ago(m.newest), 'ago'));
+        u.title = 'Newest data: ' + when(m.newest) + (m.rows.length > 1 ? ' · oldest GP: ' + when(m.oldest) : '');
+      } else { u = el('td', hm(o.at), 'u ' + fresh(o.at)); u.title = ago(o.at); }
       tr.appendChild(u);
       body.appendChild(tr);
     });

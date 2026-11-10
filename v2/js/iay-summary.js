@@ -101,7 +101,7 @@
       o.past.forEach(function (c, i) { var d = m.past[i]; tr.appendChild(el('td', nf(c.t))); tr.appendChild(el('td', nf(c.f), 'f')); tr.appendChild(pick(el('td', nf(c.p), 'p'), c.p, 'day', o, d, 'pending MRs that ended ' + dShort(d))); });
       if (m.fut.length) { o.fut.forEach(function (n) { tr.appendChild(el('td', nf(n))); }); tr.appendChild(el('td', nf(o.up))); }
       var tpd = pick(el('td', nf(o.pend), 'p'), o.pend, 'all', o, null, 'all pending MRs');
-      if (o.zone && o.pend) tpd.appendChild(el('span', ' (' + o.pct + '%)', 'pct'));
+      if (o.zone && o.pend) tpd.title = o.pct + '% of these MRs are pending (zone)';   // % only on hover
       if (o.delta != null) {
         var dl = el('div', (o.delta < 0 ? '▼' + nf(-o.delta) : o.delta > 0 ? '▲' + nf(o.delta) : '±0') + ' since ' + hhmm(o.prevAt), 'dl ' + (o.delta < 0 ? 'down' : o.delta > 0 ? 'up' : 'same'));
         dl.title = 'Total pending then: ' + nf(o.pend - o.delta) + ' (' + when(o.prevAt) + '), now: ' + nf(o.pend) +

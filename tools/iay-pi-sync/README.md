@@ -46,7 +46,7 @@ docker logs -f iay-pi-sync      # log দেখা (Ctrl+C চাপলে শ�
 |---|---|
 | `SYNC_KEY` | Tracker-এর sync key (দরকারি) |
 | `INTERVAL_MIN` | কত মিনিট পরপর চলবে (কমপক্ষে 15; default 60) |
-| `ACTIVE_HOURS` | ভারতীয় সময়ে কোন ঘণ্টাগুলোতে চলবে, যেমন `6-23` (রাতে বন্ধ থাকে) |
+| `ACTIVE_HOURS` | ভারতীয় সময়ে কোন ঘণ্টাগুলোতে চলবে, যেমন `6-23`; মাঝরাত পেরোলে `6-0` (সকাল ৬টা থেকে রাত ১টা পর্যন্ত) |
 | `GPS` | খালি রাখলে পুরো block; নির্দিষ্ট GP চাইলে `PETLA,OKRABARI` |
 | `R42_URL`, `R44_URL`, `R612_URL` | Report-এর link; খালি রাখলে script-এর DINHATA-I link ব্যবহার হয় |
 | `EMP_URLS` | ঐচ্ছিক: GP-wise "Employment Provided" report-এর link (beneficiary-র নামের জন্য), যেমন `{"PETLA":"https://…"}`। না দিলে Tracker-এ আগে থেকে থাকা নাম রেখে দেওয়া হয় |

@@ -203,7 +203,8 @@ async function runOnce() {
 function inHours() {
   const m = CFG.hours.match(/^(\d{1,2})-(\d{1,2})$/); if (!m) return true;
   const h = +new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', hour12: false });
-  return h >= +m[1] && h <= +m[2];
+  const a = +m[1], b = +m[2];
+  return a <= b ? (h >= a && h <= b) : (h >= a || h <= b);   // e.g. 6-0 = 06:00 till 00:59 (past midnight)
 }
 async function loop() {
   if (!CFG.key && !CFG.dry) { log('❌ SYNC_KEY is missing. Put the key from IAY Tracker → “Tampermonkey live sync” in .env'); process.exit(1); }

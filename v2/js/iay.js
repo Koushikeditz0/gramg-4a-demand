@@ -56,7 +56,7 @@
       me.scope = all.scope || null;
       fillGpSelect(all.gps, p);
       ov = all;
-      render();
+      render(); loadJobs();
       loadSummary();
     });
   }
@@ -152,6 +152,7 @@
     $('listCard').classList.add('hidden');
     render();
     renderSummary();
+    loadJobs();
   }
   $('gpSel').addEventListener('change', onGp);
   $('refreshBtn').onclick = function () { loading('Refresh...'); loadSync(); load(false).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); }); };
@@ -197,13 +198,17 @@
   function pickPending(kind, jc, date, title) {
     $('sumList').classList.remove('hidden'); $('sumListTitle').textContent = title + ' — loading…'; $('sumListTbl').innerHTML = ''; $('sumListNote').textContent = '';
     SB.rpc('iay_pending_list', { p_jc_prefix: jc, p_kind: kind, p_date: date, p_past: +$('sumPast').value }, { retry: true, timeout: 90000 }).then(function (rows) {
-      pend = { rows: rows || [], title: title };
+      pend = { rows: rows || [], title: title, kind: kind, jc: jc, date: date, past: +$('sumPast').value };
+      var canJob = !!jc && kind !== 'wl' && pend.rows.length > 0;
+      $('sumJobAttend').classList.toggle('hidden', !canJob); $('sumJobPay').classList.toggle('hidden', !canJob);
       $('sumListTitle').textContent = title + ' (' + nf(pend.rows.length) + ')';
       $('sumListNote').textContent = pend.rows.length > 500 ? 'Showing the first 500 here; the Excel has all ' + nf(pend.rows.length) + '.' : '';
       IS.renderList($('sumListTbl'), pend.rows, 500);
       $('sumList').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (e) { $('sumListTitle').textContent = title; status(errText(e), 'err'); });
   }
+  $('sumJobAttend').onclick = function () { sendJob(pend.jc, 'attend', pend.kind, pend.date, pend.past, pend.title); };
+  $('sumJobPay').onclick = function () { sendJob(pend.jc, 'pay', pend.kind, pend.date, pend.past, pend.title); };
   $('sumListClose').onclick = function () { $('sumList').classList.add('hidden'); };
   $('sumListXlsx').onclick = function () { if (pend.rows.length) IS.exportList(pend.rows, pend.title, 'IAY_' + pend.title.replace(/[^A-Za-z0-9-]+/g, '_')).catch(function (e) { status(e.message, 'err'); }); };
   $('sumPast').onchange = $('sumAhead').onchange = function () { loadSummary(); };
@@ -283,11 +288,100 @@
         body.appendChild(tr);
       });
       if (!list.rows.length) { var tr0 = el('tr'), td0 = el('td', 'Nothing pending ✅'); td0.colSpan = c.length + 1; tr0.appendChild(td0); body.appendChild(tr0); }
+      var one = !!selPrefix() && list.rows.length > 0, dem = one && DEMAND_KINDS.indexOf(kind) >= 0, mr = one && (kind === 'fill_overdue' || kind === 'fill_on');
+      $('listJobDemand').classList.toggle('hidden', !dem);
+      $('listJobAttend').classList.toggle('hidden', !mr); $('listJobPay').classList.toggle('hidden', !mr);
       $('listCard').classList.remove('hidden');
       $('listCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); });
   }
   $('listClose').onclick = function () { $('listCard').classList.add('hidden'); };
+
+  // ---------- K-Desk jobs (SQL v199) ----------
+  var DEMAND_KINDS = ['mr_gap', 'mr_due5', 'mr_start_on', 'no_mr'];
+  var JOB_NAME = { demand: 'Demand + Allocation', attend: 'MR Attendance', pay: 'MR Payment' };
+  function mrSource(kind) { return kind === 'fill_on' ? ['day', 0] : ['older', 0]; }   // fill_overdue = ended before today
+  $('listJobDemand').onclick = function () {
+    var d = list.date;
+    if (list.kind === 'no_mr') {
+      var v = window.prompt('These works have no MR yet. Demand “From” date (DD/MM/YYYY):', dmy(ov.today));
+      if (!v) return; var m = v.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!m) { status('Date must be DD/MM/YYYY.', 'err'); return; }
+      d = m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+    }
+    sendJob(selPrefix(), 'demand', list.kind, d, 2, list.title);
+  };
+  $('listJobAttend').onclick = function () { var s = mrSource(list.kind); sendJob(selPrefix(), 'attend', s[0], list.date, s[1], list.title); };
+  $('listJobPay').onclick = function () { var s = mrSource(list.kind); sendJob(selPrefix(), 'pay', s[0], list.date, s[1], list.title); };
+  function gpName(jc) { var g = ((ov && ov.gps) || []).filter(function (x) { return x.jc_prefix === jc; })[0]; return g ? g.gp_name : jc; }
+  function sendJob(jc, kind, source, date, past, title) {
+    if (!jc) { status('Select one GP first — a K-Desk job is for one GP.', 'err'); return; }
+    var t = JOB_NAME[kind] + ' · ' + String(title || '').replace(/\s*\(\d[\d,]*\)\s*$/, '');
+    if (!window.confirm('Send this list to K-Desk as a “' + JOB_NAME[kind] + '” job for ' + gpName(jc) + '?\n\n' + t +
+        '\n\nNothing is done on the portal until you load the job in K-Desk on the PC and press Start.')) return;
+    loading('Making job...');
+    SB.rpc('iay_job_create', { p_jc_prefix: jc, p_kind: kind, p_source: source, p_date: date || null, p_past: past, p_title: t }, { timeout: 90000 }).then(function (r) {
+      if (!r.job_id) { status('Nothing to send — the list is empty' + (r.left_out ? ' (' + r.left_out + ' left out: ' + (kind === 'pay' ? 'no MB page' : 'Job Card / name / date missing') + ')' : '') + '.', 'err'); return; }
+      status('✅ Job #' + r.job_id + ' sent to K-Desk: ' + nf(r.total) + ' rows' + (r.left_out ? ' · ' + nf(r.left_out) + ' left out (' + (kind === 'pay' ? 'no MB page yet' : 'Job Card / name / date missing') + ')' : '') +
+             '.\nOn the PC: K-Desk → ' + JOB_NAME[kind] + ' panel → 📥 Admin job.', 'ok');
+      loadJobs(); $('jobCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }).catch(function (e) { status(errText(e), 'err'); }).then(function () { loading(''); });
+  }
+  var jobTimer = null;
+  function loadJobs() {
+    clearTimeout(jobTimer);
+    var p = selPrefix();
+    SB.rpc('iay_mb_status', { p_jc_prefix: p }, { retry: true }).then(function (m) {
+      $('mbLine').textContent = !p ? '' : (m && m.first_mb ? 'MB books: ' + m.first_mb + '–' + m.last_mb + ' · ' + nf(m.slots) + ' works have pages · last MB used ' + (m.last_used || '—') +
+        (m.waiting ? ' · ' + nf(m.waiting) + ' Ongoing works get pages at the next payment job' : '') : 'MB books not set for this GP — payment jobs need them.');
+    }).catch(function () { $('mbLine').textContent = ''; });
+    return SB.rpc('iay_jobs_list', { p_jc_prefix: p }, { retry: true }).then(function (jobs) {
+      var b = $('jobBody'); b.innerHTML = '';
+      if (!jobs.length) { var tr0 = el('tr'), td0 = el('td', 'No jobs yet'); td0.colSpan = 10; tr0.appendChild(td0); b.appendChild(tr0); }
+      var live = false;
+      jobs.forEach(function (j) {
+        var tr = el('tr');
+        tr.appendChild(el('td', String(j.id), 'n'));
+        var t = el('td'); t.appendChild(el('b', JOB_NAME[j.kind])); t.appendChild(el('div', j.title.replace(JOB_NAME[j.kind] + ' · ', ''), 'muted')); tr.appendChild(t);
+        tr.appendChild(el('td', gpName(j.jc_prefix), 'nw'));
+        [j.total, j.ok, j.failed, j.skipped].forEach(function (n) { tr.appendChild(el('td', nf(n), 'n')); });
+        var st = { queued: '⏳ Waiting for K-Desk', running: '▶ Running', done: '✅ Done', cancelled: '✕ Cancelled' }[j.status] || j.status;
+        tr.appendChild(el('td', st + (j.status === 'running' ? ' (' + nf(j.ok + j.failed + j.skipped) + '/' + nf(j.total) + ')' : ''), 'nw'));
+        tr.appendChild(el('td', when(j.created_at), 'nw'));
+        var act = el('td', null, 'nw');
+        var x = el('button', '⬇', 'btn-success btn-small'); x.title = 'Rows + results Excel'; x.onclick = function () { jobXlsx(j.id); }; act.appendChild(x);
+        if (j.status === 'queued' || j.status === 'running') {
+          live = true;
+          var c = el('button', '✕', 'btn-light btn-small'); c.title = 'Cancel job'; c.style.marginLeft = '4px';
+          c.onclick = function () { if (window.confirm('Cancel job #' + j.id + '? K-Desk will not show it any more.')) SB.rpc('iay_job_cancel', { p_id: j.id }).then(loadJobs).catch(function (e) { status(errText(e), 'err'); }); };
+          act.appendChild(c);
+        }
+        tr.appendChild(act); b.appendChild(tr);
+      });
+      if (live) jobTimer = setTimeout(function () { if (!document.hidden) loadJobs(); else jobTimer = setTimeout(loadJobs, 30000); }, 20000);
+    }).catch(function (e) { $('jobBody').innerHTML = ''; status(errText(e), 'err'); });
+  }
+  $('jobRefresh').onclick = function () { loadJobs(); };
+  var RES = { done: 'Done', error: 'Error', skipped: 'Skipped' };
+  function jobXlsx(id) {
+    loading('Preparing Excel...');
+    Promise.all([needXlsx(), SB.rpc('iay_job_detail', { p_id: id }, { timeout: 60000 })]).then(function (r) {
+      var d = r[1], k = d.job.kind, res = d.results || {}, H, rows;
+      if (k === 'demand') {
+        H = ['Work Code', 'Reg. No.', 'Applicant', 'From', 'Days', 'Demand', 'Demand note', 'Allocation', 'Allocation note'];
+        rows = d.items.map(function (x) { var z = res[x.work_code] || {}; return [x.work_code, x.reg, x.app, x.from, x.days, RES[z.d] || '', z.dm || '', RES[z.a] || '', z.am || '']; });
+      } else {
+        H = ['Work Code', 'MR No', 'MR End'].concat(k === 'pay' ? ['MB No', 'Page No'] : []).concat(['Result', 'Note']);
+        rows = d.items.map(function (x) { var z = res[x.work_code + '|' + x.mr] || {};
+          return [x.work_code, x.mr, dmy(x.end)].concat(k === 'pay' ? [x.mb, x.page] : []).concat([RES[z.s] || '', z.sm || '']); });
+      }
+      var ws = XLSX.utils.aoa_to_sheet([H].concat(rows));
+      ws['!cols'] = H.map(function (h) { return { wch: /Work Code|note|Note/.test(h) ? 30 : /Applicant|Reg/.test(h) ? 24 : 11 }; });
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: H.length - 1 } }) };
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, safeName(JOB_NAME[k]));
+      XLSX.writeFile(wb, 'IAY_Job_' + id + '_' + k + '.xlsx');
+    }).catch(function (e) { status(e.code ? errText(e) : (e.message || String(e)), 'err'); }).then(function () { loading(''); });
+  }
 
   // ---------- Excel ----------
   function needXlsx() { return window.IaySummary.needXlsx(); }

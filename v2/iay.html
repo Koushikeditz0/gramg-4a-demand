@@ -87,6 +87,9 @@
     <div class="row" style="justify-content:space-between;margin-bottom:6px">
       <h2 id="listTitle" style="margin:0"></h2>
       <div class="row">
+        <button class="btn-primary btn-small hidden" id="listJobDemand">📤 K-Desk: Demand + Allocation</button>
+        <button class="btn-primary btn-small hidden" id="listJobAttend">📤 K-Desk: MR Attendance</button>
+        <button class="btn-primary btn-small hidden" id="listJobPay">📤 K-Desk: MR Payment</button>
         <button class="btn-success btn-small" id="listXlsx">⬇ Excel</button>
         <button class="btn-light btn-small" id="listClose">✕</button>
       </div>
@@ -119,10 +122,23 @@
     <div class="muted" style="margin-top:4px">Zone by Total pending: 🟢 nothing pending · 🟡 up to 10% pending · 🔴 more than 10% pending. Tap a pending number for its MR list.</div>
     <div id="sumList" class="hidden" style="margin-top:8px">
       <div class="row" style="justify-content:space-between"><b id="sumListTitle" style="font-size:13.5px"></b>
-        <div class="row"><button class="btn-success btn-small" id="sumListXlsx">⬇ Excel</button><button class="btn-light btn-small" id="sumListClose">✕</button></div></div>
+        <div class="row"><button class="btn-primary btn-small hidden" id="sumJobAttend">📤 K-Desk: MR Attendance</button><button class="btn-primary btn-small hidden" id="sumJobPay">📤 K-Desk: MR Payment</button><button class="btn-success btn-small" id="sumListXlsx">⬇ Excel</button><button class="btn-light btn-small" id="sumListClose">✕</button></div></div>
       <div class="muted" id="sumListNote"></div>
       <div class="table-wrap" style="margin-top:4px"><table id="sumListTbl"></table></div>
     </div>
+  </div>
+
+  <div class="card" id="jobCard">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">🤖 K-Desk jobs</h2>
+      <button class="btn-light btn-small" id="jobRefresh">🔄</button>
+    </div>
+    <div class="muted" style="margin-top:4px">Open a list above (one GP selected) and press <b>📤 K-Desk</b>. On the PC where the portal is logged in, K-Desk Suite → panel → <b>📥 Admin job</b> loads it; you press Start there, and each row's result comes back here. Demand jobs use 42 / 28 / 14 days (3 / 2 / 1 MRs to reach 45, then the next 45). Payment jobs carry MB No + Page No (Ongoing works, Job Card order, 10 pages a work).</div>
+    <div id="mbLine" class="muted" style="margin-top:4px"></div>
+    <div class="table-wrap" style="margin-top:6px;max-height:none"><table>
+      <thead><tr><th>#</th><th>Job</th><th>GP</th><th class="n">Rows</th><th class="n">✅ Done</th><th class="n">❌ Error</th><th class="n">⏭ Skipped</th><th>Status</th><th>Made</th><th></th></tr></thead>
+      <tbody id="jobBody"></tbody>
+    </table></div>
   </div>
 
   <div class="card" id="gpCard">
@@ -172,6 +188,6 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/iay-summary.js?v=20261109f"></script>
-<script src="./js/iay.js?v=20261109g"></script>
+<script src="./js/iay.js?v=20261110a"></script>
 </body>
 </html>

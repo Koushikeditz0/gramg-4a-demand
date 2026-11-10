@@ -761,6 +761,8 @@
   function reqSup(n) { return Math.max(1, Math.floor((Number(n) || 0) / 20)); }
 
   function loadDashboard() {
+    // IAY Dashboard card (js/iay-dash.js): the database limits it to the GP Admin's own GP
+    if (window.IayDash) window.IayDash.load({ gps: state.gps, fixedGpId: gpView(), role: me.role });
     var gp = Number($('dashGp').value);
     if (!gp || dash.loading) return Promise.resolve();
     dash.loading = true;

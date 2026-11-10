@@ -80,6 +80,11 @@
     .filters button{background:#e2e8f0;color:#334155;padding:6px 10px;font-size:12px;}
     .filters button.active{background:#0f172a;color:#fff;}
     details.dups summary{cursor:pointer;font-weight:700;font-size:13px;color:#991b1b;}
+    .idbox > summary{cursor:pointer;list-style:none;margin-top:10px;} .idbox > summary::-webkit-details-marker{display:none;} .idbox > summary:before{content:'▸ ';} .idbox[open] > summary:before{content:'▾ ';}
+    .iwf{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;} .iwf input,.iwf select{border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:13px;} .iwf input{flex:2 1 220px;width:auto;} .iwf select{flex:1 1 160px;width:auto;}
+    table.iwt{font-size:12px;} table.iwt td{vertical-align:top;white-space:nowrap;} table.iwt td.n{text-align:right;} table.iwt .jc{font-family:Consolas,monospace;font-size:11.5px;} table.iwt .nm{font-weight:600;white-space:normal;min-width:120px;}
+    .ph{border-radius:6px;padding:3px 5px;line-height:1.3;min-width:96px;} .ph b{font-size:12px;} .ph small{display:block;font-size:10.5px;color:#475569;}
+    .ph.ok{background:#dcfce7;} .ph.wl{background:#bbf7d0;} .ph.run{background:#e0e7ff;} .ph.due{background:#fee2e2;} .ph.fut{background:#f1f5f9;color:#64748b;} .ph.none{color:#cbd5e1;background:none;}
     .idkpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;}
     .idk{border-radius:10px;padding:9px;background:#f8fafc;border:1px solid #e2e8f0;} .idk .n{font-size:22px;font-weight:800;} .idk .l{font-size:12px;font-weight:600;margin-top:2px;} .idk .s{font-size:11px;color:#64748b;margin-top:2px;}
     .idk.red{background:#fee2e2;color:#991b1b;border-color:#fecaca;} .idk.green{background:#dcfce7;color:#166534;border-color:#bbf7d0;} .idk.blue{background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;}
@@ -244,6 +249,7 @@
 
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="dash"><i>📊</i><span>Dashboard</span></button>
+    <button class="tab" data-tab="iay"><i>🏠</i><span>IAY</span></button>
     <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
@@ -297,8 +303,8 @@
     </div>
   </section>
 
-  <!-- ============ DASHBOARD ============ -->
-  <section id="tab-dash">
+  <!-- ============ IAY ============ -->
+  <section id="tab-iay" class="hidden">
    <div class="card" id="iayDash" style="border-color:#fed7aa;">
      <div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap;">
        <h2 style="margin:0;color:#7a3b00;">🏠 IAY Dashboard</h2>
@@ -320,11 +326,41 @@
          <div id="idMb"></div>
        </div>
      </div>
-     <div class="idh" style="margin-top:10px;"><span id="idBrkTitle">Breakdown</span> <span class="muted" style="font-weight:400;">· most pending first</span></div>
-     <div class="table-wrap" style="max-height:320px;"><table class="idt">
-       <thead><tr><th>Name</th><th class="n">Works</th><th class="n">Avg MRs</th><th class="n">To fill</th><th class="n">MR gap</th><th class="n">WL pending</th><th class="n">WL done</th><th class="n">6 MRs</th></tr></thead>
-       <tbody id="idBrk"></tbody></table></div>
+     <details id="idBrkBox" class="idbox" open>
+       <summary class="idh"><span id="idBrkTitle">Breakdown</span> <span class="muted" style="font-weight:400;">· most pending first · tap to hide / show</span></summary>
+       <div class="table-wrap" style="max-height:320px;margin-top:4px;"><table class="idt">
+         <thead><tr><th>Name</th><th class="n">Works</th><th class="n">Avg MRs</th><th class="n">To fill</th><th class="n">MR gap</th><th class="n">WL pending</th><th class="n">WL done</th><th class="n">6 MRs</th></tr></thead>
+         <tbody id="idBrk"></tbody></table></div>
+     </details>
    </div>
+   <div class="card" id="iayWorks">
+     <div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap;">
+       <h2 style="margin:0;color:#7a3b00;">📋 All IAY works</h2>
+       <div class="row" style="gap:6px;"><button class="btn-light btn-small" id="iwReload" title="Reload">🔄</button><button class="btn-success btn-small" id="iwXlsx">⬇ Excel (filtered)</button></div>
+     </div>
+     <div class="muted" style="margin-top:2px;">One row per work: Job Card, beneficiary, MB No, every phase's MR (No · dates · portal status · MB page) and the wagelist. MB page for phase N = first page + N − 1.</div>
+     <div class="iwf">
+       <input type="search" id="iwQ" placeholder="🔍 Job Card / name / work code / MR No">
+       <select id="iwVill"><option value="">All villages</option></select>
+       <select id="iwSt">
+         <option value="">All works</option><option value="pend">MR ended, not filled</option><option value="gap">MR gap (new MR needed)</option>
+         <option value="run">MR running</option><option value="wlw">Filled, wagelist pending</option><option value="wl">Wagelist generated</option>
+         <option value="nomr">No MR yet</option><option value="done6">6 MRs done</option><option value="nomb">No MB page</option>
+       </select>
+     </div>
+     <div class="muted" id="iwInfo" style="margin:4px 0;"></div>
+     <div class="table-wrap" style="max-height:70vh;"><table class="iwt">
+       <thead><tr><th>#</th><th>Job Card · Beneficiary</th><th>Village</th><th>Work Code</th><th>MB</th><th class="n">MRs</th>
+         <th>Phase 1</th><th>Phase 2</th><th>Phase 3</th><th>Phase 4</th><th>Phase 5</th><th>Phase 6</th><th>Wagelist</th><th>Next MR</th></tr></thead>
+       <tbody id="iwBody"></tbody></table></div>
+     <div class="row" style="justify-content:center;gap:8px;margin-top:6px;" id="iwPager">
+       <button class="btn-light btn-small" id="iwPrev">‹ Prev</button><span class="muted" id="iwPage"></span><button class="btn-light btn-small" id="iwNext">Next ›</button>
+     </div>
+   </div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="tab-dash">
    <div class="dash-grid">
    <div class="dash-main">
     <div class="card">
@@ -669,8 +705,8 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/iay-dash.js?v=20261110a"></script>
-<script src="./js/admin.js?v=20261110a"></script>
+<script src="./js/iay-dash.js?v=20261110b"></script>
+<script src="./js/admin.js?v=20261110b"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 </body>
 </html>

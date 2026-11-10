@@ -80,6 +80,15 @@
     .filters button{background:#e2e8f0;color:#334155;padding:6px 10px;font-size:12px;}
     .filters button.active{background:#0f172a;color:#fff;}
     details.dups summary{cursor:pointer;font-weight:700;font-size:13px;color:#991b1b;}
+    .idkpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;}
+    .idk{border-radius:10px;padding:9px;background:#f8fafc;border:1px solid #e2e8f0;} .idk .n{font-size:22px;font-weight:800;} .idk .l{font-size:12px;font-weight:600;margin-top:2px;} .idk .s{font-size:11px;color:#64748b;margin-top:2px;}
+    .idk.red{background:#fee2e2;color:#991b1b;border-color:#fecaca;} .idk.green{background:#dcfce7;color:#166534;border-color:#bbf7d0;} .idk.blue{background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;}
+    .idbar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:#e2e8f0;margin:4px 0;} .idbar span{display:block;height:100%;}
+    .idcols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px;} .idtx{font-size:12.5px;color:#334155;} .idh{font-size:12.5px;font-weight:700;color:#334155;margin-bottom:4px;}
+    .iddr{display:grid;grid-template-columns:52px 1fr 92px;gap:6px;align-items:center;font-size:12px;margin:3px 0;} .iddr .b{background:#f1f5f9;border-radius:5px;height:12px;overflow:hidden;} .iddr .b i{display:block;height:100%;} .iddr .v{text-align:right;color:#475569;}
+    .idlg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:#334155;margin:4px 0;} .idlg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
+    table.idt td.n,table.idt th.n{text-align:right;} table.idt td.g{font-weight:600;white-space:nowrap;} table.idt td.bad{color:#b91c1c;font-weight:700;}
+    @media (max-width:700px){ .idcols{grid-template-columns:1fr;} .idkpi{grid-template-columns:repeat(2,minmax(0,1fr));} }
     @media (max-width:600px){ .app{padding:6px;} .card{padding:10px;} th,td{padding:5px;} .header-title{font-size:15px;} }
     input[type=password]{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:9px 10px;font-size:14px;}
     .modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;z-index:90;align-items:flex-start;justify-content:center;overflow:auto;padding:12px 8px;}
@@ -290,9 +299,32 @@
 
   <!-- ============ DASHBOARD ============ -->
   <section id="tab-dash">
-   <a href="./iay.html" class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;text-decoration:none;color:#7a3b00;background:#fff7ed;border-color:#fed7aa;font-weight:700;font-size:14px;">
-     <span>🏠 IAY Tracker <span class="muted" style="font-weight:400;">— MR fill, next MR, pending wagelists</span></span><span>→</span>
-   </a>
+   <div class="card" id="iayDash" style="border-color:#fed7aa;">
+     <div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap;">
+       <h2 style="margin:0;color:#7a3b00;">🏠 IAY Dashboard</h2>
+       <div class="row" style="gap:6px;flex-wrap:wrap;">
+         <select id="idGp" aria-label="GP" style="min-width:150px;"></select>
+         <button class="btn-light btn-small" id="idRefresh" title="Refresh">🔄</button>
+         <a href="./iay.html" id="idOpen" class="btn-small" style="background:#7a3b00;color:#fff;border-radius:8px;padding:6px 10px;text-decoration:none;font-weight:700;font-size:12px;">IAY Tracker →</a>
+       </div>
+     </div>
+     <div class="muted" id="idLine" style="margin-top:4px;"></div>
+     <div class="idkpi" id="idKpi"></div>
+     <div id="idProg" style="margin-top:6px;"></div>
+     <div class="idcols">
+       <div><div class="idh">Works by MRs done (target 6 MRs × 15 days)</div><div id="idDist"></div></div>
+       <div>
+         <div class="idh">MRs &amp; wagelist <span class="muted" style="font-weight:400;">· rate ₹/day <input id="idRate" type="number" min="1" step="1" style="width:64px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:6px;"></span></div>
+         <div id="idWl"></div>
+         <div class="idh" style="margin-top:10px;">MB books &amp; K-Desk jobs</div>
+         <div id="idMb"></div>
+       </div>
+     </div>
+     <div class="idh" style="margin-top:10px;"><span id="idBrkTitle">Breakdown</span> <span class="muted" style="font-weight:400;">· most pending first</span></div>
+     <div class="table-wrap" style="max-height:320px;"><table class="idt">
+       <thead><tr><th>Name</th><th class="n">Works</th><th class="n">Avg MRs</th><th class="n">To fill</th><th class="n">MR gap</th><th class="n">WL pending</th><th class="n">WL done</th><th class="n">6 MRs</th></tr></thead>
+       <tbody id="idBrk"></tbody></table></div>
+   </div>
    <div class="dash-grid">
    <div class="dash-main">
     <div class="card">
@@ -637,7 +669,8 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/admin.js?v=20261107i"></script>
+<script src="./js/iay-dash.js?v=20261110a"></script>
+<script src="./js/admin.js?v=20261110a"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 </body>
 </html>

@@ -270,7 +270,9 @@ begin
     into v_add
     from (select distinct on (x->>'key') left(x->>'key', 120) k, x->>'s' s, left(coalesce(x->>'m', ''), 300) m
             from jsonb_array_elements(p_rows) x
-           where x->>'s' in ('done', 'error', 'skipped') and coalesce(x->>'key', '') <> '') y;
+           where x->>'s' in ('done', 'error', 'skipped') and coalesce(x->>'key', '') <> ''
+             and x->>'key' in (select case when j.kind = 'demand' then i->>'work_code' else (i->>'work_code') || '|' || (i->>'mr') end
+                                 from jsonb_array_elements(j.items) i)) y;
   update public.iay_jobs set results = results || v_add, updated_at = now() where id = p_id;
   perform private.iay_job_tally(p_id);
   return (select jsonb_build_object('ok', ok, 'failed', failed, 'skipped', skipped, 'status', status) from public.iay_jobs where id = p_id);

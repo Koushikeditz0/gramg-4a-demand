@@ -1,0 +1,9 @@
+-- =====================================================================
+-- G RAM-G 4A — mandays never go down on import (v206, 2026-11-12)
+-- The Pi sync / Tampermonkey send mandays from R6.12. When that report could not be read
+-- they send 0, which used to wipe the stored mandays. private.iay_import_core now keeps
+-- the higher of the new and the stored value (same way names / Job Card / village are kept).
+-- Applied with the full function body (see migration iay_import_keep_mandays_v206 in Supabase);
+-- the change versus v195 is only in v_old (adds 'm') and the mandays expression:
+--   greatest(<new mandays>, <stored mandays>)
+-- =====================================================================

@@ -40,24 +40,25 @@
     var pc = function (a, b) { return (b ? Math.round(a * 10000 / b) / 100 : 0).toFixed(2) + '%'; };
     var exp = function (g) { return (g.p1 + g.p2 + g.p3 + g.p4) * 14; };
     var cells = function (g, rem) {
-      var c = [nf(g.works), nf(g.p1), pc(g.p1, g.works), nf(g.works - g.p1), nf(g.p1 * 14)];
-      [g.p2, g.p3, g.p4].forEach(function (n) { c.push(nf(n), pc(n, g.p1), nf(n * 14)); });
+      // Tampermonkey v1.8 format: per phase Expected PD (e-MR × 14) and Actual PD (mandays split MR by MR, ≤15 a filled MR)
+      var c = [nf(g.works), nf(g.p1), pc(g.p1, g.works), nf(g.works - g.p1), nf(g.p1 * 14), nf(g.a1)];
+      [2, 3, 4].forEach(function (k) { var n = g['p' + k]; c.push(nf(n), pc(n, g.p1), nf(n * 14), nf(g['a' + k])); });
       return c.concat([nf(g.days), nf(rem), nf(g.wl)]);
     };
     var esc = function (t) { return String(t).replace(/[&<>"]/g, function (x) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]; }); };
     var tr = function (name, c, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td class="g">' + esc(name) + '</td>' + c.map(function (v) { return '<td>' + v + '</td>'; }).join('') + '</tr>'; };
-    var h = '<tr><th rowspan="2">Panchayat</th><th rowspan="2">Total no of Work</th><th colspan="4" class="ph">1st Phase</th><th colspan="3" class="ph">2nd Phase</th><th colspan="3" class="ph">3rd Phase</th><th colspan="3" class="ph">4th Phase</th>' +
+    var h = '<tr><th rowspan="2">Panchayat</th><th rowspan="2">Total no of Work</th><th colspan="5" class="ph">1st Phase</th><th colspan="4" class="ph">2nd Phase</th><th colspan="4" class="ph">3rd Phase</th><th colspan="4" class="ph">4th Phase</th>' +
             '<th rowspan="2">Actual PD generated as on date</th><th rowspan="2">Remaining PD to be generated</th><th rowspan="2">Wagelist</th></tr>' +
-            '<tr><th>e-MR Generated</th><th>% of e-MR generation</th><th>e-MR not Generated</th><th>PD Generated</th>' +
-            new Array(4).join('<th>e-MR Generated</th><th>% of e-MR generation</th><th>PD Generated</th>') + '</tr>';
-    var t = { works: 0, p1: 0, p2: 0, p3: 0, p4: 0, days: 0, wl: 0 }, remT = 0;
+            '<tr><th>e-MR Generated</th><th>% of e-MR generation</th><th>e-MR not Generated</th><th>Expected PD</th><th class="ac">Actual PD</th>' +
+            new Array(4).join('<th>e-MR Generated</th><th>% of e-MR generation</th><th>Expected PD</th><th class="ac">Actual PD</th>') + '</tr>';
+    var t = { works: 0, p1: 0, p2: 0, p3: 0, p4: 0, a1: 0, a2: 0, a3: 0, a4: 0, days: 0, wl: 0 }, remT = 0;
     var body = rows.map(function (g) {
       var rem = Math.max(0, exp(g) - g.days); remT += rem;
       for (var k in t) t[k] += +g[k] || 0;
       return tr(g.gp_name, cells(g, rem));
     }).join('');
     if (rows.length > 1) body += tr('TOTAL', cells(t, remT), 'tot');   // remaining = sum of the GPs' remaining (as in the Tampermonkey report)
-    $('pdTbl').innerHTML = h + (body || '<tr><td colspan="17" style="text-align:left">No IAY data yet.</td></tr>');
+    $('pdTbl').innerHTML = h + (body || '<tr><td colspan="21" style="text-align:left">No IAY data yet.</td></tr>');
   }
   function render() {
     if (!data) return;

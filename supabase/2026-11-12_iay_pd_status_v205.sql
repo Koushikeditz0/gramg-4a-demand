@@ -28,3 +28,8 @@ begin
 end $$;
 revoke all on function public.iay_public_pd(text) from public;
 grant execute on function public.iay_public_pd(text) to anon, authenticated;
+
+-- v207 (2026-11-12): Tampermonkey v1.8 format — Actual PD per phase. private.iay_pd_core now also
+-- returns a1..a4: each work's mandays split MR by MR in phase order (start date, MR No),
+-- at most 15 days on every Filled / WL Generated MR. Applied as migration iay_pd_status_actual_v207b
+-- (window function over iay_mrs; ~0.2 s for the whole block).

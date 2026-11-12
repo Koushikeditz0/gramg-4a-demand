@@ -45,7 +45,7 @@
     if (busy) return Promise.resolve(); busy = true;
     $('idLine').textContent = 'Loading…';
     return SB.rpc('iay_dashboard', { p_jc_prefix: $('idGp').value || null }, { retry: true, timeout: 60000 }).then(function (d) {
-      last = d; render();
+      last = d; render(); mbRender();
     }).catch(function (e) {
       $('idLine').textContent = /iay_dashboard|PGRST202/.test((e.code || '') + (e.message || '')) ? 'IAY dashboard is not installed on the server yet (SQL v200).' : 'Could not load: ' + (e.message || e.code);
     }).then(function () { busy = false; });
@@ -275,6 +275,139 @@
       XLSX.writeFile(wb, 'IAY_All_Works_' + String(g ? g.textContent : 'GP').replace(/[^A-Za-z0-9]+/g, '_') + '_' + ((last && last.today) || 'today') + '.xlsx');
     }).catch(function (e) { $('iwInfo').textContent = e.message; });
   }
+
+  /* ---------------------- MB books (SQL v204): range or Excel ---------------------- */
+  var mbp = null, mbUp = null, mbGp = null;
+  var MBERR = {
+    MB_ALREADY_ALLOTTED: 'Pages are already given out — only the Last MB can change now. (Reset first if the range was typed wrong.)',
+    LAST_MB_IN_USE: 'Last MB is lower than an MB already in use.',
+    NOT_ENOUGH_BOOKS: 'Not enough books for all works — increase Last MB.',
+    MB_IN_USE: 'Cannot reset: some works with these MB pages already have filled MRs.',
+    MB_RANGE_FIRST: 'Save the range in Option 1 first.',
+    FIX_ERRORS_FIRST: 'Fix the rows with errors in the Excel and upload again.',
+    BAD_INPUT: 'Check the numbers (Last MB ≥ First MB, pages per MB ≥ pages per work).',
+    PICK_ONE_GP: 'Pick one GP above.'
+  };
+  function mbErr(e) { var c = e && (e.code || e.message); return MBERR[c] || (e && (e.message || e.code)) || String(e); }
+  function mbOut(id, html) { $(id).innerHTML = html; }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function mbRender() {
+    var d = last, p = $('idGp').value;
+    $('mbCard').classList.toggle('hidden', !p);
+    if (!p || !d) return;
+    var m = d.mb;
+    if (m) {
+      var cap = (m.last_mb - m.first_mb + 1) * Math.floor(m.pages_per_mb / m.pages_per_work);
+      $('mbState').textContent = 'MB ' + m.first_mb + '–' + m.last_mb + ' · ' + m.pages_per_mb + ' pages a book · ' + m.pages_per_work + ' pages a work · ' +
+        nf(m.slots) + ' of ' + nf(cap) + ' work slots used · last MB used ' + (m.last_used || '—') + (m.waiting ? ' · ' + nf(m.waiting) + ' works waiting for pages' : '');
+      $('mbFirst').value = m.first_mb; $('mbLast').value = m.last_mb; $('mbPpm').value = m.pages_per_mb; $('mbPpw').value = m.pages_per_work;
+    } else {
+      $('mbState').textContent = 'MB books are not set for this GP yet — open below and use Option 1 (range) or Option 2 (Excel).';
+      $('mbBox').open = true;
+      if (mbGp !== p) { $('mbFirst').value = ''; $('mbLast').value = ''; $('mbPpm').value = 200; $('mbPpw').value = 10; }
+    }
+    var fixed = !!(m && m.slots);
+    $('mbFirst').disabled = $('mbPpm').disabled = $('mbPpw').disabled = fixed;
+    $('mbSave').disabled = true; mbp = null;
+    if (mbGp !== p) { mbGp = p; mbUp = null; mbOut('mbPrevOut', ''); mbOut('mbUpOut', ''); $('mbApply').classList.add('hidden'); }   // keep messages after a save
+  }
+  function mbArgs() {
+    return { p_jc_prefix: $('idGp').value, p_first_mb: +$('mbFirst').value || null, p_last_mb: +$('mbLast').value || null,
+             p_pages_per_mb: +$('mbPpm').value || 200, p_pages_per_work: +$('mbPpw').value || 10 };
+  }
+  function mbPreview() {
+    var a = mbArgs(); $('mbSave').disabled = true;
+    if (!a.p_first_mb || !a.p_last_mb) { mbOut('mbPrevOut', '<span class="bad">Enter First MB and Last MB.</span>'); return; }
+    mbOut('mbPrevOut', 'Checking…');
+    SB.rpc('iay_mb_preview', a).then(function (r) {
+      mbp = r;
+      var h = 'Range MB ' + r.first_mb + '–' + r.last_mb + ': ' + nf(r.capacity) + ' work slots (' + r.works_per_mb + ' works a book).<br>';
+      if (r.allotted) h += nf(r.allotted) + ' works already have pages. ';
+      if (r.new) h += '<b>' + nf(r.new) + ' works will get pages</b>: first MB ' + r.first_new.mb + ' p' + r.first_new.pg + ', last about MB ' + r.last_new.mb + ' p' + r.last_new.pg + '. ';
+      else h += 'No work is waiting for pages. ';
+      if (r.waiting_no_mr) h += nf(r.waiting_no_mr) + ' approved works without an MR get pages later, when their MR is made. ';
+      h += r.fits ? '<span class="ok">Fits — ' + nf(r.free_after) + ' slots left.</span>' : '<span class="bad">Does not fit — increase Last MB.</span>';
+      mbOut('mbPrevOut', h);
+      $('mbSave').disabled = !r.fits;
+    }).catch(function (e) { mbOut('mbPrevOut', '<span class="bad">' + esc(mbErr(e)) + '</span>'); });
+  }
+  function mbSave() {
+    if (!mbp || !window.confirm('Save MB ' + mbp.first_mb + '–' + mbp.last_mb + ' and give pages to ' + nf(mbp.new) + ' works?')) return;
+    $('mbSave').disabled = true; mbOut('mbPrevOut', 'Saving…');
+    SB.rpc('iay_mb_setup', mbArgs()).then(function (r) {
+      mbOut('mbPrevOut', '<span class="ok">✅ Saved. ' + nf(r.new_slots) + ' works got pages; ' + nf(r.slots) + ' in all, last MB used ' + (r.last_mb_used || '—') + '.</span>');
+      ctx.dirty = true; last = null; wv.prefix = null; refresh();
+    }).catch(function (e) { mbOut('mbPrevOut', '<span class="bad">' + esc(mbErr(e)) + '</span>'); });
+  }
+  function mbTemplate() {
+    var go = function () {
+      needXlsx().then(function () {
+        var H = ['Work Code', 'Job Card', 'Beneficiary', 'Village', 'Work Status', 'MRs', 'MB No', 'Page From'];
+        var aoa = [H].concat(wv.rows.map(function (r) { return [r.wc, r.jcn, r.name, r.vill === '—' ? '' : r.vill, r.st, (r.mrs || []).length, r.mb || '', r.mb ? r.pg : '']; }));
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [{ wch: 28 }, { wch: 24 }, { wch: 26 }, { wch: 14 }, { wch: 11 }, { wch: 6 }, { wch: 9 }, { wch: 10 }];
+        var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'MB');
+        var g = $('idGp').selectedOptions[0];
+        XLSX.writeFile(wb, 'IAY_MB_Template_' + String(g ? g.textContent : 'GP').replace(/[^A-Za-z0-9]+/g, '_') + '.xlsx');
+      }).catch(function (e) { mbOut('mbUpOut', '<span class="bad">' + esc(e.message) + '</span>'); });
+    };
+    if (wv.prefix === $('idGp').value && wv.rows.length) go(); else loadWorks(true).then(go);
+  }
+  function mbFile(f) {
+    mbUp = null; $('mbApply').classList.add('hidden'); mbOut('mbUpOut', 'Reading ' + esc(f.name) + '…');
+    needXlsx().then(function () { return f.arrayBuffer(); }).then(function (buf) {
+      var wb = XLSX.read(buf, { type: 'array' }), ws = wb.Sheets[wb.SheetNames[0]];
+      var a = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+      var hi = -1, cw = -1, cm = -1, cp = -1;
+      for (var i = 0; i < Math.min(a.length, 15) && hi < 0; i++) {
+        a[i].forEach(function (h, j) {
+          var t = String(h).trim().toLowerCase();
+          if (cw < 0 && /work\s*code/.test(t)) cw = j;
+          else if (cm < 0 && /^mb(\s*(no|number|book))?\.?$/.test(t)) cm = j;
+          else if (cp < 0 && /^(mb\s*)?page(\s*(from|no|start))?\.?$/.test(t)) cp = j;
+        });
+        if (cw >= 0 && cm >= 0 && cp >= 0) hi = i; else { cw = cm = cp = -1; }
+      }
+      if (hi < 0) throw new Error('Columns “Work Code”, “MB No” and “Page From” not found. Use the template.');
+      var rows = [];
+      for (var k = hi + 1; k < a.length; k++) {
+        var wc = String(a[k][cw] || '').trim(), mb = String(a[k][cm] || '').trim(), pg = String(a[k][cp] || '').trim();
+        if (!wc || (!mb && !pg)) continue;            // blank MB → left for automatic pages
+        rows.push({ wc: wc, mb: mb, pg: pg });
+      }
+      if (!rows.length) throw new Error('No row has an MB No / Page From.');
+      mbUp = rows;
+      return SB.rpc('iay_mb_upload', { p_jc_prefix: $('idGp').value, p_rows: rows, p_apply: false }, { timeout: 90000 });
+    }).then(function (r) {
+      if (!r) return;
+      var h = nf(r.rows) + ' rows with MB in the file: <span class="ok">' + nf(r.ok) + ' OK</span>' + (r.unchanged ? ' (' + nf(r.unchanged) + ' same as now)' : '') +
+              (r.errors ? ' · <span class="bad">' + nf(r.errors) + ' with errors</span>' : '') +
+              (r.not_in_file ? ' · ' + nf(r.not_in_file) + ' works not in the file will get the next free pages' : '') + '.';
+      if (r.errors) {
+        h += '<div class="table-wrap" style="max-height:220px;"><table><thead><tr><th>Excel row</th><th>Work Code</th><th>MB</th><th>Page</th><th>Problem</th></tr></thead><tbody>' +
+          r.error_rows.map(function (x) { return '<tr><td>' + x.row + '</td><td>' + esc(x.wc) + '</td><td>' + esc(x.mb) + '</td><td>' + esc(x.pg) + '</td><td class="bad">' + esc(x.err) + '</td></tr>'; }).join('') +
+          '</tbody></table></div>' + (r.errors > r.error_rows.length ? 'First ' + r.error_rows.length + ' shown. ' : '') + 'Fix these and upload again.';
+      }
+      mbOut('mbUpOut', h);
+      $('mbApply').classList.toggle('hidden', !!r.errors || !r.ok);
+    }).catch(function (e) { mbOut('mbUpOut', '<span class="bad">' + esc(mbErr(e)) + '</span>'); });
+  }
+  function mbApply() {
+    if (!mbUp || !window.confirm('Write these MB numbers for ' + nf(mbUp.length) + ' works?')) return;
+    $('mbApply').classList.add('hidden'); mbOut('mbUpOut', 'Saving…');
+    SB.rpc('iay_mb_upload', { p_jc_prefix: $('idGp').value, p_rows: mbUp, p_apply: true }, { timeout: 90000 }).then(function (r) {
+      mbOut('mbUpOut', '<span class="ok">✅ Saved ' + nf(r.ok) + ' works from the Excel' + (r.auto_after ? '; ' + nf(r.auto_after) + ' more got the next free pages' : '') + '.</span>');
+      mbUp = null; ctx.dirty = true; last = null; wv.prefix = null; refresh();
+    }).catch(function (e) { mbOut('mbUpOut', '<span class="bad">' + esc(mbErr(e)) + '</span>'); });
+  }
+  function mbReset() {
+    var g = $('idGp').selectedOptions[0];
+    if (!window.confirm('Remove ALL MB numbers of ' + (g ? g.textContent : 'this GP') + ' and start again?\n\nThis is refused if any of these works already has a filled MR.')) return;
+    SB.rpc('iay_mb_reset', { p_jc_prefix: $('idGp').value }).then(function (r) {
+      mbOut('mbPrevOut', '<span class="ok">Reset — ' + nf(r.removed) + ' allotments removed. Enter the range again.</span>');
+      ctx.dirty = true; last = null; wv.prefix = null; refresh();
+    }).catch(function (e) { mbOut('mbPrevOut', '<span class="bad">' + esc(mbErr(e)) + '</span>'); });
+  }
   function save() { try { if (!ctx.fixed) localStorage.setItem(GP_KEY, $('idGp').value); } catch (e) {} }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -284,6 +417,13 @@
     try { if (localStorage.getItem(BRK_KEY) === '0') $('idBrkBox').open = false; } catch (e) {}
     $('idBrkBox').addEventListener('toggle', function () { try { localStorage.setItem(BRK_KEY, this.open ? '1' : '0'); } catch (e) {} });
     $('iwReload').addEventListener('click', function () { loadWorks(true); });
+    $('mbPreview').addEventListener('click', mbPreview);
+    $('mbSave').addEventListener('click', mbSave);
+    ['mbFirst', 'mbLast', 'mbPpm', 'mbPpw'].forEach(function (id) { $(id).addEventListener('input', function () { $('mbSave').disabled = true; mbp = null; }); });
+    $('mbTpl').addEventListener('click', mbTemplate);
+    $('mbFile').addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (f) mbFile(f); });
+    $('mbApply').addEventListener('click', mbApply);
+    $('mbReset').addEventListener('click', mbReset);
     $('iwXlsx').addEventListener('click', worksXlsx);
     var qt = null;
     $('iwQ').addEventListener('input', function () { clearTimeout(qt); qt = setTimeout(function () { wv.page = 0; drawWorks(); }, 250); });

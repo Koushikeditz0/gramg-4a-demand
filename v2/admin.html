@@ -80,6 +80,9 @@
     .filters button{background:#e2e8f0;color:#334155;padding:6px 10px;font-size:12px;}
     .filters button.active{background:#0f172a;color:#fff;}
     details.dups summary{cursor:pointer;font-weight:700;font-size:13px;color:#991b1b;}
+    .mbopt{border:1px solid #e2e8f0;border-radius:10px;padding:9px;margin-top:8px;background:#fffdf8;} .mbh{font-weight:700;font-size:13px;color:#7a3b00;margin-bottom:3px;}
+    .mbf{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-top:6px;} .mbf label{font-size:12px;font-weight:600;color:#334155;} .mbf input{width:100%;margin-top:2px;}
+    .mbout{font-size:12.5px;margin-top:6px;} .mbout .ok{color:#166534;font-weight:700;} .mbout .bad{color:#b91c1c;font-weight:700;} .mbout table{font-size:11.5px;margin-top:4px;}
     .idbox > summary{cursor:pointer;list-style:none;margin-top:10px;} .idbox > summary::-webkit-details-marker{display:none;} .idbox > summary:before{content:'▸ ';} .idbox[open] > summary:before{content:'▾ ';}
     .iwf{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;} .iwf input,.iwf select{border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:13px;} .iwf input{flex:2 1 220px;width:auto;} .iwf select{flex:1 1 160px;width:auto;}
     table.iwt{font-size:12px;} table.iwt td{vertical-align:top;white-space:nowrap;} table.iwt td.n{text-align:right;} table.iwt .jc{font-family:Consolas,monospace;font-size:11.5px;} table.iwt .nm{font-weight:600;white-space:normal;min-width:120px;}
@@ -331,6 +334,39 @@
        <div class="table-wrap" style="max-height:320px;margin-top:4px;"><table class="idt">
          <thead><tr><th>Name</th><th class="n">Works</th><th class="n">Avg MRs</th><th class="n">To fill</th><th class="n">MR gap</th><th class="n">WL pending</th><th class="n">WL done</th><th class="n">6 MRs</th></tr></thead>
          <tbody id="idBrk"></tbody></table></div>
+     </details>
+   </div>
+   <div class="card hidden" id="mbCard">
+     <h2 style="margin:0;color:#7a3b00;">📒 MB books</h2>
+     <div class="muted" id="mbState" style="margin-top:4px;"></div>
+     <details class="idbox" id="mbBox">
+       <summary class="idh">Set up / change MB books <span class="muted" style="font-weight:400;">· tap to open</span></summary>
+       <div class="mbopt">
+         <div class="mbh">Option 1 — enter the range, the pages are worked out</div>
+         <div class="muted">Books issued by the Block (one continuous range). Works that are Ongoing or have an MR get pages in Job Card order (village no, household no); later works take the next free pages. MR of phase N uses first page + N − 1.</div>
+         <div class="mbf">
+           <label>First MB<input type="number" id="mbFirst" min="1"></label>
+           <label>Last MB<input type="number" id="mbLast" min="1"></label>
+           <label>Pages per MB<input type="number" id="mbPpm" min="10" value="200"></label>
+           <label>Pages per work<input type="number" id="mbPpw" min="1" value="10"></label>
+         </div>
+         <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap;">
+           <button class="btn-light btn-small" id="mbPreview">👁 Preview</button>
+           <button class="btn-primary btn-small" id="mbSave" disabled>✅ Save &amp; allot</button>
+         </div>
+         <div id="mbPrevOut" class="mbout"></div>
+       </div>
+       <div class="mbopt">
+         <div class="mbh">Option 2 — upload an Excel (MB numbers already given by hand)</div>
+         <div class="muted">Save the range in Option 1 first. Download the template (every work of the GP in Job Card order, with today's MB No / Page From), fill <b>MB No</b> and <b>Page From</b> (first page of the work: 1, 11, 21 …), upload. It is checked first; nothing changes until you press Apply. Works left blank / not in the file get the next free pages.</div>
+         <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap;">
+           <button class="btn-light btn-small" id="mbTpl">⬇ Template</button>
+           <label class="btn-light btn-small" style="cursor:pointer;font-weight:700;border-radius:8px;padding:6px 10px;font-size:12px;">⭱ Upload Excel<input type="file" id="mbFile" accept=".xlsx,.xls,.csv" hidden></label>
+           <button class="btn-primary btn-small hidden" id="mbApply">✅ Apply</button>
+         </div>
+         <div id="mbUpOut" class="mbout"></div>
+       </div>
+       <div class="row" style="justify-content:flex-end;margin-top:8px;"><button class="btn-light btn-small" id="mbReset" style="color:#b91c1c;">Reset MB books</button></div>
      </details>
    </div>
    <div class="card" id="iayWorks">
@@ -705,7 +741,7 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
-<script src="./js/iay-dash.js?v=20261110b"></script>
+<script src="./js/iay-dash.js?v=20261112a"></script>
 <script src="./js/admin.js?v=20261110b"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 </body>

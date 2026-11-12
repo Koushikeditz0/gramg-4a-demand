@@ -31,6 +31,8 @@
     td.g.z-red{background:#fecaca;} td.g.z-yellow{background:#fef9c3;} td.g.z-green{background:#dcfce7;}
     table.list th{background:#e2e8f0;color:#172033;border:1px solid #e2e8f0;position:sticky;top:0;} table.list td{text-align:left;white-space:nowrap;}
     .mono{font-family:Consolas,monospace;font-size:12px;}
+    table.pd th{font-size:11.5px;padding:5px;} table.pd th.ph{background:#7a3b00;border-color:#8a4a10;} table.pd td{white-space:nowrap;}
+    table.pd tr:first-child th:first-child,table.pd td.g{position:sticky;left:0;z-index:1;} table.pd td.g{background:#fff;} table.pd tr.tot td.g{background:#e2e8f0;} table.pd tr:first-child th:first-child{z-index:2;background:#1f4e79;}
     .err{background:#fee2e2;color:#991b1b;border-radius:8px;padding:12px;font-size:14px;}
   </style>
 </head>
@@ -67,10 +69,16 @@
     <div class="muted" id="listNote"></div>
     <div class="table-wrap" style="max-height:65vh"><table id="listTbl" class="list"></table></div>
   </div>
+  <div class="card" id="pdCard">
+    <div style="font-size:15px;font-weight:700;color:#7a3b00;margin-bottom:4px">PBA Mandays Status</div>
+    <div class="muted" style="margin-bottom:6px">IAY (State Scheme House). Target 90 days a house · PD per phase = e-MR × 14 · Actual PD = mandays in the Phase Report · data as of the Last update above.</div>
+    <div class="table-wrap"><table id="pdTbl" class="pd"></table></div>
+    <div class="muted" style="margin-top:6px">% of e-MR generation: 1st phase out of all works, later phases out of 1st-phase e-MRs. Remaining PD = PD expected from the e-MRs generated − actual PD.</div>
+  </div>
   <div class="muted" style="text-align:center;margin:10px 0 20px">G RAM-G 4A · IAY Tracker · Developed &amp; Maintained by Koushik Sarkar (VLE)</div>
 </div>
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/iay-summary.js?v=20261110c"></script>
-<script src="./js/iay-report.js?v=20261109c"></script>
+<script src="./js/iay-report.js?v=20261112a"></script>
 </body>
 </html>

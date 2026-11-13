@@ -1,6 +1,6 @@
 -- =====================================================================
 -- G RAM-G 4A List Builder: clean up import staging rows right after an import
--- finishes (v208, 2026-11-13). Already run from Claude via Supabase MCP.
+-- finishes (v208, 2026-11-13). Run once in Supabase → SQL Editor.
 -- Before: the copy was only deleted when the NEXT import started, so the
 -- last import's rows (e.g. 10,793 rows of GP 3) stayed in the database.
 -- Now: also deleted as soon as an import's status leaves 'staged'

@@ -1403,6 +1403,21 @@
     .sn-list label small{font-weight:400;font-size:11px;color:#64748b;}
     .sn-list input{display:none;} .sn-list label.on{border-color:#059669;background:#ecfdf5;color:#065f46;}
     .sn-btns{display:flex;gap:8px;} .sn-btns button{flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:15px;}
+    /* ② Worker: Sansad tiles instead of the dropdown, Add button, Next bar also in 2 column */
+    body.gs-in #villageSelect{display:none;}
+    .sn-tiles{display:none;grid-template-columns:repeat(5,1fr);gap:6px;margin:4px 0 10px;}
+    body.gs-in .sn-tiles{display:grid;}
+    .sn-tiles button{position:relative;border:2px solid #e2e8f0;background:#fff;border-radius:12px;padding:9px 2px;font:inherit;font-weight:800;font-size:15px;color:#334155;cursor:pointer;box-shadow:0 2px 6px -3px rgba(15,23,42,.2);}
+    .sn-tiles button.mine{border-color:#a7f3d0;background:#f0fdf4;}
+    .sn-tiles button.mine:after{content:"★";position:absolute;top:1px;right:4px;font-size:10px;color:#059669;}
+    .sn-tiles button.on{background:linear-gradient(145deg,#3b82f6,#1d4ed8);border-color:#1d4ed8;color:#fff;box-shadow:0 6px 12px -5px rgba(29,78,216,.7);}
+    .sn-tiles button.on:after{color:#fff;}
+    .sn-tiles .sn-more{grid-column:1/-1;font-size:13px;font-weight:700;color:#2563eb;border-style:dashed;}
+    body.gs-in #addBtn{background:linear-gradient(120deg,#059669,#10b981);border:0;font-weight:800;box-shadow:0 6px 12px -5px rgba(5,150,105,.7);}
+    body.gs-in.list-open:not(.list-readonly):not(.ui-new) .wbar{display:flex;}
+    body.gs-in.list-open:not(.list-readonly):not(.ui-new){padding-bottom:78px;}
+    body.gs-in:not(.ui-new) .wbar-more{display:none;}
+    body.gs-in:not(.ui-new) #nextBtn{display:none;}
   </style>
 
 </head>
@@ -1783,16 +1798,11 @@
     <div class="control-box">
 
 
-      <div class="field-label">
-
-        Village
-
-      </div>
+      <div class="field-label">Sansad (Village)</div>
 
 
-      <select
-        id="villageSelect"
-        onchange="villageChanged()">
+      <div class="sn-tiles" id="snTiles"></div>
+      <select id="villageSelect" onchange="villageChanged()">
 
         <option value="">
 
@@ -1816,13 +1826,7 @@
           onkeydown="searchKey(event)">
 
 
-        <button
-          class="btn-primary"
-          onclick="searchBeneficiary()">
-
-          Search
-
-        </button>
+        <button class="btn-primary" id="addBtn" onclick="searchBeneficiary()">＋ Add</button>
 
 
       </div>
@@ -2410,8 +2414,8 @@
           hideLoading();
 
 
-          villages =
-            res || [];
+          villages = res || [];
+          setTimeout(renderSnTiles,0);
 
 
           const select =
@@ -2521,13 +2525,7 @@
         .trim();
 
 
-    if(
-      value === ''
-    ){
-
-      clearSearchResults();
-
-    }
+    if(value==='' && !document.body.classList.contains('gs-in')){ clearSearchResults(); }
 
   }
 
@@ -2636,7 +2634,7 @@
       showLoading('নাম দিয়ে search হচ্ছে...');
       google.script.run
         .withSuccessHandler(function(res){
-          hideLoading(); families=res||[]; renderSearchResults();
+          hideLoading(); families=res||[]; renderSearchResults(); addDone();
           const n=families.reduce(function(a,f){return a+f.members.length;},0);
           showStatus(n ? n+' জন worker পাওয়া গেছে'+(n>=100?' (প্রথম ১০০ জন — নাম আরও নির্দিষ্ট করুন)':'')+'।' : 'এই নামে কোনো worker পাওয়া যায়নি।', n?'success':'error');
         })
@@ -2657,8 +2655,11 @@
     showLoading('Beneficiary search হচ্ছে...');
     google.script.run
       .withSuccessHandler(function(res){
-        hideLoading(); families=res||[]; renderSearchResults();
-        if(!otherGp.length) showStatus(families.length+'টি Job Card পাওয়া গেছে।', families.length?'success':'error');
+        hideLoading();
+        const got=res||[], keys={}; got.forEach(function(f){ keys[f.key||f.jobCard]=true; });
+        families=got.concat(families.filter(function(f){ return !keys[f.key||f.jobCard]; }));
+        renderSearchResults(); addDone();
+        if(!otherGp.length) showStatus(got.length?got.length+'টি Job Card যোগ হয়েছে। পরের নম্বর লিখুন।':'Job Card পাওয়া যায়নি।', got.length?'success':'error');
       })
       .withFailureHandler(function(err){ hideLoading(); showStatus(err.message||String(err),'error'); })
       .getFamilies(token, entries);
@@ -2666,6 +2667,10 @@
 
 
 
+  function addDone(){
+    const i=document.getElementById('searchInput'); i.value='';
+    try{ i.focus(); }catch(e){}
+  }
   /* =====================================================
      MAKE SELECTED MEMBER
   ====================================================== */
@@ -3968,6 +3973,7 @@ function setStep(n, fromPreview){
   curStep=n;
   [1,2,3,4].forEach(function(k){ document.body.classList.toggle('step-'+k, k===n); });
   if(n===1){ fillInfo(''); fillSup(''); }
+  if(n===2 && typeof renderSnTiles==='function') renderSnTiles();
   window.scrollTo(0,0);
   if(typeof renderChrome==='function') renderChrome();
 }
@@ -4694,7 +4700,7 @@ function openSansadPick(){
 function saveSansad(list){
   if(list===null) list=Array.prototype.map.call(document.querySelectorAll('#snList input:checked'),function(i){ return Number(i.value); });
   try{ localStorage.setItem(snKey(), JSON.stringify(list)); }catch(e){}
-  closePage('snPage'); renderOthers(); renderHome();
+  closePage('snPage'); renderOthers(); renderHome(); const vs=document.getElementById('villageSelect'); if(vs && list.length && list.indexOf(Number(vs.value))<0){ vs.value=String(list[0]); } renderSnTiles();
   showStatus(list.length?'✅ আপনার Sansad: '+list.map(function(v){ return String(v).padStart(3,'0'); }).join(', ')+'। Home-এ এদের খবর দেখাবে।':'✅ সব Sansad-এর খবর Home-এ দেখাবে।','success');
 }
 function renderHomeAbps(){
@@ -4735,6 +4741,29 @@ function renderHomeAbps(){
     gsAbpsBusy=true;
     gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; gsAbpsErr=''; gsAbpsAt=Date.now(); gsAbpsBusy=false; renderHomeAbps(); },
       function(e){ gsAbpsBusy=false; gsAbpsAt=Date.now(); if(e&&e.authLost) return; gsAbpsErr=(e&&e.code==='ABPS_SETUP')?'ABPS অংশ এখনো চালু হয়নি।':'ABPS তথ্য আনা যায়নি।'; renderHomeAbps(); });
+  }
+}
+/* ---------- ② Worker: Sansad as tiles; My Sansad first (★) and picked by default ---------- */
+let snShowAll=false;
+function renderSnTiles(){
+  const box=document.getElementById('snTiles'), sel=document.getElementById('villageSelect'); if(!box||!sel) return;
+  const all=(villages||[]).map(function(v){ return Number(v.v); }), mine=mySansad().filter(function(v){ return all.indexOf(v)>=0; });
+  if(!sel.value && mine.length){ sel.value=String(mine[0]); }
+  const cur=Number(sel.value)||0;
+  let show=all;
+  if(mine.length && !snShowAll) show=all.filter(function(v){ return mine.indexOf(v)>=0 || v===cur; });
+  else if(mine.length) show=mine.concat(all.filter(function(v){ return mine.indexOf(v)<0; }));
+  box.innerHTML='';
+  show.forEach(function(v){
+    const b=document.createElement('button'); b.type='button'; b.textContent=String(v).padStart(3,'0');
+    b.className=(mine.indexOf(v)>=0?'mine':'')+(v===cur?' on':''); b.title='Sansad '+String(v).padStart(3,'0');
+    b.onclick=function(){ if(sel.value===String(v)) return; sel.value=String(v); villageChanged(); renderSnTiles(); try{ document.getElementById('searchInput').focus(); }catch(e){} };
+    box.appendChild(b);
+  });
+  if(mine.length && all.length>mine.length){
+    const m=document.createElement('button'); m.type='button'; m.className='sn-more';
+    m.textContent=snShowAll?'▲ শুধু আমার Sansad':'▼ অন্য Sansad ('+(all.length-mine.length)+')';
+    m.onclick=function(){ snShowAll=!snShowAll; renderSnTiles(); }; box.appendChild(m);
   }
 }
 let curSection='home';

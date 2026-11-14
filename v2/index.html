@@ -1455,6 +1455,7 @@
     @media screen{body:before{content:"";position:fixed;left:0;right:0;bottom:0;height:62vh;z-index:-1;pointer-events:none;opacity:.6;
       background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='320' cy='120' r='34' fill='%23fde68a' opacity='.55'/%3E%3Cpath d='M0 190 Q90 150 190 178 T400 160 V300 H0Z' fill='%23dcfce7'/%3E%3Cpath d='M0 225 Q120 190 240 214 T400 205 V300 H0Z' fill='%23bbf7d0' opacity='.8'/%3E%3Cpath d='M0 262 Q140 236 270 254 T400 248 V300 H0Z' fill='%23bfdbfe' opacity='.7'/%3E%3Cpath d='M60 250 Q200 170 340 250' fill='none' stroke='%2393c5fd' stroke-width='4'/%3E%3Cg stroke='%2393c5fd' stroke-width='2'%3E%3Cline x1='100' y1='250' x2='100' y2='226'/%3E%3Cline x1='150' y1='250' x2='150' y2='206'/%3E%3Cline x1='200' y1='250' x2='200' y2='199'/%3E%3Cline x1='250' y1='250' x2='250' y2='206'/%3E%3Cline x1='300' y1='250' x2='300' y2='226'/%3E%3C/g%3E%3Cpath d='M20 214 l6 -14 l6 14 M40 210 l6 -14 l6 14 M360 206 l6 -14 l6 14' stroke='%2386efac' stroke-width='2' fill='none'/%3E%3C/svg%3E") center bottom/cover no-repeat;}}
   @media screen{
+    body.gs-in #searchResults .photo-btn,body.gs-in #selectedResults .photo-btn{display:none!important;}
     /* every page: soft sky tint on top so the picture background reads on all pages */
     html{background:linear-gradient(180deg,#eef4ff 0%,#f1f5f9 45%,#f0fdf4 100%) fixed;}
     body{background:transparent!important;}
@@ -2149,7 +2150,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261114b"></script>
+<script src="./js/gramg-adapter.js?v=20261114c"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -4168,7 +4169,9 @@ function submitMyList(){
   if(have<req){ openMeta(selected.size+' জন worker-এর জন্য '+req+' জন Supervisor-এর নাম লাগবে (দেওয়া আছে '+have+' জন)।'); return; }
   const ask=function(){
     if(!selected.size){ showStatus('খালি list জমা দেওয়া যায় না। আগে worker select করুন।','error'); return; }
-    askYesNo({icon:'📤',title:'"'+listState.workName+'" list জমা দেবেন?',msg:selected.size+' জন worker সহ Admin-এর কাছে যাবে।\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।',yes:'হ্যাঁ, জমা দিন',kind:'ok'})
+    const miss=missingAccCount();
+    askYesNo({icon:'📤',title:'"'+listState.workName+'" list জমা দেবেন?',msg:selected.size+' জন worker সহ Admin-এর কাছে যাবে।\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।'+
+      (miss?'\n\n🏦 '+miss+' জনের Account নেই। জমা দিলে এঁদের নাম "Bank Account"-এ চলে যাবে, সেখান থেকে passbook-এর photo পাঠাবেন।':''),yes:'হ্যাঁ, জমা দিন',kind:'ok'})
       .then(function(ok){ if(ok) submitMyListNow(); });
   };
   // PBA (IAY) beneficiaries with a running MR: the portal leaves them out of the Demand
@@ -4177,16 +4180,27 @@ function submitMyList(){
     iayRemoveAsk(true).then(function(removed){ if(!removed) ask(); });
   });
 }
+// workers of this list without Account No / IFSC (from the Preview's account check; 0 when not checked yet)
+function missingAccCount(){
+  if(!accountMap || !Object.keys(accountMap).length) return 0;
+  let n=0; selected.forEach(function(it){ const a=accountMap[String(it.jobCard).toUpperCase()+'|'+String(it.applicantNo)]||{}; if(!a.accountNo||!a.ifsc) n++; });
+  return n;
+}
 function submitMyListNow(){
   if(busySaving()) return;
   if(document.getElementById('previewOverlay').classList.contains('show')) closeFinalPreview();
   showLoading('List জমা দেওয়া হচ্ছে...');
+  const subId=listState.listId;
   gramgAdapter.submitList().then(function(r){
+    // workers without account → requests in Bank Account (the server decides who is missing)
+    const accReq=(subId && gramgAdapter.listMissingAccounts) ? gramgAdapter.listMissingAccounts(subId).catch(function(){ return null; }) : Promise.resolve(null);
     // blank screen for the next work; the submitted list stays in the list picker above
     document.getElementById('searchInput').value=''; clearSearchResults();   // fresh screen for the next work
     const blank=gramgAdapter.closeList ? gramgAdapter.closeList().then(afterListLoaded) : Promise.resolve();
-    return blank.catch(function(){ hideLoading(); }).then(function(){
-      showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে। নতুন কাজের জন্য "➕ New Demand" চাপুন।','success');
+    return Promise.all([blank.catch(function(){ hideLoading(); }), accReq]).then(function(x){
+      const a=x[1], n=a?(Number(a.added)||0)+(Number(a.already)||0):0;
+      showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে।'+(n?' 🏦 '+n+' জনের Account নেই, এঁদের নাম Bank Account-এ গেছে।':' নতুন কাজের জন্য "➕ New Demand" চাপুন।'),'success');
+      if(a && typeof loadAcRequests==='function') loadAcRequests();
     });
   },function(e){
     hideLoading(); if(e && e.authLost) return;

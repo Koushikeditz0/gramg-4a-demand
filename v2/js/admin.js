@@ -1418,9 +1418,10 @@
       stat(bad, 'Now inactive / no eKYC-ABPS', bad ? 'bad' : '');
       $('pvWork').value = d.work_name || '';
       $('pvCode').value = d.work_code || '';
-      var dOk = 0, dAll = 0, aOk = 0, aAll = 0;
-      items.forEach(function (x) { if (x.demand_status) { dAll++; if (x.demand_status === 'done') dOk++; } if (x.alloc_status) { aAll++; if (x.alloc_status === 'done') aOk++; } });
+      var dOk = 0, dAll = 0, dAl = 0, aOk = 0, aAll = 0;
+      items.forEach(function (x) { if (x.demand_status) { dAll++; if (isAlready(x.demand_status, x.demand_msg)) dAl++; else if (x.demand_status === 'done') dOk++; } if (x.alloc_status) { aAll++; if (x.alloc_status === 'done') aOk++; } });
       if (dAll) { stat(dOk + '/' + dAll, 'Demand done (K-Desk)', dOk < dAll ? 'warn' : 'good'); }
+      if (dAl) { stat(dAl, 'Demand already there (portal)', 'warn'); }
       if (aAll) { stat(aOk + '/' + aAll, 'Allocation done (K-Desk)', aOk < aAll ? 'warn' : 'good'); }
       $('pvKdesk').textContent = d.exported_at ? '🖥 Last taken to K-Desk / exported: ' + fmtDate(d.exported_at) + (d.export_count > 1 ? ' (' + d.export_count + ' times)' : '') : 'Not taken to K-Desk yet.';
       $('pvSups').value = (d.supervisors || []).join(', ');
@@ -1436,8 +1437,11 @@
       .then(function () { loading(''); });
   }
   var RES = { done: 'Success', error: 'Error', skipped: 'Skipped' };
-  function resCell(s, msg, at) {
-    var td = el('td', s ? (s === 'done' ? '✓ ' : '✕ ') + RES[s] : '—', s ? (s === 'done' ? 'res-ok' : 'res-bad') : 'muted');
+  // portal: "Demand of X for period … is already there (and work is allotted)": K-Desk reports done, but nothing new was entered
+  function isAlready(s, msg) { return s === 'done' && /already there|already exists/i.test(msg || ''); }
+  function resCell(s, msg, at, demand) {
+    var al = demand && isAlready(s, msg);
+    var td = el('td', al ? '⚠ Already there' : s ? (s === 'done' ? '✓ ' : '✕ ') + RES[s] : '—', al ? 'res-warn' : s ? (s === 'done' ? 'res-ok' : 'res-bad') : 'muted');
     td.title = (msg || '') + (at ? (msg ? ' · ' : '') + fmtDate(at) : ''); td.style.whiteSpace = 'nowrap';
     return td;
   }
@@ -1451,7 +1455,7 @@
       [++sl, x.job_card_no, x.applicant_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '—', x.ifsc || '—'].forEach(function (c, i) {
         var td = el('td', String(c)); if (i === 1 || i === 6 || i === 7) td.className = 'mono nw'; tr.appendChild(td);
       });
-      tr.appendChild(resCell(x.demand_status, x.demand_msg, x.demand_at)); tr.appendChild(resCell(x.alloc_status, x.alloc_msg, x.alloc_at));
+      tr.appendChild(resCell(x.demand_status, x.demand_msg, x.demand_at, true)); tr.appendChild(resCell(x.alloc_status, x.alloc_msg, x.alloc_at));
       var notes = [];
       if (!x.active) notes.push('inactive'); else if (!x.eligible) notes.push('no eKYC/ABPS');
       if (x.in_other_lists > 0) notes.push('also in another list');
@@ -1543,7 +1547,7 @@
     loadXlsx().then(function () {
       var aoa = [['SL No', 'Job Card No', 'Applicant Name', 'eKYC', 'ABPS', 'Account No', 'IFSC Code', 'Demand', 'Demand result', 'Allocation', 'Allocation result']];
       (pv.data.items || []).forEach(function (x, i) { aoa.push([i + 1, x.job_card_no, x.applicant_name, yn(x.ekyc), yn(x.abps), x.account_no || '', x.ifsc || '',
-        RES[x.demand_status] || '', x.demand_msg || '', RES[x.alloc_status] || '', x.alloc_msg || '']); });
+        (isAlready(x.demand_status, x.demand_msg) ? 'Already there' : RES[x.demand_status] || ''), x.demand_msg || '', RES[x.alloc_status] || '', x.alloc_msg || '']); });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 30 }, { wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 13 }, { wch: 9 }, { wch: 28 }, { wch: 10 }, { wch: 28 }];
       var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'List');

@@ -259,12 +259,45 @@
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
     <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
+    <button class="tab" data-tab="signup"><i>🙋</i><span>Requests <b class="badge badge-admin hidden" id="suBadge"></b></span></button>
     <button class="tab" data-tab="masters" id="mastersTab"><i>🏗</i><span>Works &amp; Supervisors</span></button>
   </div>
   <div class="side-foot">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
 </aside>
 <main class="main">
   <div id="status" class="status" role="status" aria-live="polite"></div>
+
+  <!-- ============ SUPERVISOR ACCOUNT REQUESTS (v213) ============ -->
+  <section id="tab-signup" class="hidden">
+    <div class="card">
+      <h2 style="margin:0;">🙋 Supervisor account requests</h2>
+      <div class="muted">Supervisors cannot make an account from the login page. Turn on a <b>request link</b> below and send the link or QR in the supervisors' WhatsApp group. Whoever opens it picks their own name from the <b>Works &amp; Supervisors</b> list, enters their <b>mobile number</b> (this becomes the username) and their own PIN. The account works only after you press <b>Accept</b>.</div>
+      <label class="f" for="suGp">Gram Panchayat</label>
+      <select id="suGp"></select>
+      <div class="muted" id="suSetup"></div>
+    </div>
+    <div class="card">
+      <h2>🔗 Request link</h2>
+      <div id="suLinkBox" class="muted">No link yet.</div>
+      <div class="row" style="margin-top:8px;align-items:flex-end;">
+        <div><label class="f" for="suDays">Link works for</label>
+          <select id="suDays"><option value="1">1 day</option><option value="3">3 days</option><option value="7" selected>7 days</option><option value="15">15 days</option><option value="30">30 days</option></select></div>
+        <button class="btn-primary btn-small" id="suNew">🔄 Make new link</button>
+        <button class="btn-light btn-small" id="suCopy" disabled>📋 Copy link</button>
+        <button class="btn-light btn-small" id="suQrDl" disabled>🔳 Download QR</button>
+        <button class="btn-danger btn-small" id="suOff" disabled>⛔ Turn off</button>
+      </div>
+      <div id="suQrWrap" class="hidden" style="margin-top:10px;"><canvas id="suQr" style="max-width:220px;width:100%;border:1px solid #e2e8f0;border-radius:10px;"></canvas></div>
+      <div class="muted" style="margin-top:6px;">A new link stops the old one at once. Turn the link off when everyone has sent their request.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">📨 Requests</h2><button class="btn-light btn-small" id="suRefresh">🔄 Refresh</button></div>
+      <div class="muted">Check that the name and mobile number are really your supervisor's before you accept. A request not accepted in 7 days is removed by itself.</div>
+      <div class="table-wrap stack" style="margin-top:6px;"><table>
+        <thead><tr><th>Supervisor</th><th>ID</th><th>Mobile / Username</th><th>Sent</th><th>Status</th><th></th></tr></thead>
+        <tbody id="suBody"></tbody></table></div>
+    </div>
+  </section>
 
   <!-- ============ WORKS & SUPERVISORS (v185) ============ -->
   <section id="tab-masters" class="hidden">
@@ -757,5 +790,7 @@
 <script src="./js/admin.js?v=20261114a"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
+<script src="./js/vendor/qrcode-1.4.4.js"></script>
+<script src="./js/admin-signup.js?v=20261114a"></script>
 </body>
 </html>

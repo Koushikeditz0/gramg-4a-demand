@@ -18,6 +18,13 @@
 //   * The profile is created through public.admin_create_profile (validated
 //     and audited in the database). If that fails, the new login is deleted.
 //   * PIN reset ends every device session of that user (audited).
+//   * v213: two actions WITHOUT a login, for the supervisor request page
+//     v2/join.html (opened only from the Admin's request link / QR):
+//       check_link      → GP name + supervisor list of that link
+//       request_account → login created BANNED + pending request; the Admin
+//                         accepts / rejects it in the Admin panel (database).
+//     The database checks the link code and limits (wrong codes / requests per
+//     IP per hour, one pending request per supervisor, 20 per GP).
 //
 // Deploy (Supabase dashboard): Edge Functions → admin-users → Code →
 // paste this file → Deploy. "Verify JWT" stays OFF (this function checks
@@ -91,6 +98,77 @@ async function rpcAsUser(url: string, publishable: string, token: string, fn: st
   return data;
 }
 
+// Call a database function with the SECRET key (only the signup_* functions,
+// which are granted to service_role only).
+async function rpcAsService(url: string, secret: string, fn: string, args: Record<string, unknown>): Promise<any> {
+  const res = await fetch(url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: secretHeaders(secret), body: JSON.stringify(args) });
+  const data = await asJson(res);
+  if (!res.ok) { const err: any = new Error((data && data.message) || ('HTTP ' + res.status)); err.code = 'DB_ERROR'; throw err; }
+  return data;
+}
+
+function clientIp(req: Request): string {
+  const xf = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  return (xf || req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || 'unknown').slice(0, 64);
+}
+
+const BAN = '876000h';   // ~100 years: the login exists but cannot be used until the Admin accepts
+
+// Supervisor request page (no login). Every check is repeated by the database.
+async function publicAction(req: Request, body: any, url: string, secret: string): Promise<Response> {
+  const ip = clientIp(req);
+  const code = String(body.code || '').trim().toLowerCase();
+  if (!/^[a-z0-9]{12}$/.test(code)) return reply(req, 400, { error: 'BAD_LINK' });
+
+  if (body.action === 'check_link') {
+    const r = await rpcAsService(url, secret, 'signup_check_link', { p_code: code, p_ip: ip });
+    if (r && r.error) return reply(req, r.error === 'RATE_LIMIT' ? 429 : 400, { error: r.error });
+    return reply(req, 200, r);
+  }
+
+  // request_account
+  const username = String(body.mobile || '').replace(/\D/g, '');
+  const pin = String(body.pin || '').trim();
+  const supId = Number(body.supervisor_id);
+  if (!/^[6-9][0-9]{9}$/.test(username)) return reply(req, 400, { error: 'BAD_MOBILE' });
+  if (!Number.isInteger(supId) || supId <= 0) return reply(req, 400, { error: 'BAD_SUPERVISOR' });
+  const pp = pinProblem(pin); if (pp) return reply(req, 400, { error: pp });
+  const ua = String(req.headers.get('user-agent') || '').slice(0, 300);
+  const args = { p_code: code, p_supervisor_id: supId, p_username: username, p_ip: ip, p_user_agent: ua, p_user_id: null as string | null };
+
+  // 1. may it go ahead? (link, limits, supervisor free, mobile not used)
+  const chk = await rpcAsService(url, secret, 'signup_request', args);
+  if (chk && chk.error) return reply(req, chk.error === 'RATE_LIMIT' ? 429 : 400, { error: chk.error });
+
+  // 2. the login, banned until the Admin accepts
+  const cr = await fetch(url + '/auth/v1/admin/users', {
+    method: 'POST', headers: secretHeaders(secret),
+    body: JSON.stringify({ email: username + EMAIL_DOMAIN, password: pin, email_confirm: true, ban_duration: BAN }),
+  });
+  const created = await asJson(cr);
+  if (!cr.ok) {
+    const c = created && (created.error_code || created.code);
+    if (c === 'email_exists' || cr.status === 422) return reply(req, 409, { error: 'USERNAME_TAKEN' });
+    if (c === 'weak_password') return reply(req, 400, { error: 'WEAK_PIN' });
+    return reply(req, 502, { error: 'AUTH_ERROR' });
+  }
+  const userId = (created && (created.id || (created.user && created.user.id))) || '';
+  const undo = () => fetch(url + '/auth/v1/admin/users/' + userId, { method: 'DELETE', headers: secretHeaders(secret) });
+  // make sure it is banned even if this Auth version ignored ban_duration on create
+  const bannedUntil = created && (created.banned_until || (created.user && created.user.banned_until));
+  if (!bannedUntil) {
+    const b = await fetch(url + '/auth/v1/admin/users/' + userId, { method: 'PUT', headers: secretHeaders(secret), body: JSON.stringify({ ban_duration: BAN }) });
+    if (!b.ok) { await undo(); return reply(req, 502, { error: 'AUTH_ERROR' }); }
+  }
+
+  // 3. the pending request (database re-checks everything)
+  let saved: any;
+  try { saved = await rpcAsService(url, secret, 'signup_request', { ...args, p_user_id: userId }); }
+  catch (_e) { saved = { error: 'SERVER_ERROR' }; }
+  if (!saved || saved.error) { await undo(); return reply(req, 400, { error: (saved && saved.error) || 'SERVER_ERROR' }); }
+  return reply(req, 200, { ok: true, name: saved.name, username });
+}
+
 const USERNAME_RE = /^[a-z0-9_.-]{3,32}$/;
 function pinProblem(pin: string): string | null {
   if (!/^[0-9]{6,12}$/.test(pin)) return 'PIN_FORMAT';
@@ -114,12 +192,18 @@ async function handler(req: Request): Promise<Response> {
   const secret = pickKey('SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !publishable || !secret) return reply(req, 500, { error: 'SERVER_NOT_CONFIGURED' });
 
+  let body: any;
+  try { body = await req.json(); } catch (_e) { return reply(req, 400, { error: 'BAD_INPUT' }); }
+
+  // supervisor request page: no login (v213)
+  if (body && (body.action === 'check_link' || body.action === 'request_account')) {
+    try { return await publicAction(req, body, url, secret); }
+    catch (_e) { return reply(req, 500, { error: 'SERVER_ERROR' }); }
+  }
+
   const auth = req.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   if (!token || token.split('.').length !== 3) return reply(req, 401, { error: 'NOT_LOGGED_IN' });
-
-  let body: any;
-  try { body = await req.json(); } catch (_e) { return reply(req, 400, { error: 'BAD_INPUT' }); }
 
   try {
     // 1. Who is calling? (database check: active admin, live device session)

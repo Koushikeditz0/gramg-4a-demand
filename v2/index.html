@@ -1212,6 +1212,7 @@
     body.sec-acc #acPage .ac-top button{display:none;}
     .abv{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:8px;font:inherit;color:inherit;cursor:pointer;}
     .abv .vn{font-weight:800;font-size:15px;min-width:76px;}
+    .abv .vn small{display:block;font-size:12px;font-weight:600;color:#475569;max-width:110px;overflow-wrap:anywhere;}
     .abv .bars{flex:1;min-width:0;font-size:11.5px;color:#475569;}
     .abv .bar{height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin:3px 0 5px;} .abv .bar div{height:100%;background:#16a34a;}
     .abv .left{background:#fee2e2;color:#991b1b;font-weight:800;border-radius:20px;padding:3px 9px;font-size:12px;white-space:nowrap;}
@@ -1405,13 +1406,14 @@
     .sn-btns{display:flex;gap:8px;} .sn-btns button{flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:15px;}
     /* ② Worker: Sansad tiles instead of the dropdown, Add button, Next bar also in 2 column */
     body.gs-in #villageSelect{display:none;}
-    .sn-tiles{display:none;grid-template-columns:repeat(5,1fr);gap:6px;margin:4px 0 10px;}
+    .sn-tiles{display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:4px 0 10px;}
     body.gs-in .sn-tiles{display:grid;}
     .sn-tiles button{position:relative;border:2px solid #e2e8f0;background:#fff;border-radius:12px;padding:9px 2px;font:inherit;font-weight:800;font-size:15px;color:#334155;cursor:pointer;box-shadow:0 2px 6px -3px rgba(15,23,42,.2);}
     .sn-tiles button.mine{border-color:#a7f3d0;background:#f0fdf4;}
     .sn-tiles button.mine:after{content:"★";position:absolute;top:1px;right:4px;font-size:10px;color:#059669;}
     .sn-tiles button.on{background:linear-gradient(145deg,#3b82f6,#1d4ed8);border-color:#1d4ed8;color:#fff;box-shadow:0 6px 12px -5px rgba(29,78,216,.7);}
     .sn-tiles button.on:after{color:#fff;}
+    .sn-tiles button small{display:block;font-size:10px;font-weight:600;line-height:1.2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .sn-tiles .sn-more{grid-column:1/-1;font-size:13px;font-weight:700;color:#2563eb;border-style:dashed;}
     body.gs-in #addBtn{background:linear-gradient(120deg,#059669,#10b981);border:0;font-weight:800;box-shadow:0 6px 12px -5px rgba(5,150,105,.7);}
     body.gs-in.list-open:not(.list-readonly):not(.ui-new) .wbar{display:flex;}
@@ -2150,7 +2152,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261114c"></script>
+<script src="./js/gramg-adapter.js?v=20261114d"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2164,6 +2166,37 @@
   let currentUser = null;
 
   let villages = [];
+  /* Local village names the Admin wrote (SQL v212): village no → name. Kept on this
+     phone per GP so they show at once; refreshed from the server after login. */
+  let villageNames = {};
+  function vnKey(){ return currentUser ? 'GramG2_vnames_'+currentUser.gp : ''; }
+  function vLocal(v){ return villageNames[Number(v)] || ''; }
+  // "002" or "002 · কালীবাড়ি"; prefix e.g. 'Village' / 'Sansad'
+  function vLabel(v, prefix){ const l=vLocal(v); return (prefix?prefix+' ':'')+String(v).padStart(3,'0')+(l?' · '+l:''); }
+  function setVillageNames(rows){
+    const m={}; (rows||[]).forEach(function(r){ const n=String(r.name||'').trim(); if(n) m[Number(r.v)]=n; });
+    villageNames=m;
+  }
+  function loadVillageNames(){
+    const k=vnKey();
+    try{ const c=k && JSON.parse(localStorage.getItem(k)||'null'); if(c) setVillageNames(c); }catch(e){}
+    if(!window.gramgAdapter || !gramgAdapter.villageNames) return;
+    gramgAdapter.villageNames().then(function(rows){
+      if(vnKey()!==k) return;
+      const before=JSON.stringify(villageNames); setVillageNames(rows);
+      try{ localStorage.setItem(k, JSON.stringify(rows||[])); }catch(e){}
+      if(JSON.stringify(villageNames)!==before) refreshVillageLabels();
+    }, function(){});
+  }
+  // repaint the places that are already on screen
+  function refreshVillageLabels(){
+    try{ const sel=document.getElementById('villageSelect'); if(sel) [].forEach.call(sel.options,function(o){ const x=(villages||[]).find(function(v){ return String(v.v)===o.value; }); if(x) o.textContent=vLabel(x.v)+' — '+x.families+' families'; }); }catch(e){}
+    try{ renderSnTiles(); }catch(e){}
+    try{ renderHome(); }catch(e){}
+    try{ renderOthers(); }catch(e){}
+    try{ renderGsBar(); }catch(e){}
+    try{ if(curSection==='abps'){ if(abpsVillage!==null) renderAbpsVillage(); else if(abpsRows) renderAbpsSummary(); } }catch(e){}
+  }
 
   let families = [];
 
@@ -2405,6 +2438,7 @@
     currentUser = null;
 
     villages = [];
+    villageNames = {};
 
     families = [];
 
@@ -2501,11 +2535,7 @@
 
               option.textContent =
 
-                String(v.v)
-                  .padStart(
-                    3,
-                    '0'
-                  ) +
+                vLabel(v.v) +
 
                 ' — ' +
 
@@ -3507,7 +3537,7 @@
       hideLoading(); accountMap=accounts||{}; previewRows=Array.from(selected.values());
       const vs={}; previewRows.forEach(x=>{const p=parseJobCardClient(x.jobCard);if(p)vs[p.v]=true;});
       const sel=document.getElementById('previewVillage'); sel.innerHTML='<option value="">All Villages</option>';
-      Object.keys(vs).sort((a,b)=>Number(a)-Number(b)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent='Village '+String(v).padStart(3,'0');sel.appendChild(o);});
+      Object.keys(vs).sort((a,b)=>Number(a)-Number(b)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=vLabel(v,'Village');sel.appendChild(o);});
       document.getElementById('previewSearch').value='';
       const wn=document.getElementById('workName'); if(wn) wn.value=gramgAdapter.workName()||'';
       document.getElementById('pvWorkText').textContent=gramgAdapter.workName()||'—';
@@ -3796,7 +3826,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy();
+  loadVillageNames(); loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy();
   document.body.classList.add('gs-in'); renderGsBar(); renderHome();
 }
 const AUTH_LOST_MSG={
@@ -4421,7 +4451,7 @@ function renderChrome(){
   const ro=document.getElementById('roSum');
   if(ro && open && st!=='draft'){
     const vs={}; selected.forEach(function(x){ const p=parseJobCardClient(x.jobCard); if(p) vs[String(p.v).padStart(3,'0')]=true; });
-    ro.innerHTML='<div><span>Worker</span><b>'+n+' জন</b></div><div><span>Village</span><b>'+(Object.keys(vs).sort().join(', ')||'—')+'</b></div>'+
+    ro.innerHTML='<div><span>Worker</span><b>'+n+' জন</b></div><div><span>Village</span><b>'+escapeHtml(Object.keys(vs).sort().map(function(v){ return vLabel(Number(v)); }).join(', ')||'—')+'</b></div>'+
       '<div><span>Supervisor</span><b>'+escapeHtml((listState.supervisors||[]).join(', ')||'—')+'</b></div>'+
       (listState.submittedAt?'<div><span>জমা দেওয়া</span><b>'+escapeHtml(fmtBnDate(listState.submittedAt))+'</b></div>':'');
   }
@@ -4684,7 +4714,7 @@ function renderGsBar(){
     const n=acReqs.filter(function(r){ return r.status==='open'; }).length;
     t='🏦 Bank Account'; sub=n?n+' জনের passbook বাকি':'কোনো passbook বাকি নেই';
   }else if(sec==='abps'){
-    t='✅ eKYC / ABPS'; sub=(abpsVillage!==null && abpsVillage!==undefined)?'Village '+String(abpsVillage).padStart(3,'0'):'Village ছুঁয়ে বাকিদের দেখুন';
+    t='✅ eKYC / ABPS'; sub=(abpsVillage!==null && abpsVillage!==undefined)?vLabel(abpsVillage,'Village'):'Village ছুঁয়ে বাকিদের দেখুন';
   }else if(sec==='other'){ t='☰ আরও'; sub='Guide · ভাষা · Update · Logout'; }
   const tt=document.getElementById('gsTitle'), ss=document.getElementById('gsSub');
   if(tt.textContent!==t) tt.textContent=t;
@@ -4757,7 +4787,7 @@ function renderHome(){
 /* ---------- My Sansad (village) choice: per supervisor, on this phone ---------- */
 function snKey(){ return 'gs.sansad.'+String((currentUser&&(currentUser.username||currentUser.name))||''); }
 function mySansad(){ try{ const a=JSON.parse(localStorage.getItem(snKey())||'[]'); return Array.isArray(a)?a.map(Number).filter(function(x){ return x>0; }):[]; }catch(e){ return []; } }
-function snName(v){ return 'Sansad '+String(v).padStart(3,'0'); }
+function snName(v){ return escapeHtml(vLabel(v,'Sansad')); }
 function openSansadPick(){
   const sel=mySansad(), box=document.getElementById('snList'); box.innerHTML='';
   let vs=(villages||[]).map(function(v){ return {v:Number(v.v),f:v.families}; });
@@ -4765,7 +4795,7 @@ function openSansadPick(){
   if(!vs.length){ box.innerHTML='<div class="ac-hint">Village list এখনো আসেনি। একটু পরে আবার চেষ্টা করুন।</div>'; }
   vs.forEach(function(x){
     const l=document.createElement('label'); l.className=sel.indexOf(x.v)>=0?'on':'';
-    l.innerHTML='<input type="checkbox" value="'+x.v+'"'+(sel.indexOf(x.v)>=0?' checked':'')+'>'+String(x.v).padStart(3,'0')+(x.f!=null?'<small>'+x.f+' families</small>':'');
+    l.innerHTML='<input type="checkbox" value="'+x.v+'"'+(sel.indexOf(x.v)>=0?' checked':'')+'>'+escapeHtml(vLabel(x.v))+(x.f!=null?'<small>'+x.f+' families</small>':'');
     l.querySelector('input').onchange=function(){ l.classList.toggle('on',this.checked); };
     box.appendChild(l);
   });
@@ -4775,7 +4805,7 @@ function saveSansad(list){
   if(list===null) list=Array.prototype.map.call(document.querySelectorAll('#snList input:checked'),function(i){ return Number(i.value); });
   try{ localStorage.setItem(snKey(), JSON.stringify(list)); }catch(e){}
   closePage('snPage'); renderOthers(); renderHome(); const vs=document.getElementById('villageSelect'); if(vs && list.length && list.indexOf(Number(vs.value))<0){ vs.value=String(list[0]); } renderSnTiles();
-  showStatus(list.length?'✅ আপনার Sansad: '+list.map(function(v){ return String(v).padStart(3,'0'); }).join(', ')+'। Home-এ এদের খবর দেখাবে।':'✅ সব Sansad-এর খবর Home-এ দেখাবে।','success');
+  showStatus(list.length?'✅ আপনার Sansad: '+list.map(function(v){ return vLabel(v); }).join(', ')+'। Home-এ এদের খবর দেখাবে।':'✅ সব Sansad-এর খবর Home-এ দেখাবে।','success');
 }
 function renderHomeAbps(){
   const box=document.getElementById('gsAbps'), pc=document.getElementById('gsAbpsPct'), al=document.getElementById('gsAlert'), tn=document.getElementById('gsNAbps'); if(!box) return;
@@ -4798,7 +4828,7 @@ function renderHomeAbps(){
       // message for the chosen Sansad(s): eKYC/ABPS pending + passbook requests there
       const accN=acReqs.filter(function(r){ return r.status==='open' && mine.indexOf(Number(r.village_no))>=0; }).length;
       if(left || accN){
-        al.innerHTML='<div class="gs-alert"><i>🔔</i><div><b>'+escapeHtml(mine.map(function(v){ return String(v).padStart(3,'0'); }).join(', '))+' নং Sansad-এর খবর</b>'+
+        al.innerHTML='<div class="gs-alert"><i>🔔</i><div><b>'+escapeHtml(mine.map(function(v){ return vLabel(v); }).join(', '))+' Sansad-এর খবর</b>'+
           (left?left+' জনের eKYC / ABPS বাকি।':'')+(left&&accN?' ':'')+(accN?accN+' জনের passbook photo চাই।':'')+'</div></div>';
         al.firstChild.style.cursor='pointer'; al.firstChild.onclick=function(){ if(left) openSec('abps'); else openSec('acc'); };
       }
@@ -4830,7 +4860,8 @@ function renderSnTiles(){
   box.innerHTML='';
   show.forEach(function(v){
     const b=document.createElement('button'); b.type='button'; b.textContent=String(v).padStart(3,'0');
-    b.className=(mine.indexOf(v)>=0?'mine':'')+(v===cur?' on':''); b.title='Sansad '+String(v).padStart(3,'0');
+    if(vLocal(v)){ const sm=document.createElement('small'); sm.textContent=vLocal(v); b.appendChild(sm); }
+    b.className=(mine.indexOf(v)>=0?'mine':'')+(v===cur?' on':''); b.title=vLabel(v,'Sansad');
     b.onclick=function(){ if(sel.value===String(v)) return; sel.value=String(v); villageChanged(); renderSnTiles(); try{ document.getElementById('searchInput').focus(); }catch(e){} };
     box.appendChild(b);
   });
@@ -4935,7 +4966,7 @@ function renderAbpsSummary(){
   abpsRows.forEach(function(r){
     const left=r.workers-r.both, pc=r.workers?Math.round(r.both*100/r.workers):0;
     const b=document.createElement('button'); b.type='button'; b.className='abv';
-    b.innerHTML='<span class="vn">Village '+String(r.village_no).padStart(3,'0')+'</span><span class="bars">'+r.workers+' জন · ABPS '+r.abps+' · eKYC '+r.ekyc+
+    b.innerHTML='<span class="vn">Village '+String(r.village_no).padStart(3,'0')+(vLocal(r.village_no)?'<small>'+escapeHtml(vLocal(r.village_no))+'</small>':'')+'</span><span class="bars">'+r.workers+' জন · ABPS '+r.abps+' · eKYC '+r.ekyc+
       '<div class="bar"><div style="width:'+pc+'%"></div></div></span><span class="left'+(left?'':' ok')+'">'+(left?left+' বাকি':'সব ✓')+'</span>';
     b.onclick=function(){ openAbpsVillage(r.village_no); };
     body.appendChild(b);
@@ -4945,7 +4976,7 @@ function openAbpsVillage(v){
   abpsVillage=v; renderGsBar(); abpsFilter='all'; abpsList=[];
   document.getElementById('abpsSub').style.display='none';
   const body=document.getElementById('abpsBody');
-  body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>Village '+String(v).padStart(3,'0')+'</b></div><div class="ac-hint">আনছি...</div>';
+  body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>'+escapeHtml(vLabel(v,'Village'))+'</b></div><div class="ac-hint">আনছি...</div>';
   window.scrollTo(0,0);
   gramgAdapter.abpsVillage(v).then(function(rows){ if(abpsVillage!==v) return; abpsList=rows||[]; renderAbpsVillage(); },
     function(e){ if(e&&e.authLost) return; body.lastChild.textContent=(e&&e.message)||String(e); });
@@ -4954,7 +4985,7 @@ function renderAbpsVillage(){
   const v=abpsVillage, body=document.getElementById('abpsBody');
   const q=(document.getElementById('abQ')||{}).value||'';
   const cnt={all:abpsList.length, abps:abpsList.filter(function(x){return !x.abps;}).length, ekyc:abpsList.filter(function(x){return !x.ekyc;}).length, both:abpsList.filter(function(x){return !x.abps&&!x.ekyc;}).length};
-  body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>Village '+String(v).padStart(3,'0')+'</b></div>'+
+  body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>'+escapeHtml(vLabel(v,'Village'))+'</b></div>'+
     '<div class="ab-f">'+[['all','সব বাকি'],['abps','ABPS নেই'],['ekyc','eKYC নেই'],['both','দুটোই নেই']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(abpsFilter===f[0]?'on':'')+'">'+f[1]+' ('+cnt[f[0]]+')</button>'; }).join('')+'</div>'+
     '<input type="search" id="abQ" class="ab-q" placeholder="🔎 নাম বা Job Card খুঁজুন" autocomplete="off"><div id="abList"></div>';
   const qi=document.getElementById('abQ'); qi.value=q; qi.oninput=paintAbpsList;
@@ -4983,7 +5014,7 @@ function renderOthers(){
   const u=currentUser||{};
   document.getElementById('othWho').innerHTML='👤 <b>'+escapeHtml(u.name||u.username||'')+'</b>'+(u.username?' (@'+escapeHtml(u.username)+')':'')+'<br>🏛 GP: '+escapeHtml(u.gp||'')+
     (u.jcPrefix?' · '+escapeHtml(u.jcPrefix):'')+'<br><span id="othData">'+escapeHtml((document.getElementById('dataStatus')||{}).textContent||'')+'</span>';
-  const ms=mySansad(); document.getElementById('othSansad').textContent=ms.length?'এখন: '+ms.map(function(v){ return String(v).padStart(3,'0'); }).join(', ')+' · বদলাতে চাপুন':'যে Sansad-এ কাজ করেন, তার খবর Home-এ আসবে';
+  const ms=mySansad(); document.getElementById('othSansad').textContent=ms.length?'এখন: '+ms.map(function(v){ return vLabel(v); }).join(', ')+' · বদলাতে চাপুন':'যে Sansad-এ কাজ করেন, তার খবর Home-এ আসবে';
   const ib=document.getElementById('installBtn'); document.getElementById('othInstall').style.display=(ib && ib.style.display!=='none')?'':'none';
   let en=false; try{ en=localStorage.getItem('GramG2_lang')==='en'; }catch(e){}
   document.getElementById('othLang').textContent=en?'এখন: English · বাংলা করতে চাপুন':'এখন: বাংলা · English করতে চাপুন';
@@ -5058,7 +5089,7 @@ function renderAcReqList(){
   order.forEach(function(v){
     const g=document.createElement('div'); g.className='ac-grp';
     const wait=groups[v].filter(function(r){ return r.status==='open'; }).length;
-    g.innerHTML='<div class="ac-gh"><span>Village '+String(v).padStart(3,'0')+'</span><small>'+(wait?wait+' জন বাকি':'সব পাঠানো ✓')+'</small></div>';
+    g.innerHTML='<div class="ac-gh"><span>'+escapeHtml(vLabel(v,'Village'))+'</span><small>'+(wait?wait+' জন বাকি':'সব পাঠানো ✓')+'</small></div>';
     groups[v].forEach(function(r){
       g.appendChild(acRow(r,function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); }));
     });

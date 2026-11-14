@@ -891,7 +891,7 @@
     .member-sub{font-size:9px;color:#64748b;margin-top:1px;}
     .member-taken{font-size:9px;color:#b45309;font-weight:700;margin-top:1px;}
     .member-iay{font-size:9px;color:#b91c1c;font-weight:700;margin-top:1px;} 
-    .selected-item.iay-busy{background:#fef2f2;} .pba-tag{color:#b91c1c;font-weight:700;font-size:11px;}
+    .selected-item.iay-busy,.member.iay-busy{background:#fef2f2;} .family-iay{font-size:11px;color:#b91c1c;font-weight:800;margin-top:2px;} .pba-tag{color:#b91c1c;font-weight:700;font-size:11px;}
     .pv-chip.pba{background:#fef2f2;border-color:#fca5a5;color:#b91c1c;cursor:pointer;font-weight:700;}
     .member.taken .member-name{color:#94a3b8;}
     .columns > .panel.sel-panel{position:sticky;top:6px;}
@@ -2680,6 +2680,7 @@
           '<div class="fam-head-row"><div>' +
           '<div class="family-title">' + escapeHtml(family.jobCard) + '</div>' +
           '<div class="family-meta">' + family.members.length + ' members</div>' +
+          (function(){ const h=family.members.length&&iayHit(family.members[0]); return h?'<div class="family-iay">🏠 '+escapeHtml(iayText(Object.assign({},h,{self:true})))+'</div>':''; })() +
           '</div><div class="yn-head" aria-hidden="true"><span>eKYC</span><span>ABPS</span></div></div>';
 
         // App No is shown only when two members of the family have the same name
@@ -2703,7 +2704,7 @@
             const checked = selected.has(member.id);
             const taken = isTakenElsewhere(member);
             const canPick = member.ekyc && member.abps && !taken;
-            row.className = 'member' + (taken ? ' taken' : '');
+            row.className = 'member' + (taken ? ' taken' : '') + (iayHit(member) ? ' iay-busy' : '');
             const dupName = nameCount[String(member.name || '').trim().toUpperCase()] > 1;
             row.innerHTML =
               '<input type="checkbox" class="member-check" data-id="' + escapeAttr(member.id) + '" ' +
@@ -2784,6 +2785,18 @@
   ){
 
     if(listLocked(true)){ syncCurrentCheckboxes(); return; }
+
+    // PBA MR on this job card: ask right at selection time (warn only)
+    const ih = checked && !toggleMember.iayOk ? iayHit(member) : null;
+    if(ih){
+      askYesNo({icon:'🏠', title:member.name+': PBA MR চলছে',
+        msg:iayText(ih)+'\nএই তারিখে portal এঁর Demand নেবে না, labour কম দেখাবে।\n\nতবুও list-এ নেবেন?',
+        yes:'হ্যাঁ, নিন', no:'না'}).then(function(ok){
+        if(ok){ toggleMember.iayOk=true; try{ toggleMember(member,family,true); } finally { toggleMember.iayOk=false; } }
+        else syncCurrentCheckboxes();
+      });
+      return;
+    }
 
     if(checked){
 
@@ -4249,7 +4262,7 @@ function loadIayBusy(force){
     d.works.forEach(function(w){ const k=String(w[0]||'').trim().toUpperCase(); if(!k) return;
       const a=m.get(k)||[]; a.push({ben:w[1]||'',last:w[2]||'',rem:Number(w[3]||0),mrs:w[4]||[]}); m.set(k,a); });
     iayMap=m;
-    try{ renderSelected(); if(families.length && workerTab!=='sel') renderSearchResults(); }catch(e){}
+    try{ renderSelected(); if(families.length){ const t=workerTab; renderSearchResults(); if(t==='sel'){ workerTab='sel'; applyUiLayout(); } } }catch(e){}
   },function(){ iayLoading=null; });
   return iayLoading;
 }

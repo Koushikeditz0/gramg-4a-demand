@@ -388,6 +388,8 @@
       if (!st.listId) return Promise.resolve([]);
       return SB.rpc('get_list_results', { p_list_id: st.listId }, { retry: true }).catch(function (e) { throw bnError(e || {}); });
     },
+    // results of any own list (Home / My List status: Portal-এ উঠেছে)
+    resultsFor: function (id) { return SB.rpc('get_list_results', { p_list_id: id }, { retry: true }); },
     listState: function () { return st.submitState; },
     // ---- account copy (passbook) photos ----
     photoStates: function (wids) {

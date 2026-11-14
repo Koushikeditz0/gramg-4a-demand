@@ -1287,6 +1287,76 @@
       .dt-grid{grid-template-columns:1fr 1fr;}
       .dt-grid label:nth-child(1){grid-column:1/-1;}
     }
+    /* ===== v6 home (2026-11-14): blue app bar + Home with 3 tiles; old header, user bar and section tabs hidden ===== */
+    body.gs-in .header,body.gs-in .user-bar,body.gs-in #secBar{display:none !important;}
+    .gsbar{display:none;align-items:center;gap:8px;margin:-8px -8px 10px;padding:12px 14px;background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;position:sticky;top:0;z-index:45;}
+    body.gs-in .gsbar{display:flex;}
+    .gs-back{display:none;background:none;border:0;color:#fff;font-size:30px;line-height:1;padding:0 6px 4px 0;cursor:pointer;font-family:inherit;}
+    body.gs-sub .gs-back{display:block;}
+    .gs-t{flex:1;min-width:0;} .gs-t b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .gs-t small{display:block;font-size:12px;color:#dbeafe;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+    .gs-menu{background:none;border:0;color:#fff;font-size:24px;padding:2px 4px;cursor:pointer;font-family:inherit;}
+    body.gs-sub .gs-menu{display:none;}
+    .gsbar .save-chip{background:rgba(255,255,255,.18);color:#fff;border-color:transparent;}
+    .gsbar .save-chip.failed{background:#fee2e2;color:#991b1b;}
+    body.sec-home #homePage{display:block;}
+    #homePage{background:none;box-shadow:none;padding:0;}
+    .gs-hero{margin:-10px -8px 0;padding:2px 14px 18px;background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;border-radius:0 0 20px 20px;}
+    .gs-hello{font-size:20px;font-weight:800;} .gs-date{font-size:12.5px;color:#bfdbfe;margin-top:2px;}
+    .gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 10px;}
+    .gs-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid;border-radius:16px;padding:12px 4px 10px;font:inherit;font-weight:800;font-size:13px;color:#0f172a;cursor:pointer;line-height:1.15;}
+    .gs-tile i{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;}
+    .gs-tile svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+    .gs-tile.t1{background:#eff6ff;border-color:#bfdbfe;} .gs-tile.t1 i{background:#2563eb;}
+    .gs-tile.t2{background:#fff7ed;border-color:#fed7aa;} .gs-tile.t2 i{background:#ea580c;}
+    .gs-tile.t3{background:#f0fdf4;border-color:#bbf7d0;} .gs-tile.t3 i{background:#16a34a;}
+    .gs-n{position:absolute;top:6px;right:8px;background:#dc2626;color:#fff;border-radius:10px;font-size:12px;font-weight:800;padding:1px 7px;}
+    .gs-n:empty{display:none;}
+    .gs-new{width:100%;border:0;border-radius:12px;background:#2563eb;color:#fff;font:inherit;font-weight:800;font-size:16px;padding:13px;cursor:pointer;}
+    .gs-sh{display:flex;justify-content:space-between;align-items:center;margin:14px 2px 4px;font-weight:800;font-size:14px;color:#334155;}
+    .gs-sh button{background:none;border:0;color:#2563eb;font:inherit;font-weight:700;font-size:13px;cursor:pointer;padding:4px 0;}
+    .gs-mini{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:#fff;margin:6px 0;border-radius:10px;padding:10px 12px;border:1px solid #e5e7eb;border-left:4px solid #94a3b8;font:inherit;color:inherit;cursor:pointer;}
+    .gs-mini b{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;} .gs-mini b small{color:#64748b;font-weight:400;}
+    .gs-mini.k-draft{border-left-color:#eab308;} .gs-mini.k-sent{border-left-color:#2563eb;} .gs-mini.k-portal{border-left-color:#16a34a;} .gs-mini.k-ac{border-left-color:#ea580c;}
+    .gs-cam{width:34px;height:34px;border-radius:9px;background:#ea580c;display:flex;align-items:center;justify-content:center;flex:none;}
+    .gs-cam svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;}
+    .gs-none{color:#64748b;font-size:13px;padding:8px 2px;}
+    .gs-kb{margin:4px 2px;} .gs-kb .bar{height:8px;background:#dcfce7;border-radius:5px;overflow:hidden;} .gs-kb .bar div{height:100%;background:#16a34a;}
+    .gs-kb small{display:block;color:#64748b;font-size:12px;margin-top:6px;}
+    .gs-data{font-size:11.5px;color:#94a3b8;text-align:center;margin:18px 0 6px;}
+    /* status pills (My List + Home) */
+    .gst{font-size:11.5px;font-weight:800;border-radius:20px;padding:3px 9px;white-space:nowrap;flex:none;}
+    .gst.k-draft{background:#fef9c3;color:#854d0e;} .gst.k-sent{background:#eff6ff;color:#1d4ed8;} .gst.k-portal{background:#f0fdf4;color:#15803d;} .gst.k-lock{background:#e2e8f0;color:#334155;}
+    /* sub pages: the bar shows the title, so the old in-page titles go */
+    body.gs-in .sec-page>.sp-h{display:none;}
+    body.gs-in .sec-page{background:#fff;}
+    /* My List page */
+    body.gs-in .lp-row #newListBtn{background:#2563eb;color:#fff;border:0;}
+    body.gs-in .lp-row #newListBtn:disabled{background:#94a3b8;}
+    body.gs-in.list-open .lp-head{display:none;}
+    body.gs-in #lpCards>.h{display:none;}
+    .lc-chips{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;padding-bottom:2px;}
+    .lc-chips button{flex:0 0 auto;border:1px solid #e2e8f0;background:#fff;border-radius:20px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer;}
+    .lc-chips button.on{background:#2563eb;border-color:#2563eb;color:#fff;}
+    body.gs-in .lcard{border:1px solid #e5e7eb;border-left:5px solid #94a3b8;border-radius:14px;padding:12px 12px 12px 14px;}
+    body.gs-in .lcard.k-draft{border-left-color:#eab308;padding-right:54px;} body.gs-in .lcard.k-sent{border-left-color:#2563eb;}
+    body.gs-in .lcard.k-portal{border-left-color:#16a34a;} body.gs-in .lcard.k-lock{border-left-color:#94a3b8;}
+    .lcard .lc-r{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+    body.gs-in .lcard b{font-size:14.5px;line-height:1.35;}
+    .lcard .lc-go{color:#2563eb;font-weight:800;font-size:13px;margin-top:6px;}
+    /* inside a list: one slim progress line instead of the 4 step tabs */
+    .lay-cols-btn{display:none !important;} body.ui-new.more-open .lay-cols-btn{display:block !important;}
+    body.gs-in .wtab-lay{display:none !important;}
+    .steps .gs-prog{flex:1;}
+    .gs-prog{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:800;color:#334155;margin:0 2px 8px;}
+    .gs-prog .bar{flex:1;height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden;} .gs-prog .bar div{height:100%;background:#2563eb;}
+    /* Bank Account page */
+    body.gs-in.sec-acc #acPage .ac-top{display:none;}
+    body.gs-in .ac-grp{border-radius:12px;}
+    body.gs-in .ac-gh{background:#fff7ed;color:#9a3412;}
+    body.gs-in .ac-row .go{width:42px;height:42px;border-radius:10px;background:#ea580c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;}
+    body.gs-in .ac-row .go small{display:none;}
+    body.gs-in .ac-row.sent .go{background:#16a34a;}
   </style>
 
 </head>
@@ -1453,6 +1523,33 @@
     style="display:none;">
 
 
+
+    <!-- v6 APP BAR: title + back (sub pages) or ☰ (Home) -->
+    <div class="gsbar" id="gsBar">
+      <button type="button" class="gs-back" id="gsBack" onclick="gsBack()" aria-label="ফিরে যান">‹</button>
+      <div class="gs-t"><b id="gsTitle">🌉 Gram Setu</b><small id="gsSub"></small></div>
+      <span id="saveChip" class="save-chip" role="status" aria-live="polite"></span>
+      <button type="button" class="gs-menu" id="gsMenu" onclick="setSection('other')" aria-label="আরও">☰</button>
+    </div>
+
+    <!-- v6 HOME: 3 tiles + new list + recent lists + passbook + eKYC/ABPS -->
+    <div class="sec-page" id="homePage">
+      <div class="gs-hero"><div class="gs-hello" id="gsHello"></div><div class="gs-date" id="gsDate"></div></div>
+      <div class="gs-grid">
+        <button type="button" class="gs-tile t1" onclick="openSec('list')"><span class="gs-n" id="gsNList"></span><i><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 11h6M9 15h4"/></svg></i>My List</button>
+        <button type="button" class="gs-tile t2" onclick="openSec('acc')"><span class="gs-n" id="gsNAcc"></span><i><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg></i>Bank Account</button>
+        <button type="button" class="gs-tile t3" onclick="openSec('abps')"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i>eKYC / ABPS</button>
+      </div>
+      <button type="button" class="gs-new" onclick="homeNewList()">＋ নতুন list</button>
+      <div class="gs-sh"><span>সাম্প্রতিক list</span><button type="button" onclick="openSec('list')">সব ›</button></div>
+      <div id="gsRecent"></div>
+      <div class="gs-sh"><span>Passbook চাই</span><button type="button" id="gsAccAll" onclick="openSec('acc')">সব ›</button></div>
+      <div id="gsAcc"></div>
+      <div class="gs-sh"><span>eKYC / ABPS</span><button type="button" id="gsAbpsPct" onclick="openSec('abps')">›</button></div>
+      <div id="gsAbps"></div>
+      <div class="gs-data" id="gsData"></div>
+    </div>
+
     <!-- USER -->
 
     <div class="user-bar">
@@ -1480,7 +1577,6 @@
 
 
       <div class="user-actions">
-        <span id="saveChip" class="save-chip" role="status" aria-live="polite"></span>
         <button class="install-btn btn-small" id="installBtn" style="display:none;" onclick="installApp()" title="Phone-এ app হিসেবে রাখুন">📲 Install</button>
         <button
           class="btn-light btn-small"
@@ -1710,6 +1806,7 @@
 
       <button class="btn-primary btn-small" id="nextBtn" onclick="goSupervisorStep()">Next: ③ Work/Supervisor →</button>
       <button class="btn-light btn-small lay-new-btn" onclick="setUiLayout('new')" title="এক column: খুঁজুন / বাছাই tab, বড় row">▤ ১ column</button>
+      <button class="btn-light btn-small lay-cols-btn" onclick="setUiLayout('cols')" title="Search আর বাছাই পাশাপাশি">▥ ২ column</button>
       <button class="btn-danger btn-small push-right" onclick="clearSelected()" title="Clear Selected">🧹 Clear</button>
       <button class="btn-light btn-small" onclick="deleteMyList()" style="color:#dc2626;">🗑 List মুছুন</button>
 
@@ -1938,7 +2035,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261114a"></script>
+<script src="./js/gramg-adapter.js?v=20261114b"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2135,53 +2232,7 @@
           }
 
 
-          token =
-            res.token;
-
-
-          currentUser =
-            res.user;
-
-
-          document
-            .getElementById(
-              'loginView'
-            )
-            .style.display =
-            'none';
-
-
-          document
-            .getElementById(
-              'mainView'
-            )
-            .style.display =
-            'block';
-
-
-          document
-            .getElementById(
-              'userName'
-            )
-            .textContent =
-
-            currentUser.name ||
-            currentUser.username;
-
-
-          document
-            .getElementById(
-              'userGp'
-            )
-            .textContent =
-
-            'GP: ' +
-            currentUser.gp;
-
-
-          loadVillages();
-          loadSavedSelection();
-          afterLogin(res);
+          enterApp(res);
 
         }
       )
@@ -2246,6 +2297,7 @@
     clearSearchResults();
     renderSelected();
     listState={state:'draft',submittedAt:null}; renderListState();
+    document.body.classList.remove('gs-in','gs-sub'); setSection('home');
     document.body.classList.remove('list-readonly');
 
 
@@ -3629,6 +3681,7 @@ function enterApp(res){
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
   loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy();
+  document.body.classList.add('gs-in'); renderGsBar(); renderHome();
 }
 const AUTH_LOST_MSG={
   SESSION_REVOKED:'এই account-এ অন্য একটি device-এ নতুন Login হয়েছে। একটি account সর্বোচ্চ ২টি device-এ চালু থাকতে পারে, তাই এই device-এর session বন্ধ করা হয়েছে। আবার Login করুন।',
@@ -3717,11 +3770,13 @@ function renderListState(){
   document.body.classList.toggle('list-readonly', !listState.noList && listState.state!=='draft');
   const old=panel.querySelector('.lp-empty'); if(old) old.remove();
   if(listState.noList){
+    if(!(listState.lists||[]).length || (listState.lists||[]).length>=5){
     const e=document.createElement('div'); e.className='lp-empty';
     e.textContent=(listState.lists||[]).length>=5
       ? '⚠ ৫টা list হয়ে গেছে। নতুন list খুলতে আগে পুরনো একটা list বেছে "🗑 List মুছুন" চাপুন, অথবা Admin-কে বলুন।'
       : '📝 নতুন কাজের জন্য "➕ নতুন list" চাপুন আর কাজের নাম (Work Name) দিন। একই গ্রামে একাধিক কাজ থাকলে প্রতি কাজে আলাদা list।'+((listState.lists||[]).length?' জমা দেওয়া list উপরের তালিকা থেকে বেছে দেখা যাবে।':'');
     panel.appendChild(e);
+    }
     bar.style.display='none'; if(sbtn) sbtn.style.display='none'; renderListCards(); renderListMeta(); return;
   }
   const st=listState.state;
@@ -4064,33 +4119,43 @@ function goMyLists(){
 function openListCard(id){
   const sel=document.getElementById('listSelect'); sel.value=id; listSelectChanged(); workerTab='search'; applyUiLayout(); setStep(2);
 }
+let lcFilter='all';
 function renderListCards(){
   const box=document.getElementById('lpCards'); if(!box) return; box.innerHTML='';
   const lists=listState.lists||[]; if(!lists.length) return;
-  const hh=document.createElement('div'); hh.className='h'; hh.textContent='📋 My list — খুলতে ছুঁয়ে দিন'; box.appendChild(hh);
-  const card=function(l){
-    const c=document.createElement('div'); c.setAttribute('role','button'); c.tabIndex=0; c.className='lcard '+(l.submit_state||'draft');
-    const sups=l.supervisors||[];
-    c.innerHTML='<span class="pill '+escapeHtml(l.submit_state||'draft')+'">'+escapeHtml(STATE_LABEL[l.submit_state]||'')+'</span><b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b>'+
-      '<div class="m">'+(l.workers||0)+' জন'+(l.submitted_at?' · '+escapeHtml(fmtBnDate(l.submitted_at))+' জমা':'')+
-      (((l.submit_state||'draft')==='draft')?' · '+(l.work_code?'Work Code: '+escapeHtml(l.work_code):'Work Code নেই'):' · Supervisor: '+escapeHtml(sups.length?sups.join(', '):'—'))+'</div>';
+  const kinds=lists.map(function(l){ return {l:l,k:listKind(l)}; });
+  const cnt={all:kinds.length,draft:0,sent:0,portal:0};
+  kinds.forEach(function(x){ if(x.k.k==='draft') cnt.draft++; else if(x.k.k==='portal') cnt.portal++; else cnt.sent++; });
+  const ch=document.createElement('div'); ch.className='lc-chips';
+  const en=gsEn();
+  [['all',en?'All':'সব'],['draft','অসম্পূর্ণ'],['sent',en?'Submitted':'জমা'],['portal','Portal-এ']].forEach(function(f){
+    const b=document.createElement('button'); b.type='button'; b.className=lcFilter===f[0]?'on':''; b.textContent=f[1]+' '+cnt[f[0]];
+    b.onclick=function(){ lcFilter=f[0]; renderListCards(); }; ch.appendChild(b);
+  });
+  box.appendChild(ch);
+  const shown=kinds.filter(function(x){ return lcFilter==='all' || (lcFilter==='sent'?(x.k.k==='sent'||x.k.k==='lock'):x.k.k===lcFilter); });
+  if(!shown.length){ const e=document.createElement('div'); e.className='lp-none'; e.textContent='এই ভাগে কোনো list নেই।'; box.appendChild(e); }
+  gsListOrder(shown.map(function(x){ return x.l; })).forEach(function(l){
+    const k=listKind(l), draft=(l.submit_state||'draft')==='draft', sups=l.supervisors||[], r=listRes[l.list_id];
+    const c=document.createElement('div'); c.setAttribute('role','button'); c.tabIndex=0; c.className='lcard '+(l.submit_state||'draft')+' k-'+k.k;
+    let meta=(l.workers||0)+' জন';
+    if(draft) meta+=' · '+((isPendingName(l.work_name)||!sups.length)?'Work/Supervisor বাকি':'Preview আর Submit বাকি');
+    else{
+      if(l.submitted_at) meta+=' · '+fmtBnDate(l.submitted_at)+' জমা';
+      if(l.work_days) meta+=' · '+l.work_days+(gsEn()?' days':' দিন');
+      if(r && r.d>0) meta+=' · Demand ✓ '+r.d+(r.a?' · Allocation ✓ '+r.a:'');
+    }
+    c.innerHTML='<div class="lc-r"><b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b><span class="gst k-'+k.k+'">'+escapeHtml(k.t)+'</span></div>'+
+      '<div class="m">'+escapeHtml(meta)+'</div>'+(draft?'<div class="lc-go">চালিয়ে যান ›</div>':'');
     c.onclick=function(){ openListCard(l.list_id); };
-    if((l.submit_state||'draft')==='draft'){
+    if(draft){
       const d=document.createElement('button'); d.type='button'; d.className='lcard-del'; d.title='List মুছুন'; d.textContent='🗑';
       d.onclick=function(ev){ ev.stopPropagation(); deleteCard(l); };
       c.appendChild(d);
     }
     box.appendChild(c);
-  };
-  const grp=function(title, note, arr, empty){
-    const h=document.createElement('div'); h.className='lp-grp'; h.innerHTML='<span>'+title+'</span><small>'+note+'</small>'; box.appendChild(h);
-    if(!arr.length){ const e=document.createElement('div'); e.className='lp-none'; e.textContent=empty; box.appendChild(e); }
-    arr.forEach(card);
-  };
-  const drafts=lists.filter(function(l){ return (l.submit_state||'draft')==='draft'; });
-  const done=lists.filter(function(l){ return (l.submit_state||'draft')!=='draft'; });
-  grp('📝 Draft', drafts.length+'/'+MAX_DRAFTS, drafts, 'কোনো Draft নেই');
-  grp('✅ Final Submit', String(done.length), done, 'এখনো কোনো list জমা হয়নি');
+  });
+  ensureListRes();
 }
 function stepClick(i){
   if(!currentUser) return;
@@ -4210,7 +4275,7 @@ function renderChrome(){
   const names=['① My list','② Worker','③ Work/Supervisor','④ Preview'];
   const nowAt=!open?0:(st!=='draft'?3:({1:2,2:1,4:3})[curStep]||1);
   const sb=document.getElementById('lpSteps');
-  if(sb) sb.innerHTML=names.map(function(t,i){ return '<button type="button" class="st'+(i===nowAt?' now':(done[i]?' done':''))+'" onclick="stepClick('+i+')">'+t+(i===3&&done[3]?' ✓':'')+'</button>'; }).join('');
+  if(sb) sb.innerHTML=open?'<div class="gs-prog">ধাপ '+(nowAt+1)+'/4<div class="bar"><div style="width:'+((nowAt+1)*25)+'%"></div></div></div>':'';
   const tt=document.getElementById('lpTitle');
   if(tt) tt.innerHTML=open?escapeHtml(listState.workName||'(নাম নেই)')+' <span class="pill '+escapeHtml(st)+'">'+escapeHtml(STATE_LABEL[st]||'')+'</span>':'';
   const tc=document.getElementById('wTabCount'); if(tc) tc.textContent=n;
@@ -4226,6 +4291,7 @@ function renderChrome(){
   }
   const del=document.getElementById('roDelete'); if(del) del.style.display=(st==='submitted')?'':'none';
   if(open && st!=='draft') document.body.classList.remove('more-open');
+  renderGsBar(); renderHome();
 }
 applyUiLayout(); document.body.classList.add('step-2');
 /* ---------- "শেষ data": worker-দের eKYC/ABPS তথ্য কবে, কোথা থেকে update হয়েছে ---------- */
@@ -4445,14 +4511,141 @@ function sendPhoto(){
   });
 }
 /* ---------- sections: My List · Account · ABPS · Others ---------- */
-let curSection='list';
+/* ---------- v6 Home + blue app bar (Koushik 2026-11-14: supervisors got lost in too many buttons) ----------
+   Home = 3 tiles (My List · Bank Account · eKYC/ABPS) + new list + recent lists + passbook + eKYC bar.
+   Sub pages get "‹" back in the bar; the old header, user bar and section tabs stay in the page but hidden. */
+const GS_SECS=['home','list','acc','abps','other'];
+let gsAbpsAt=0, gsAbpsBusy=false, gsAbpsErr='';
+const listRes={}; let listResBusy={};
+function gsEn(){ try{ return localStorage.getItem('GramG2_lang')==='en'; }catch(e){ return false; } }
+function openSec(s){
+  if(s==='list'){ setSection('list'); if(currentUser && !listState.noList) goMyLists(); return; }
+  setSection(s);
+}
+function homeNewList(){ setSection('list'); quickNewList(); }
+function gsBack(){
+  if(curSection==='list'){
+    if(listState.noList){ setSection('home'); return; }
+    if(curStep===1 && listState.state==='draft'){ setStep(2); return; }
+    goMyLists(); return;
+  }
+  if(curSection==='abps' && abpsVillage!==null){ openAbps(); renderGsBar(); return; }
+  setSection('home');
+}
+function gsStepText(){
+  if(listState.state!=='draft') return STATE_LABEL[listState.state]||'';
+  return curStep===1 ? 'ধাপ 3/4 · Work / Supervisor বাছুন' : 'ধাপ 2/4 · Worker বাছুন';
+}
+function renderGsBar(){
+  if(!currentUser) return;
+  const sec=curSection||'home';
+  let t='🌉 Gram Setu', sub=(currentUser.name||currentUser.username||'')+' · '+(currentUser.gp||'');
+  if(sec==='list'){
+    if(listState.noList){ t='📋 My List'; sub=(listState.lists||[]).length+' টা list'; }
+    else { t=isPendingName(listState.workName)?'নতুন list':(listState.workName||'(নাম নেই)'); sub=gsStepText(); }
+  }else if(sec==='acc'){
+    const n=acReqs.filter(function(r){ return r.status==='open'; }).length;
+    t='🏦 Bank Account'; sub=n?n+' জনের passbook বাকি':'কোনো passbook বাকি নেই';
+  }else if(sec==='abps'){
+    t='✅ eKYC / ABPS'; sub=(abpsVillage!==null && abpsVillage!==undefined)?'Village '+String(abpsVillage).padStart(3,'0'):'Village ছুঁয়ে বাকিদের দেখুন';
+  }else if(sec==='other'){ t='☰ আরও'; sub='Guide · ভাষা · Update · Logout'; }
+  const tt=document.getElementById('gsTitle'), ss=document.getElementById('gsSub');
+  if(tt.textContent!==t) tt.textContent=t;
+  if(ss.textContent!==sub) ss.textContent=sub;
+  document.body.classList.toggle('gs-sub', sec!=='home');
+}
+// list status in plain words: অসম্পূর্ণ / Admin-এর কাছে / Portal-এ উঠেছে (from K-Desk results)
+function listKind(l){
+  const s=l.submit_state||'draft';
+  if(s==='draft') return {k:'draft',t:'অসম্পূর্ণ'};
+  const r=listRes[l.list_id];
+  if(r && r.d>0) return {k:'portal',t:'Portal-এ উঠেছে ✓'};
+  if(s==='locked') return {k:'lock',t:'Admin lock করেছেন'};
+  return {k:'sent',t:'Admin-এর কাছে'};
+}
+function ensureListRes(){
+  if(!currentUser || !gramgAdapter.resultsFor) return;
+  (listState.lists||[]).forEach(function(l){
+    if((l.submit_state||'draft')==='draft' || listResBusy[l.list_id]) return;
+    const old=listRes[l.list_id]; if(old && Date.now()-old.at<5*60000) return;
+    listResBusy[l.list_id]=true;
+    gramgAdapter.resultsFor(l.list_id).then(function(rows){
+      let d=0,a=0; (rows||[]).forEach(function(r){ if(r.demand_status==='done') d++; if(r.alloc_status==='done') a++; });
+      listRes[l.list_id]={at:Date.now(),d:d,a:a}; delete listResBusy[l.list_id];
+      renderListCards(); renderHome();
+    },function(){ listRes[l.list_id]={at:Date.now(),d:0,a:0}; delete listResBusy[l.list_id]; });
+  });
+}
+function gsListOrder(lists){
+  return lists.slice().sort(function(x,y){
+    const dx=(x.submit_state||'draft')==='draft'?1:0, dy=(y.submit_state||'draft')==='draft'?1:0;
+    if(dx!==dy) return dy-dx;
+    return String(y.submitted_at||y.updated_at||y.created_at||'').localeCompare(String(x.submitted_at||x.updated_at||x.created_at||''));
+  });
+}
+function gsMini(cls, html, onClick){
+  const b=document.createElement('button'); b.type='button'; b.className='gs-mini '+cls; b.innerHTML=html; b.onclick=onClick; return b;
+}
+function renderHome(){
+  if(!currentUser) return;
+  const en=gsEn(), first=String(currentUser.name||currentUser.username||'').trim().split(/\s+/)[0];
+  const h=document.getElementById('gsHello'); if(!h) return;
+  h.textContent='নমস্কার, '+first+' 🙏';
+  try{ document.getElementById('gsDate').textContent=new Date().toLocaleDateString(en?'en-IN':'bn-IN',{weekday:'long',day:'numeric',month:'long'}); }catch(e){}
+  const lists=listState.lists||[];
+  const drafts=lists.filter(function(l){ return (l.submit_state||'draft')==='draft'; }).length;
+  document.getElementById('gsNList').textContent=drafts?String(drafts):'';
+  const rec=document.getElementById('gsRecent'); rec.innerHTML='';
+  if(!lists.length) rec.innerHTML='<div class="gs-none">এখনো কোনো list নেই। "＋ নতুন list" চাপুন।</div>';
+  gsListOrder(lists).slice(0,2).forEach(function(l){
+    const k=listKind(l);
+    rec.appendChild(gsMini('k-'+k.k,'<b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b><span class="gst k-'+k.k+'">'+escapeHtml(k.t)+'</span>',
+      function(){ setSection('list'); openListCard(l.list_id); }));
+  });
+  const open=acReqs.filter(function(r){ return r.status==='open'; });
+  document.getElementById('gsNAcc').textContent=open.length?String(open.length):'';
+  document.getElementById('gsAccAll').textContent=open.length?open.length+' জন ›':'সব ›';
+  const ac=document.getElementById('gsAcc'); ac.innerHTML='';
+  if(!open.length) ac.innerHTML='<div class="gs-none">কোনো passbook বাকি নেই ✓</div>';
+  const cam='<span class="gs-cam"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>';
+  open.slice(0,2).forEach(function(r){
+    ac.appendChild(gsMini('k-ac','<b>'+escapeHtml(r.applicant_name||'')+' <small>'+escapeHtml(shortJobCard(r.job_card_no||''))+'</small></b>'+cam,
+      function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); }));
+  });
+  renderHomeAbps();
+  const ds=document.getElementById('dataStatus'), gd=document.getElementById('gsData');
+  gd.textContent=(ds&&ds.style.display!=='none')?ds.textContent:'';
+  ensureListRes();
+}
+function renderHomeAbps(){
+  const box=document.getElementById('gsAbps'), pc=document.getElementById('gsAbpsPct'); if(!box) return;
+  if(abpsRows && abpsRows.length){
+    let tw=0,tb=0,worst=null; abpsRows.forEach(function(r){ tw+=r.workers; tb+=r.both; const left=r.workers-r.both; if(left>0 && (!worst||left>worst.left)) worst={v:r.village_no,left:left}; });
+    const p=tw?Math.round(tb*100/tw):0;
+    pc.textContent=p+'% ›';
+    box.innerHTML='<div class="gs-kb"><div class="bar"><div style="width:'+p+'%"></div></div><small>'+
+      (worst?'সবচেয়ে বেশি বাকি: Village '+String(worst.v).padStart(3,'0')+' ('+worst.left+' জন)':'সবার ABPS আর eKYC হয়ে গেছে ✓')+'</small></div>';
+  }else{
+    pc.textContent='›';
+    box.innerHTML='<div class="gs-none">'+escapeHtml(gsAbpsErr||(abpsRows?'কোনো worker নেই।':'আনছি...'))+'</div>';
+  }
+  if(!gsAbpsBusy && Date.now()-gsAbpsAt>10*60000 && currentUser){
+    gsAbpsBusy=true;
+    gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; gsAbpsErr=''; gsAbpsAt=Date.now(); gsAbpsBusy=false; renderHomeAbps(); },
+      function(e){ gsAbpsBusy=false; gsAbpsAt=Date.now(); if(e&&e.authLost) return; gsAbpsErr=(e&&e.code==='ABPS_SETUP')?'ABPS অংশ এখনো চালু হয়নি।':'ABPS তথ্য আনা যায়নি।'; renderHomeAbps(); });
+  }
+}
+let curSection='home';
 function setSection(sec){
   if(sec===curSection && sec!=='abps') { window.scrollTo(0,0); return; }
   if(curSection==='list' && sec!=='list' && document.getElementById('previewOverlay').classList.contains('show') && typeof curStep!=='undefined' && curStep!==4) closeFinalPreview();
   curSection=sec;
-  ['list','acc','abps','other'].forEach(function(k){ document.body.classList.toggle('sec-'+k, k===sec); });
+  GS_SECS.forEach(function(k){ document.body.classList.toggle('sec-'+k, k===sec); });
   document.querySelectorAll('#secBar button').forEach(function(b){ b.classList.toggle('on', b.dataset.sec===sec); });
-  try{ localStorage.setItem('gramg2.sec', sec); }catch(e){}
+  try{ localStorage.setItem('gramg2.sec2', JSON.stringify({s:sec,t:Date.now()})); }catch(e){}
+  if(sec==='home') renderHome();
+  if(sec==='list') renderListCards();
+  renderGsBar();
   if(sec==='acc'){ document.getElementById('acrSearch').value=''; renderAcReqList(); loadAcRequests(); }
   if(sec==='abps') openAbps();
   if(sec==='other') renderOthers();
@@ -4465,10 +4658,10 @@ function renderSecBadge(){
 // ABPS
 let abpsRows=null, abpsVillage=null, abpsList=[], abpsFilter='all';
 function openAbps(){
-  abpsVillage=null; const body=document.getElementById('abpsBody');
+  abpsVillage=null; renderGsBar(); const body=document.getElementById('abpsBody');
   if(!abpsRows) body.innerHTML='<div class="ac-hint">আনছি...</div>';
   else renderAbpsSummary();
-  gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; if(abpsVillage===null) renderAbpsSummary(); },
+  gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; gsAbpsAt=Date.now(); gsAbpsErr=''; if(abpsVillage===null) renderAbpsSummary(); },
     function(e){ if(e&&e.authLost) return;
       body.innerHTML='<div class="selected-empty">'+(e&&e.code==='ABPS_SETUP'?'ABPS অংশ এখনো চালু হয়নি। Admin-কে বলুন (SQL v187)।':escapeHtml((e&&e.message)||String(e)))+'</div>'; });
 }
@@ -4488,7 +4681,7 @@ function renderAbpsSummary(){
   });
 }
 function openAbpsVillage(v){
-  abpsVillage=v; abpsFilter='all'; abpsList=[];
+  abpsVillage=v; renderGsBar(); abpsFilter='all'; abpsList=[];
   document.getElementById('abpsSub').style.display='none';
   const body=document.getElementById('abpsBody');
   body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>Village '+String(v).padStart(3,'0')+'</b></div><div class="ac-hint">আনছি...</div>';
@@ -4548,7 +4741,7 @@ function appUpdate(){
     else done();
   }catch(e){ done(); }
 }
-(function(){ let s='list'; try{ s=localStorage.getItem('gramg2.sec')||'list'; }catch(e){} if(['list','acc','abps','other'].indexOf(s)<0) s='list'; curSection=''; document.body.classList.add('sec-'+s); curSection=s;
+(function(){ let s='home'; try{ const o=JSON.parse(localStorage.getItem('gramg2.sec2')||'null'); if(o && Date.now()-o.t<15*60000) s=o.s; }catch(e){} if(GS_SECS.indexOf(s)<0) s='home'; curSection=''; document.body.classList.add('sec-'+s); curSection=s;
   document.querySelectorAll('#secBar button').forEach(function(b){ b.classList.toggle('on', b.dataset.sec===s); }); })();
 /* ---------- account copy requests (account not frozen) ---------- */
 let acReqs=[], acOtherTimer=null;
@@ -4558,7 +4751,8 @@ function loadAcRequests(){
     acReqs=rows||[];
     acReqs.forEach(function(r){ const w=Number(r.worker_id); if(r.status==='photo') photoState.set(w,'new'); else if(photoState.get(w)==='new') photoState.delete(w); });
     renderAcReqBar();
-    if(document.getElementById('acPage').classList.contains('show')) renderAcReqList();
+    if(document.getElementById('acPage').classList.contains('show') || curSection==='acc') renderAcReqList();
+    renderHome(); renderGsBar();
   },function(){});
 }
 function renderAcReqBar(){
@@ -4695,7 +4889,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261107d"></script>
+<script src="./js/i18n.js?v=20261114a"></script>
 </body>
 
 </html>

@@ -415,6 +415,13 @@
     abpsVillage: function (v) {
       return SB.rpc('get_abps_village', { p_village: Number(v) }, { retry: true }).catch(function (e) { throw bnError(e || {}); });
     },
+    // submitted list: workers without account → account copy requests (Bank Account section)
+    listMissingAccounts: function (id) {
+      return SB.rpc('list_missing_account_requests', { p_list_id: id }, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) return null;                       // SQL v211 not run yet
+        throw bnError(e || {});
+      });
+    },
     accountRequests: function () {
       return SB.rpc('get_account_requests', {}, { retry: true }).catch(function (e) {
         if (e && e.status === 404) return [];                         // SQL v181 not run yet

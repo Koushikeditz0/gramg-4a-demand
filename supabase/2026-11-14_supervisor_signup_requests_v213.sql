@@ -8,7 +8,7 @@
 --      the supervisor picks their own name,
 --   2. enters their mobile number (= username) and a PIN,
 --   3. the Edge Function "admin-users" (action request_account) creates the login
---      BANNED (cannot log in) and saves a pending request here. The PIN is kept
+--      BANNED (cannot log in) and saves a pending request here (table login_requests; account_requests is the older account-copy table). The PIN is kept
 --      only by Supabase Auth (hashed), never in our tables.
 --   4. Admin Accept → profile (Supervisor) + login un-banned + supervisor row linked.
 --      Admin Reject → the login is deleted.
@@ -32,7 +32,7 @@ create table if not exists public.signup_links (
 alter table public.signup_links enable row level security;
 revoke all on public.signup_links from anon, authenticated;
 
-create table if not exists public.account_requests (
+create table if not exists public.login_requests (
   id bigint generated always as identity primary key,
   gp_id smallint not null references public.gram_panchayats(id),
   supervisor_id bigint references public.gp_supervisors(id) on delete set null,
@@ -47,11 +47,11 @@ create table if not exists public.account_requests (
   decided_at timestamptz,
   decided_by uuid references auth.users(id) on delete set null
 );
-create unique index if not exists account_requests_one_pending_sup on public.account_requests (supervisor_id) where status = 'pending';
-create unique index if not exists account_requests_one_pending_user on public.account_requests (username) where status = 'pending';
-create index if not exists account_requests_gp on public.account_requests (gp_id, status, created_at desc);
-alter table public.account_requests enable row level security;
-revoke all on public.account_requests from anon, authenticated;
+create unique index if not exists login_requests_one_pending_sup on public.login_requests (supervisor_id) where status = 'pending';
+create unique index if not exists login_requests_one_pending_user on public.login_requests (username) where status = 'pending';
+create index if not exists login_requests_gp on public.login_requests (gp_id, status, created_at desc);
+alter table public.login_requests enable row level security;
+revoke all on public.login_requests from anon, authenticated;
 
 create table if not exists public.signup_attempts (
   id bigint generated always as identity primary key,
@@ -73,7 +73,7 @@ returns integer language plpgsql security definer set search_path to '' as $$
 declare v_ids uuid[]; v_n integer;
 begin
   with x as (
-    update public.account_requests set status = 'expired', decided_at = now()
+    update public.login_requests set status = 'expired', decided_at = now()
      where status = 'pending' and created_at < now() - interval '7 days'
     returning user_id)
   select array_agg(user_id) into v_ids from x where user_id is not null;
@@ -125,7 +125,7 @@ begin
   return jsonb_build_object(
     'gp_name', (select g.name from public.gram_panchayats g where g.id = v_gp),
     'supervisors', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'name', s.name, 'sup_id', s.sup_id,
-                       'taken', s.user_id is not null or exists (select 1 from public.account_requests r
+                       'taken', s.user_id is not null or exists (select 1 from public.login_requests r
                                   where r.supervisor_id = s.id and r.status = 'pending'))
                      order by lower(s.name))
                    from public.gp_supervisors s where s.gp_id = v_gp and s.active), '[]'::jsonb));
@@ -150,14 +150,14 @@ begin
   select * into v_s from public.gp_supervisors where id = p_supervisor_id and gp_id = v_gp and active;
   if not found then return jsonb_build_object('error', 'BAD_SUPERVISOR'); end if;
   if v_s.user_id is not null then return jsonb_build_object('error', 'SUPERVISOR_HAS_LOGIN'); end if;
-  if exists (select 1 from public.account_requests where supervisor_id = v_s.id and status = 'pending') then
+  if exists (select 1 from public.login_requests where supervisor_id = v_s.id and status = 'pending') then
     return jsonb_build_object('error', 'ALREADY_REQUESTED');
   end if;
   if exists (select 1 from public.profiles where username = v_user)
-     or exists (select 1 from public.account_requests where username = v_user and status = 'pending') then
+     or exists (select 1 from public.login_requests where username = v_user and status = 'pending') then
     return jsonb_build_object('error', 'USERNAME_TAKEN');
   end if;
-  if (select count(*) from public.account_requests where gp_id = v_gp and status = 'pending') >= 20 then
+  if (select count(*) from public.login_requests where gp_id = v_gp and status = 'pending') >= 20 then
     return jsonb_build_object('error', 'TOO_MANY_PENDING');
   end if;
   if p_user_id is null then
@@ -166,7 +166,7 @@ begin
   if not exists (select 1 from auth.users where id = p_user_id and lower(email) = v_user || '@users.gramg.invalid') then
     return jsonb_build_object('error', 'BAD_INPUT');
   end if;
-  insert into public.account_requests (gp_id, supervisor_id, sup_name, sup_code, username, user_id, ip, user_agent)
+  insert into public.login_requests (gp_id, supervisor_id, sup_name, sup_code, username, user_id, ip, user_agent)
   values (v_gp, v_s.id, v_s.name, v_s.sup_id, v_user, p_user_id, left(coalesce(p_ip, ''), 64), left(coalesce(p_user_agent, ''), 300))
   returning id into v_id;
   insert into public.signup_attempts (ip, kind) values (left(coalesce(p_ip, '?'), 64), 'request');
@@ -222,16 +222,16 @@ begin
                      'username', r.username, 'status', r.status, 'created_at', r.created_at, 'decided_at', r.decided_at,
                      'device', r.user_agent)
                    order by (r.status = 'pending') desc, r.created_at desc)
-                   from public.account_requests r
+                   from public.login_requests r
                   where r.gp_id = p_gp_id and (r.status = 'pending' or r.decided_at > now() - interval '14 days')), '[]'::jsonb);
 end $$;
 
 -- Accept: Supervisor profile + login un-banned + supervisor linked, all at once.
 create or replace function public.admin_accept_account_request(p_id bigint)
 returns jsonb language plpgsql security definer set search_path to '' as $$
-declare r public.account_requests%rowtype; v_uid uuid;
+declare r public.login_requests%rowtype; v_uid uuid;
 begin
-  select * into r from public.account_requests where id = p_id for update;
+  select * into r from public.login_requests where id = p_id for update;
   if not found then raise exception 'NOT_FOUND' using errcode = '22023'; end if;
   v_uid := private.require_admin_gp(r.gp_id);
   if r.status <> 'pending' then raise exception 'ALREADY_DONE' using errcode = '22023'; end if;
@@ -245,7 +245,7 @@ begin
   values (r.user_id, r.username, r.sup_name, 'gp_user', r.gp_id);
   update auth.users set banned_until = null, updated_at = now() where id = r.user_id;
   update public.gp_supervisors set user_id = r.user_id, updated_at = now() where id = r.supervisor_id and user_id is null;
-  update public.account_requests set status = 'accepted', decided_at = now(), decided_by = v_uid where id = p_id;
+  update public.login_requests set status = 'accepted', decided_at = now(), decided_by = v_uid where id = p_id;
   insert into public.audit_logs (actor_id, gp_id, action, entity, entity_id, details)
   values (v_uid, r.gp_id, 'account_request_accepted', 'profiles', r.user_id::text,
           jsonb_build_object('request_id', p_id, 'username', r.username, 'supervisor', r.sup_code));
@@ -255,18 +255,18 @@ end $$;
 -- Reject: the (banned) login is deleted.
 create or replace function public.admin_reject_account_request(p_id bigint)
 returns jsonb language plpgsql security definer set search_path to '' as $$
-declare r public.account_requests%rowtype; v_uid uuid;
+declare r public.login_requests%rowtype; v_uid uuid;
 begin
-  select * into r from public.account_requests where id = p_id for update;
+  select * into r from public.login_requests where id = p_id for update;
   if not found then raise exception 'NOT_FOUND' using errcode = '22023'; end if;
   v_uid := private.require_admin_gp(r.gp_id);
   if r.status <> 'pending' then raise exception 'ALREADY_DONE' using errcode = '22023'; end if;
-  update public.account_requests set status = 'rejected', decided_at = now(), decided_by = v_uid where id = p_id;
+  update public.login_requests set status = 'rejected', decided_at = now(), decided_by = v_uid where id = p_id;
   if r.user_id is not null and not exists (select 1 from public.profiles where user_id = r.user_id) then
     delete from auth.users where id = r.user_id;
   end if;
   insert into public.audit_logs (actor_id, gp_id, action, entity, entity_id, details)
-  values (v_uid, r.gp_id, 'account_request_rejected', 'account_requests', p_id::text,
+  values (v_uid, r.gp_id, 'account_request_rejected', 'login_requests', p_id::text,
           jsonb_build_object('username', r.username, 'supervisor', r.sup_code));
   return jsonb_build_object('ok', true);
 end $$;
@@ -276,7 +276,7 @@ create or replace function public.admin_count_account_requests(p_gp_id smallint)
 returns integer language plpgsql stable security definer set search_path to '' as $$
 begin
   perform private.require_admin_gp(p_gp_id);
-  return (select count(*) from public.account_requests
+  return (select count(*) from public.login_requests
            where gp_id = p_gp_id and status = 'pending' and created_at > now() - interval '7 days');
 end $$;
 

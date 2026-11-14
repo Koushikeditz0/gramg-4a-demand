@@ -1452,8 +1452,20 @@
     body.gs-in.list-open.step-1:not(.list-readonly) #pgSup .pg-btns .btn-primary{background:linear-gradient(120deg,#1e40af,#3b82f6);border:0;}
     body.gs-in.list-open.step-1:not(.list-readonly){padding-bottom:80px;}
     /* light picture background: fields, a canal and the bridge, very faint */
-    body.gs-in:before{content:"";position:fixed;left:0;right:0;bottom:0;height:46vh;z-index:-1;pointer-events:none;opacity:.55;
-      background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='320' cy='120' r='34' fill='%23fde68a' opacity='.55'/%3E%3Cpath d='M0 190 Q90 150 190 178 T400 160 V300 H0Z' fill='%23dcfce7'/%3E%3Cpath d='M0 225 Q120 190 240 214 T400 205 V300 H0Z' fill='%23bbf7d0' opacity='.8'/%3E%3Cpath d='M0 262 Q140 236 270 254 T400 248 V300 H0Z' fill='%23bfdbfe' opacity='.7'/%3E%3Cpath d='M60 250 Q200 170 340 250' fill='none' stroke='%2393c5fd' stroke-width='4'/%3E%3Cg stroke='%2393c5fd' stroke-width='2'%3E%3Cline x1='100' y1='250' x2='100' y2='226'/%3E%3Cline x1='150' y1='250' x2='150' y2='206'/%3E%3Cline x1='200' y1='250' x2='200' y2='199'/%3E%3Cline x1='250' y1='250' x2='250' y2='206'/%3E%3Cline x1='300' y1='250' x2='300' y2='226'/%3E%3C/g%3E%3Cpath d='M20 214 l6 -14 l6 14 M40 210 l6 -14 l6 14 M360 206 l6 -14 l6 14' stroke='%2386efac' stroke-width='2' fill='none'/%3E%3C/svg%3E") center bottom/cover no-repeat;}
+    @media screen{body:before{content:"";position:fixed;left:0;right:0;bottom:0;height:62vh;z-index:-1;pointer-events:none;opacity:.6;
+      background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='320' cy='120' r='34' fill='%23fde68a' opacity='.55'/%3E%3Cpath d='M0 190 Q90 150 190 178 T400 160 V300 H0Z' fill='%23dcfce7'/%3E%3Cpath d='M0 225 Q120 190 240 214 T400 205 V300 H0Z' fill='%23bbf7d0' opacity='.8'/%3E%3Cpath d='M0 262 Q140 236 270 254 T400 248 V300 H0Z' fill='%23bfdbfe' opacity='.7'/%3E%3Cpath d='M60 250 Q200 170 340 250' fill='none' stroke='%2393c5fd' stroke-width='4'/%3E%3Cg stroke='%2393c5fd' stroke-width='2'%3E%3Cline x1='100' y1='250' x2='100' y2='226'/%3E%3Cline x1='150' y1='250' x2='150' y2='206'/%3E%3Cline x1='200' y1='250' x2='200' y2='199'/%3E%3Cline x1='250' y1='250' x2='250' y2='206'/%3E%3Cline x1='300' y1='250' x2='300' y2='226'/%3E%3C/g%3E%3Cpath d='M20 214 l6 -14 l6 14 M40 210 l6 -14 l6 14 M360 206 l6 -14 l6 14' stroke='%2386efac' stroke-width='2' fill='none'/%3E%3C/svg%3E") center bottom/cover no-repeat;}}
+  @media screen{
+    /* every page: soft sky tint on top so the picture background reads on all pages */
+    html{background:linear-gradient(180deg,#eef4ff 0%,#f1f5f9 45%,#f0fdf4 100%) fixed;}
+    body{background:transparent!important;}
+    body:not(.list-open) #previewOverlay{display:none!important;}
+    /* ④ Preview: Download PDF + big Submit float at the bottom */
+    body.gs-in.step-4 .preview-actions{position:fixed;left:0;right:0;bottom:0;z-index:70;margin:0;display:flex;gap:10px;align-items:stretch;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -4px 14px rgba(0,0,0,.1);}
+    body.gs-in.step-4 .preview-actions button{font-size:14px;padding:12px 10px;border-radius:12px;}
+    body.gs-in.step-4 .preview-actions .btn-light{flex:1;white-space:nowrap;font-size:13px!important;padding:12px 6px;background:#fff;color:#1e3a8a;border:2px solid #bfdbfe;font-weight:800;}
+    body.gs-in.step-4 .preview-actions #pvSubmit{flex:2;font-size:18px!important;padding:14px 10px;background:linear-gradient(120deg,#15803d,#22c55e);border:0;color:#fff;box-shadow:0 6px 16px rgba(22,163,74,.35);}
+    body.gs-in.step-4 .preview-overlay.show{padding-bottom:92px;}
+  }
   </style>
 
 </head>
@@ -4644,6 +4656,7 @@ function gsBack(){
 }
 function gsStepText(){
   if(listState.state!=='draft') return STATE_LABEL[listState.state]||'';
+  if(curStep===4) return 'ধাপ 4/4 · দেখে Submit করুন';
   return curStep===1 ? 'ধাপ 3/4 · Work / Supervisor বাছুন' : 'ধাপ 2/4 · Worker বাছুন';
 }
 function renderGsBar(){
@@ -5124,7 +5137,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261114b"></script>
+<script src="./js/i18n.js?v=20261114c"></script>
 </body>
 
 </html>

@@ -351,6 +351,7 @@
     'Work / Supervisor বাছুন': 'Pick Work / Supervisor',
     'Worker বাছুন': 'Pick workers',
     'ধাপ': 'Step',
+    'দেখে Submit করুন': 'Check and Submit',
     '☰ আরও': '☰ More',
     'Guide · ভাষা · Update · Logout': 'Guide · Language · Update · Logout',
     'টা list': 'lists',

@@ -890,7 +890,7 @@
     .yn.y{color:#16a34a;} .yn.n{color:#dc2626;}
     .member-sub{font-size:9px;color:#64748b;margin-top:1px;}
     .member-taken{font-size:9px;color:#b45309;font-weight:700;margin-top:1px;}
-    .member-iay{font-size:9px;color:#b91c1c;font-weight:700;margin-top:1px;} .member-iay.soft{color:#64748b;font-weight:600;}
+    .member-iay{font-size:9px;color:#b91c1c;font-weight:700;margin-top:1px;} 
     .selected-item.iay-busy{background:#fef2f2;} .pba-tag{color:#b91c1c;font-weight:700;font-size:11px;}
     .pv-chip.pba{background:#fef2f2;border-color:#fca5a5;color:#b91c1c;cursor:pointer;font-weight:700;}
     .member.taken .member-name{color:#94a3b8;}
@@ -2713,7 +2713,7 @@
               '<div class="member-name">' + escapeHtml(member.name) + '</div>' +
               (dupName ? '<div class="member-sub">App ' + escapeHtml(member.applicantNo) + '</div>' : '') +
               (taken ? '<div class="member-taken">🔒 ' + escapeHtml(takenLabel(member)) + '</div>' : '') +
-              iayLine(member, family) +
+              iayLine(member) +
               '</div>' +
               '<div class="yn-wrap">' +
               '<span class="yn ' + (member.ekyc ? 'y' : 'n') + '" title="eKYC ' + (member.ekyc ? 'YES' : 'NO') + '">' + (member.ekyc ? '✓' : '✗') + '</span>' +
@@ -4260,27 +4260,22 @@ function iayWindow(){
   const t=iayToday||iayIso(new Date()); return [t, iayAdd(t,15)];
 }
 function iayBenMatch(name, ben){ const a=iayNorm(name), b=iayNorm(ben); return !!(a&&b&&(a===b||(a.length>3&&b.length>3&&(a.indexOf(b)>=0||b.indexOf(a)>=0)))); }
-// {s,e,est,ben} = the PBA MR of this worker that falls in the list's days, else null.
-// soft=true: any member of the job card (used only for the grey family hint)
-function iayHit(m, soft){
+// {s,e,est,ben,self} = the PBA MR on this worker's job card that falls in the list's days, else null.
+// Whole job card counts (Koushik 2026-11-14: the family works on the PBA MR too).
+function iayHit(m){
   if(!iayMap||!m) return null;
   const works=iayMap.get(String(m.jobCard||'').trim().toUpperCase()); if(!works) return null;
   const win=iayWindow();
   for(const w of works){
-    if(!soft && !iayBenMatch(m.name, w.ben)) continue;
-    for(const p of w.mrs){ if(p[0]<=win[1] && p[1]>=win[0]) return {s:p[0], e:p[1], est:false, ben:w.ben}; }
+    const self=iayBenMatch(m.name, w.ben);
+    for(const p of w.mrs){ if(p[0]<=win[1] && p[1]>=win[0]) return {s:p[0], e:p[1], est:false, ben:w.ben, self:self}; }
     if(w.rem>0 && w.last){ const s=iayAdd(w.last,1), e=iayAdd(w.last,16*w.rem);
-      if(s<=win[1] && e>=win[0]) return {s:s, e:e, est:true, ben:w.ben}; }
+      if(s<=win[1] && e>=win[0]) return {s:s, e:e, est:true, ben:w.ben, self:self}; }
   }
   return null;
 }
-function iayText(h){ return h.est ? ('PBA: পরের MR ~'+iayDm(h.s)+' থেকে (আনুমানিক)') : ('PBA MR চলছে '+iayDm(h.s)+'–'+iayDm(h.e)); }
-function iayLine(m, family){
-  const h=iayHit(m); if(h) return '<div class="member-iay">🏠 '+escapeHtml(iayText(h))+'</div>';
-  const f=iayHit(m,true); if(!f) return '';
-  const benHere=family&&family.members.some(function(x){ return iayBenMatch(x.name,f.ben); });
-  return '<div class="member-iay soft">🏠 '+(benHere?'এই পরিবারে PBA কাজ চলছে':'PBA উপভোক্তা: '+escapeHtml(f.ben||'?')+' (নাম মেলেনি, দেখে নিন)')+'</div>';
-}
+function iayText(h){ return (h.est ? ('PBA: পরের MR ~'+iayDm(h.s)+' থেকে (আনুমানিক)') : ('PBA MR চলছে '+iayDm(h.s)+'–'+iayDm(h.e)))+(h.self||!h.ben?'':' · উপভোক্তা '+h.ben); }
+function iayLine(m){ const h=iayHit(m); return h?'<div class="member-iay">🏠 '+escapeHtml(iayText(h))+'</div>':''; }
 function iayBusyItems(){ const out=[]; selected.forEach(function(it){ const h=iayHit(it); if(h) out.push({item:it, hit:h}); }); return out; }
 // resolves after the supervisor answers (removed or kept)
 function iayRemoveAsk(fromSubmit){

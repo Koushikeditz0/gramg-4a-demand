@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<title>Gram Setu · Account request</title>
+<!--
+  v212: supervisor account request page. Opened ONLY from the Admin's request
+  link / QR (…/join.html#<code>). The code is after "#", so it never reaches any
+  server log. The login page (index.html) is not changed.
+-->
+<style>
+  :root{--ink:#0f172a;--mut:#64748b;--line:#cbd5e1;--blue:#2563eb;--bg:#eef2f7;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans Bengali','Hind Siliguri',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;}
+  header{background:linear-gradient(90deg,#f97316,#2563eb);color:#fff;padding:14px 16px;font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;}
+  header img{width:30px;height:30px;border-radius:8px;background:#fff;}
+  main{max-width:460px;margin:0 auto;padding:16px;}
+  .card{background:#fff;border-radius:14px;box-shadow:0 2px 10px #0f172a14;padding:16px;margin-bottom:14px;}
+  h2{font-size:17px;margin:0 0 6px;}
+  .mut{color:var(--mut);font-size:13px;}
+  .step{display:inline-block;background:var(--ink);color:#fff;font-size:12px;border-radius:10px;padding:2px 9px;margin-bottom:8px;}
+  label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px;}
+  input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px;background:#f8fafc;font-family:inherit;}
+  input:focus{outline:2px solid #93c5fd;border-color:var(--blue);}
+  button{font-family:inherit;}
+  .btn{width:100%;margin-top:16px;background:var(--blue);color:#fff;border:0;border-radius:11px;padding:13px;font-size:16px;font-weight:700;cursor:pointer;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .btn.light{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+  .list{margin-top:8px;max-height:52vh;overflow:auto;}
+  .opt{display:block;width:100%;text-align:left;border:1px solid #e2e8f0;background:#fff;border-radius:10px;padding:10px;margin-top:6px;font-size:15px;cursor:pointer;color:var(--ink);}
+  .opt small{color:var(--mut);font-size:12px;}
+  .opt:disabled{background:#f1f5f9;color:#94a3b8;cursor:default;}
+  .tag{font-size:11px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:6px;margin-left:4px;}
+  .err{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:10px;padding:10px;margin-top:12px;font-size:14px;}
+  .ok{background:#ecfdf5;border:1px solid #10b981;border-radius:12px;padding:16px;text-align:center;}
+  .ok b{font-size:18px;}
+  .hidden{display:none !important;}
+  .who{font-weight:700;font-size:16px;}
+  .who small{display:block;color:var(--mut);font-weight:400;font-size:12px;word-break:break-all;}
+</style>
+</head>
+<body>
+<header><img src="./favicon-32.png" alt="">Gram Setu · Account request</header>
+<main>
+  <div class="card" id="vLoad"><div class="mut">Link দেখা হচ্ছে…</div></div>
+
+  <div class="card hidden" id="vBad">
+    <h2>⚠️ Link কাজ করছে না</h2>
+    <div class="mut" id="badMsg">এই link বন্ধ বা পুরনো হয়ে গেছে। Admin-এর কাছে নতুন link চান।</div>
+  </div>
+
+  <div class="card hidden" id="vPick">
+    <span class="step">ধাপ ১/২</span>
+    <h2 id="gpName"></h2>
+    <div class="mut">Supervisor list থেকে নিজের নাম বাছুন।</div>
+    <input type="search" id="find" placeholder="🔍 নাম / ID খুঁজুন" style="margin-top:10px;">
+    <div class="list" id="list"></div>
+    <div class="mut hidden" id="empty" style="margin-top:10px;">এই GP-র supervisor list এখনো খালি। Admin-কে জানান।</div>
+  </div>
+
+  <div class="card hidden" id="vForm">
+    <span class="step">ধাপ ২/২</span>
+    <div class="who" id="who"></div>
+    <label for="mobile">Mobile নম্বর (এটাই আপনার Username হবে)</label>
+    <input type="tel" id="mobile" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10 সংখ্যা">
+    <label for="pin1">নতুন PIN (৬–১২ সংখ্যা)</label>
+    <input type="password" id="pin1" inputmode="numeric" maxlength="12" autocomplete="new-password">
+    <label for="pin2">PIN আবার লিখুন</label>
+    <input type="password" id="pin2" inputmode="numeric" maxlength="12" autocomplete="new-password">
+    <div class="mut" style="margin-top:6px;">সহজ PIN (111111, 123456) চলবে না। PIN কাউকে বলবেন না।</div>
+    <div class="err hidden" id="formErr"></div>
+    <button class="btn" id="send">Request পাঠান</button>
+    <button class="btn light" id="back">← নাম বদলান</button>
+  </div>
+
+  <div class="card hidden" id="vDone">
+    <div class="ok">
+      <b>⏳ Request পাঠানো হয়েছে</b>
+      <p id="doneText"></p>
+      <div class="mut">Admin Accept করলে Gram Setu-র Login page-এ এই Username আর আপনার PIN দিয়ে Login করুন। Accept-এর আগে Login করলে "Admin approval বাকি" দেখাবে।</div>
+    </div>
+    <a class="btn" href="./index.html" style="display:block;text-align:center;text-decoration:none;">Login page খুলুন</a>
+  </div>
+</main>
+
+<script src="./js/config.js?v=20261106b"></script>
+<script>
+(function () {
+  'use strict';
+  var CFG = window.GRAMG_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var code = (location.hash.replace(/^#/, '') || new URLSearchParams(location.search).get('c') || '').trim().toLowerCase();
+  var sups = [], picked = null, busy = false;
+
+  var MSG = {
+    BAD_LINK: 'এই link বন্ধ বা পুরনো হয়ে গেছে। Admin-এর কাছে নতুন link চান।',
+    RATE_LIMIT: 'অনেকবার চেষ্টা হয়েছে। ১ ঘণ্টা পরে আবার চেষ্টা করুন।',
+    BAD_MOBILE: 'সঠিক ১০ সংখ্যার mobile নম্বর দিন।',
+    PIN_FORMAT: 'PIN ৬ থেকে ১২ সংখ্যার হবে, শুধু সংখ্যা।',
+    WEAK_PIN: 'PIN খুব সহজ (যেমন 111111, 123456)। অন্য PIN দিন।',
+    BAD_SUPERVISOR: 'এই নামটি আর list-এ নেই। Page আবার খুলুন।',
+    SUPERVISOR_HAS_LOGIN: 'এই supervisor-এর account আগেই আছে। PIN ভুলে গেলে Admin-কে বলুন।',
+    ALREADY_REQUESTED: 'এই নামে আগেই request পাঠানো হয়েছে। Admin Accept করা পর্যন্ত অপেক্ষা করুন।',
+    USERNAME_TAKEN: 'এই mobile নম্বরে আগেই account বা request আছে।',
+    TOO_MANY_PENDING: 'এখন অনেক request অপেক্ষায় আছে। পরে চেষ্টা করুন বা Admin-কে জানান।',
+    NETWORK: 'Internet connection দেখে আবার চেষ্টা করুন।'
+  };
+  function msg(c) { return MSG[c] || ('সমস্যা হয়েছে (' + (c || 'ERROR') + ')। পরে আবার চেষ্টা করুন।'); }
+
+  function show(id) {
+    ['vLoad', 'vBad', 'vPick', 'vForm', 'vDone'].forEach(function (v) { $(v).classList.toggle('hidden', v !== id); });
+    window.scrollTo(0, 0);
+  }
+  function bad(c) { $('badMsg').textContent = msg(c); show('vBad'); }
+
+  function call(payload) {
+    return fetch(String(CFG.SUPABASE_URL || '') + '/functions/v1/admin-users', {
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', 'apikey': CFG.SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify(payload)
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (d) {
+        if (!res.ok || (d && d.error)) { var e = new Error((d && d.error) || ('HTTP ' + res.status)); e.code = (d && d.error) || 'HTTP_' + res.status; throw e; }
+        return d;
+      });
+    }, function () { var e = new Error('NETWORK'); e.code = 'NETWORK'; throw e; });
+  }
+
+  function shortId(id) { id = String(id || ''); return id.length > 16 ? '…' + id.slice(-16) : id; }
+
+  function renderList() {
+    var q = $('find').value.trim().toLowerCase(), box = $('list');
+    box.innerHTML = '';
+    sups.filter(function (s) { return !q || (s.name + ' ' + s.sup_id).toLowerCase().indexOf(q) >= 0; }).forEach(function (s) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'opt';
+      b.appendChild(document.createTextNode(s.name + ' '));
+      var sm = document.createElement('small'); sm.textContent = '· ' + shortId(s.sup_id); b.appendChild(sm);
+      if (s.taken) {
+        var t = document.createElement('span'); t.className = 'tag'; t.textContent = 'account / request আছে'; b.appendChild(t);
+        b.disabled = true;
+      } else {
+        b.addEventListener('click', function () { pick(s); });
+      }
+      box.appendChild(b);
+    });
+  }
+
+  function pick(s) {
+    picked = s;
+    $('who').textContent = s.name;
+    var sm = document.createElement('small'); sm.textContent = s.sup_id; $('who').appendChild(sm);
+    $('formErr').classList.add('hidden');
+    show('vForm'); $('mobile').focus();
+  }
+
+  ['mobile', 'pin1', 'pin2'].forEach(function (id) {
+    $(id).addEventListener('input', function () { var v = this.value.replace(/\D/g, ''); if (v !== this.value) this.value = v; });
+  });
+  $('find').addEventListener('input', renderList);
+  $('back').addEventListener('click', function () { show('vPick'); });
+
+  function formErr(t) { $('formErr').textContent = t; $('formErr').classList.remove('hidden'); }
+  $('send').addEventListener('click', function () {
+    if (busy || !picked) return;
+    var mobile = $('mobile').value, p1 = $('pin1').value, p2 = $('pin2').value;
+    if (!/^[6-9][0-9]{9}$/.test(mobile)) return formErr(MSG.BAD_MOBILE);
+    if (!/^[0-9]{6,12}$/.test(p1)) return formErr(MSG.PIN_FORMAT);
+    if (p1 !== p2) return formErr('দুটো PIN মিলছে না।');
+    busy = true; $('send').disabled = true; $('send').textContent = 'পাঠানো হচ্ছে…'; $('formErr').classList.add('hidden');
+    call({ action: 'request_account', code: code, supervisor_id: picked.id, mobile: mobile, pin: p1 })
+      .then(function (r) {
+        $('doneText').textContent = (r.name || picked.name) + ' · Username: ' + (r.username || mobile);
+        show('vDone');
+      }, function (e) {
+        if (e.code === 'BAD_LINK' || e.code === 'RATE_LIMIT') return bad(e.code);
+        formErr(msg(e.code));
+      })
+      .then(function () { busy = false; $('send').disabled = false; $('send').textContent = 'Request পাঠান'; });
+  });
+
+  if (!/^[a-z0-9]{12}$/.test(code)) { bad('BAD_LINK'); return; }
+  call({ action: 'check_link', code: code }).then(function (r) {
+    sups = r.supervisors || [];
+    $('gpName').textContent = '✅ ' + (r.gp_name || '') + ' GP';
+    $('empty').classList.toggle('hidden', sups.length > 0);
+    $('find').classList.toggle('hidden', sups.length === 0);
+    renderList(); show('vPick');
+  }, function (e) { bad(e.code); });
+})();
+</script>
+</body>
+</html>

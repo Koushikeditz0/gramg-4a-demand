@@ -113,6 +113,8 @@
     if (pin.length < 6) return Promise.resolve({ ok: false, message: 'PIN কমপক্ষে ৬ সংখ্যার। পুরনো ছোট PIN চলবে না — Administrator-এর কাছ থেকে নতুন PIN নিন।' });
     return SB.signIn(username + EMAIL_DOMAIN, pin).then(startSession, function (e) {
       if (e.network) return { ok: false, message: BN.NETWORK };
+      // v212: account requested from the request link, not accepted yet (login is banned until then)
+      if (e.code === 'user_banned' || /banned/i.test(e.message || '')) return { ok: false, message: 'Admin approval বাকি। Admin আপনার request Accept করলে তবেই Login হবে।' };
       return { ok: false, message: 'Username/PIN ভুল অথবা user inactive।' };
     }).catch(function (e) {
       if (e.code === 'USER_DISABLED') return { ok: false, message: 'আপনার account বন্ধ করা আছে। Administrator-এর সঙ্গে যোগাযোগ করুন।' };

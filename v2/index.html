@@ -793,7 +793,7 @@
     body.ui-new .member{padding:11px 8px;gap:10px;cursor:pointer;}
     body.ui-new .member-check{width:22px;height:22px;flex:0 0 22px;}
     body.ui-new .member-name{font-size:14px;}
-    body.ui-new .member-sub,body.ui-new .member-taken{font-size:11px;}
+    body.ui-new .member-sub,body.ui-new .member-taken,body.ui-new .member-iay{font-size:11px;}
     body.ui-new .family-title{font-size:13px;} body.ui-new .family-meta{font-size:11px;}
     body.ui-new .yn-head{display:none;}
     body.ui-new .yn-wrap{gap:4px;}
@@ -890,6 +890,9 @@
     .yn.y{color:#16a34a;} .yn.n{color:#dc2626;}
     .member-sub{font-size:9px;color:#64748b;margin-top:1px;}
     .member-taken{font-size:9px;color:#b45309;font-weight:700;margin-top:1px;}
+    .member-iay{font-size:9px;color:#b91c1c;font-weight:700;margin-top:1px;} .member-iay.soft{color:#64748b;font-weight:600;}
+    .selected-item.iay-busy{background:#fef2f2;} .pba-tag{color:#b91c1c;font-weight:700;font-size:11px;}
+    .pv-chip.pba{background:#fef2f2;border-color:#fca5a5;color:#b91c1c;cursor:pointer;font-weight:700;}
     .member.taken .member-name{color:#94a3b8;}
     .columns > .panel.sel-panel{position:sticky;top:6px;}
     .sel-panel .selected-scroll{max-height:calc(100vh - 60px);}
@@ -1935,7 +1938,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261107d"></script>
+<script src="./js/gramg-adapter.js?v=20261114a"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2710,6 +2713,7 @@
               '<div class="member-name">' + escapeHtml(member.name) + '</div>' +
               (dupName ? '<div class="member-sub">App ' + escapeHtml(member.applicantNo) + '</div>' : '') +
               (taken ? '<div class="member-taken">🔒 ' + escapeHtml(takenLabel(member)) + '</div>' : '') +
+              iayLine(member, family) +
               '</div>' +
               '<div class="yn-wrap">' +
               '<span class="yn ' + (member.ekyc ? 'y' : 'n') + '" title="eKYC ' + (member.ekyc ? 'YES' : 'NO') + '">' + (member.ekyc ? '✓' : '✗') + '</span>' +
@@ -2912,11 +2916,13 @@
     if(!selected.size){container.innerHTML='<div class="selected-empty">এখনো কোনো worker select করা হয়নি।</div>';return;}
     let sl=1;
     selected.forEach(function(item){
-      const row=document.createElement('div'); row.className='selected-item';
+      const ih=iayHit(item);
+      const row=document.createElement('div'); row.className='selected-item'+(ih?' iay-busy':'');
       row.innerHTML='<div class="selected-sl">'+sl+'</div>'+
         '<div class="selected-main">'+
         '<div class="selected-job">'+escapeHtml(shortJobCard(item.jobCard))+'</div>'+
         '<div class="selected-name">'+escapeHtml(item.name)+'</div>'+
+        (ih?'<div class="member-iay">🏠 '+escapeHtml(iayText(ih))+'</div>':'')+
         '</div>'+
         (item.wid?'<button class="photo-btn" title="Account copy (passbook) photo"'+(accMissing.has(item.wid)?'':' style="display:none"')+'>📷</button>':'')+
         '<button class="remove-btn" title="Remove">✕</button>';
@@ -2966,6 +2972,7 @@
 
   function selectAllCurrent(){
     if(listLocked(true)) return;
+    let iaySkipped = 0;
 
     if(
       !families.length
@@ -2989,6 +2996,7 @@
 
             if(!member.ekyc || !member.abps) return;
             if(isTakenElsewhere(member)) return;
+            if(iayHit(member)){ iaySkipped++; return; }
             selected.set(
 
               member.id,
@@ -3014,7 +3022,7 @@
     scheduleSaveSelection();
 
     showStatus(
-      'Current search-এর সব worker selected হয়েছে।',
+      'Current search-এর সব worker selected হয়েছে।' + (iaySkipped ? ' 🏠 PBA MR চলছে এমন ' + iaySkipped + ' জনকে নেওয়া হয়নি (চাইলে নিজে টিক দিন)।' : ''),
       'success'
     );
 
@@ -3043,7 +3051,7 @@
     }
 
 
-    let count = 0;
+    let count = 0, iaySkipped = 0;
 
 
     families.forEach(
@@ -3053,6 +3061,7 @@
           function(member){
 
             if(member.ekyc && member.abps && !isTakenElsewhere(member)){
+              if(iayHit(member)){ iaySkipped++; return; }
               selected.set(
 
                 member.id,
@@ -3086,7 +3095,7 @@
 
       count +
 
-      ' জন eKYC + ABPS worker selected হয়েছে।',
+      ' জন eKYC + ABPS worker selected হয়েছে।' + (iaySkipped ? ' 🏠 PBA MR চলছে এমন ' + iaySkipped + ' জনকে নেওয়া হয়নি (চাইলে নিজে টিক দিন)।' : ''),
 
       'success'
 
@@ -3310,6 +3319,7 @@
   window.addEventListener('focus',refreshSelectionFromServer);
   function openFinalPreview(){
     if(!selected.size){showStatus('কোনো worker selected হয়নি।','error');return;}
+    loadIayBusy().then(function(){ if(document.getElementById('previewOverlay').classList.contains('show')) renderPreviewTable(); });
     showLoading('Final list প্রস্তুত হচ্ছে...');
     const ids=Array.from(selected.keys());
     google.script.run.withSuccessHandler(function(accounts){
@@ -3336,18 +3346,19 @@
 
   function renderPreviewTable(){
     const q=document.getElementById('previewSearch').value.trim().toLowerCase(), vf=document.getElementById('previewVillage').value;
-    const body=document.getElementById('previewTableBody'); body.innerHTML=''; let sl=1,shown=0,missing=0;
+    const body=document.getElementById('previewTableBody'); body.innerHTML=''; let sl=1,shown=0,missing=0; const busyN=iayBusyItems().length;
     previewRows.forEach(item=>{
       const p=parseJobCardClient(item.jobCard), key=String(item.jobCard).toUpperCase()+'|'+String(item.applicantNo);
       const acc=accountMap[key]||{}; const hay=(item.name+' '+item.jobCard+' '+item.applicantNo).toLowerCase();
       if(q&&!hay.includes(q))return; if(vf&&String(p?p.v:'')!==String(vf))return;
       shown++; if(!acc.accountNo||!acc.ifsc)missing++;
       const tr=document.createElement('tr'); if(!acc.accountNo||!acc.ifsc)tr.className='missing-account';
-      tr.innerHTML='<td>'+sl+++'</td><td>'+escapeHtml(item.jobCard)+'</td><td>'+escapeHtml(item.name)+'</td><td>'+badgeText(item.ekyc)+'</td><td>'+badgeText(item.abps)+'</td><td>'+escapeHtml(acc.accountNo||'⚠ Missing')+(acc.src==='sent'?' <span class="acc-sent" title="Supervisor-এর পাঠানো (📷 Account copy), data-তে এখনো নেই">📷</span>':'')+'</td><td>'+escapeHtml(acc.ifsc||'⚠ Missing')+'</td>'; body.appendChild(tr);
+      tr.innerHTML='<td>'+sl+++'</td><td>'+escapeHtml(item.jobCard)+'</td><td>'+escapeHtml(item.name)+(function(){const h=iayHit(item);return h?'<div class="pba-tag">🏠 '+escapeHtml(iayText(h))+'</div>':'';})()+'</td><td>'+badgeText(item.ekyc)+'</td><td>'+badgeText(item.abps)+'</td><td>'+escapeHtml(acc.accountNo||'⚠ Missing')+(acc.src==='sent'?' <span class="acc-sent" title="Supervisor-এর পাঠানো (📷 Account copy), data-তে এখনো নেই">📷</span>':'')+'</td><td>'+escapeHtml(acc.ifsc||'⚠ Missing')+'</td>'; body.appendChild(tr);
     });
     document.getElementById('previewSummary').innerHTML='<span class="pv-chip">👥 Total <b>'+previewRows.length+'</b></span>'+
       (shown!==previewRows.length?'<span class="pv-chip">🔍 Showing <b>'+shown+'</b></span>':'')+
-      '<span class="pv-chip '+(missing?'bad':'ok')+'">🏦 Missing Account <b>'+missing+'</b></span>';
+      '<span class="pv-chip '+(missing?'bad':'ok')+'">🏦 Missing Account <b>'+missing+'</b></span>'+
+      (busyN?'<span class="pv-chip pba" onclick="iayRemoveAsk()" title="এই তারিখে PBA MR চলছে, portal এদের Demand নেবে না">🏠 PBA MR চলছে <b>'+busyN+'</b> · বাদ দিন ✕</span>':'');
     document.getElementById('previewSub').textContent=currentUser.name+' • '+currentUser.gp+' • '+previewRows.length+' workers';
   }
 
@@ -3604,7 +3615,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters();
+  loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy();
 }
 const AUTH_LOST_MSG={
   SESSION_REVOKED:'এই account-এ অন্য একটি device-এ নতুন Login হয়েছে। একটি account সর্বোচ্চ ২টি device-এ চালু থাকতে পারে, তাই এই device-এর session বন্ধ করা হয়েছে। আবার Login করুন।',
@@ -3968,8 +3979,16 @@ function submitMyList(){
   const req=requiredSupervisors(selected.size), have=(listState.supervisors||[]).length;
   if(!(listState.workName||'').trim() || isPendingName(listState.workName)){ openInfo('Submit করার আগে কাজ বাছুন।'); return; }
   if(have<req){ openMeta(selected.size+' জন worker-এর জন্য '+req+' জন Supervisor-এর নাম লাগবে (দেওয়া আছে '+have+' জন)।'); return; }
-  askYesNo({icon:'📤',title:'"'+listState.workName+'" list জমা দেবেন?',msg:selected.size+' জন worker সহ Admin-এর কাছে যাবে।\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।',yes:'হ্যাঁ, জমা দিন',kind:'ok'})
-    .then(function(ok){ if(ok) submitMyListNow(); });
+  const ask=function(){
+    if(!selected.size){ showStatus('খালি list জমা দেওয়া যায় না। আগে worker select করুন।','error'); return; }
+    askYesNo({icon:'📤',title:'"'+listState.workName+'" list জমা দেবেন?',msg:selected.size+' জন worker সহ Admin-এর কাছে যাবে।\nপরে বদলাতে হলে "↩ Edit" চাপতে হবে।',yes:'হ্যাঁ, জমা দিন',kind:'ok'})
+      .then(function(ok){ if(ok) submitMyListNow(); });
+  };
+  // PBA (IAY) beneficiaries with a running MR: the portal leaves them out of the Demand
+  loadIayBusy().then(function(){
+    if(!iayBusyItems().length){ ask(); return; }
+    iayRemoveAsk(true).then(function(removed){ if(!removed) ask(); });
+  });
 }
 function submitMyListNow(){
   if(busySaving()) return;
@@ -4209,6 +4228,75 @@ function loadDataStatus(){
     box.textContent='📅 শেষ data: '+(txt||'নেই')+(old?' (পুরনো)':'');
     box.style.color=old?'#b91c1c':''; box.style.display='';
   },function(){ box.style.display='none'; });
+}
+/* ---------- PBA (IAY) beneficiaries with a running MR (SQL v210) ----------
+   The portal leaves a worker out of the Demand when the worker already has an
+   MR for those days, so a PBA house beneficiary in a labour list only lowers
+   the labour count. Warn only (Koushik's choice 2026-11-14): badge, bulk select
+   skips them, Preview chip + Submit ask offer "বাদ দিন". */
+let iayMap=null, iayAt=0, iayToday='', iayLoading=null;
+function iayNorm(s){ return String(s||'').toUpperCase().replace(/[^A-Z\u0980-\u09FF]/g,''); }
+function iayIso(d){ return d.toISOString().slice(0,10); }
+function iayAdd(iso,k){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return ''; return iayIso(new Date(Date.UTC(+m[1],+m[2]-1,+m[3]+k))); }
+function iayDm(iso){ const m=/^\d{4}-(\d{2})-(\d{2})/.exec(String(iso||'')); return m?m[2]+'/'+m[1]:''; }
+function loadIayBusy(force){
+  if(!force && iayAt && Date.now()-iayAt<30*60000) return Promise.resolve();
+  if(iayLoading) return iayLoading;
+  iayLoading=gramgAdapter.iayBusy().then(function(d){
+    iayAt=Date.now(); iayLoading=null;
+    if(!d||!Array.isArray(d.works)){ iayMap=null; return; }
+    iayToday=d.today||iayIso(new Date()); const m=new Map();
+    d.works.forEach(function(w){ const k=String(w[0]||'').trim().toUpperCase(); if(!k) return;
+      const a=m.get(k)||[]; a.push({ben:w[1]||'',last:w[2]||'',rem:Number(w[3]||0),mrs:w[4]||[]}); m.set(k,a); });
+    iayMap=m;
+    try{ renderSelected(); if(families.length && workerTab!=='sel') renderSearchResults(); }catch(e){}
+  },function(){ iayLoading=null; });
+  return iayLoading;
+}
+// the list's own days (From + 6+1 rule), else the next 16 days
+function iayWindow(){
+  const wd=Number(listState.workDays||0);
+  if(listState.fromDate&&wd) return [listState.fromDate, iayAdd(listState.fromDate, dtTotal(wd)-1)];
+  const t=iayToday||iayIso(new Date()); return [t, iayAdd(t,15)];
+}
+function iayBenMatch(name, ben){ const a=iayNorm(name), b=iayNorm(ben); return !!(a&&b&&(a===b||(a.length>3&&b.length>3&&(a.indexOf(b)>=0||b.indexOf(a)>=0)))); }
+// {s,e,est,ben} = the PBA MR of this worker that falls in the list's days, else null.
+// soft=true: any member of the job card (used only for the grey family hint)
+function iayHit(m, soft){
+  if(!iayMap||!m) return null;
+  const works=iayMap.get(String(m.jobCard||'').trim().toUpperCase()); if(!works) return null;
+  const win=iayWindow();
+  for(const w of works){
+    if(!soft && !iayBenMatch(m.name, w.ben)) continue;
+    for(const p of w.mrs){ if(p[0]<=win[1] && p[1]>=win[0]) return {s:p[0], e:p[1], est:false, ben:w.ben}; }
+    if(w.rem>0 && w.last){ const s=iayAdd(w.last,1), e=iayAdd(w.last,16*w.rem);
+      if(s<=win[1] && e>=win[0]) return {s:s, e:e, est:true, ben:w.ben}; }
+  }
+  return null;
+}
+function iayText(h){ return h.est ? ('PBA: পরের MR ~'+iayDm(h.s)+' থেকে (আনুমানিক)') : ('PBA MR চলছে '+iayDm(h.s)+'–'+iayDm(h.e)); }
+function iayLine(m, family){
+  const h=iayHit(m); if(h) return '<div class="member-iay">🏠 '+escapeHtml(iayText(h))+'</div>';
+  const f=iayHit(m,true); if(!f) return '';
+  const benHere=family&&family.members.some(function(x){ return iayBenMatch(x.name,f.ben); });
+  return '<div class="member-iay soft">🏠 '+(benHere?'এই পরিবারে PBA কাজ চলছে':'PBA উপভোক্তা: '+escapeHtml(f.ben||'?')+' (নাম মেলেনি, দেখে নিন)')+'</div>';
+}
+function iayBusyItems(){ const out=[]; selected.forEach(function(it){ const h=iayHit(it); if(h) out.push({item:it, hit:h}); }); return out; }
+// resolves after the supervisor answers (removed or kept)
+function iayRemoveAsk(fromSubmit){
+  const busy=iayBusyItems(); if(!busy.length) return Promise.resolve();
+  const names=busy.slice(0,8).map(function(b){ return '• '+b.item.name+' ('+shortJobCard(b.item.jobCard)+') '+iayDm(b.hit.s)+'–'+iayDm(b.hit.e)+(b.hit.est?' ~':''); }).join('\n')+(busy.length>8?'\n… আরও '+(busy.length-8)+' জন':'');
+  return askYesNo({icon:'🏠', title:busy.length+' জন worker-এর PBA MR চলছে',
+    msg:'এই তারিখে portal এদের Demand নেবে না, labour কম দেখাবে:\n'+names+'\n\nএদের list থেকে বাদ দেবেন?',
+    yes:'হ্যাঁ, বাদ দিন', no:'রেখে দিন'}).then(function(ok){
+    if(!ok) return false;
+    if(listLocked(true)) return false;
+    busy.forEach(function(b){ selected.delete(b.item.id); });
+    syncCurrentCheckboxes(); updateFamilyHeaders(); renderSelected(); scheduleSaveSelection();
+    if(document.getElementById('previewOverlay').classList.contains('show')){ previewRows=Array.from(selected.values()); renderPreviewTable(); }
+    showStatus('🏠 '+busy.length+' জন PBA worker বাদ দেওয়া হয়েছে। এখন list-এ '+selected.size+' জন।'+(fromSubmit?' "Saved ✓" দেখালে আবার Submit চাপুন।':''),'success');
+    return true;
+  });
 }
 /* ---------- K-Desk results (Demand / Allocation) of the current list ---------- */
 /* ---------- account copy (passbook) photo ---------- */

@@ -270,7 +270,7 @@
   <section id="tab-masters" class="hidden">
     <div class="card">
       <h2 style="margin:0;">🏗 Works &amp; Supervisors</h2>
-      <div class="muted">Enter the GP's works and supervisors once. In the phone app the supervisor then <b>searches and picks</b> the Work Name + Work Code and the supervisor <b>Name (ID)</b> from these lists instead of typing. While a list is empty, the phone app keeps the old typing boxes.</div>
+      <div class="muted">Enter the GP's works, supervisors and local village names once. In the phone app the supervisor then <b>searches and picks</b> the Work Name + Work Code and the supervisor <b>Name (ID)</b> from these lists instead of typing. While a list is empty, the phone app keeps the old typing boxes.</div>
       <label class="f" for="msGp">Gram Panchayat</label>
       <select id="msGp"></select>
       <div class="muted" id="msSetup"></div>
@@ -305,6 +305,16 @@
       <div class="table-wrap stack" style="margin-top:6px;max-height:60vh;"><table>
         <thead><tr><th></th><th>#</th><th>Name</th><th>ID</th><th>Source</th><th></th></tr></thead>
         <tbody id="msBody"></tbody></table></div>
+    </div>
+    <div class="card" id="vnCard">
+      <h2>🏘 Village names (local)</h2>
+      <div class="muted">Write the local name people use for each village (Bangla or English, e.g. <b>কালীবাড়ি</b> / <b>Kalibari</b>). The phone app then shows <b>002 · কালীবাড়ি</b> wherever the village appears (village list, Sansad, eKYC/ABPS, Bank Account). Leave a box empty to show only the number.</div>
+      <div class="muted" id="vnSetup"></div>
+      <input type="search" id="vnFind" placeholder="🔍 Search village number or name" style="margin-top:10px;width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:8px;">
+      <div class="table-wrap stack" style="margin-top:6px;max-height:60vh;"><table>
+        <thead><tr><th>Village</th><th>Families</th><th>Workers</th><th>Local name</th></tr></thead>
+        <tbody id="vnBody"></tbody></table></div>
+      <div class="row" style="margin-top:8px;"><button class="btn-primary" id="vnSave" disabled>💾 Save village names</button><span class="muted" id="vnChanged"></span></div>
     </div>
   </section>
 
@@ -746,5 +756,6 @@
 <script src="./js/iay-dash.js?v=20261112a"></script>
 <script src="./js/admin.js?v=20261114a"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
+<script src="./js/admin-villages.js?v=20261114a"></script>
 </body>
 </html>

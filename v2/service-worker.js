@@ -1,7 +1,7 @@
 // v2 service worker: caches only the app shell (same origin). Data requests go to
 // Supabase (another origin) and are never cached, so offline never shows stale data
 // as if it were saved.
-const CACHE_NAME = 'gramg-4a-demand-v2.28.0';
+const CACHE_NAME = 'gramg-4a-demand-v2.29.0';
 const APP_SHELL = ['./', './index.html', './manifest.json', './js/config.js?v=20261106b', './js/sb-client.js?v=20261106a', './js/gramg-adapter.js?v=20261114b', './admin.html', './js/iay-dash.js?v=20261112a', './js/admin.js?v=20261114a', './js/admin-masters.js?v=20261107e', './js/import-map.js?v=20261020a', './js/i18n.js?v=20261114b', './iay.html', './js/iay.js?v=20261110a', './js/iay-summary.js?v=20261110c', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon-32.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(APP_SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

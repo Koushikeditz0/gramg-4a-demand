@@ -1418,6 +1418,42 @@
     body.gs-in.list-open:not(.list-readonly):not(.ui-new){padding-bottom:78px;}
     body.gs-in:not(.ui-new) .wbar-more{display:none;}
     body.gs-in:not(.ui-new) #nextBtn{display:none;}
+    /* ===== ③ Work / Supervisor made simple (2026-11-14) ===== */
+    body.gs-in #pgInfo .pg-h{font-size:15px;}
+    body.gs-in #pgInfo.wm-done:not(.wm-edit) .pg-sub,
+    body.gs-in #pgInfo.wm-done:not(.wm-edit) label[for=liWmQ],
+    body.gs-in #pgInfo.wm-done:not(.wm-edit) #liWmQ,
+    body.gs-in #pgInfo.wm-done:not(.wm-edit) #liWmList{display:none !important;}
+    .wm-chg{display:inline-block;margin-top:6px;background:none;border:0;color:#2563eb;font:inherit;font-weight:800;font-size:13px;cursor:pointer;padding:2px 0;}
+    body.gs-in .dt-box{background:#fff;border:0;box-shadow:0 6px 18px -8px rgba(15,23,42,.2);}
+    .dt-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px;}
+    .dt-chips button{border:2px solid #e2e8f0;background:#fff;border-radius:12px;padding:7px 11px;font:inherit;font-weight:800;font-size:13.5px;color:#334155;cursor:pointer;}
+    .dt-chips button.on{background:linear-gradient(145deg,#3b82f6,#1d4ed8);border-color:#1d4ed8;color:#fff;box-shadow:0 5px 10px -5px rgba(29,78,216,.7);}
+    .dt-lab{font-size:12px;font-weight:800;color:#64748b;margin-top:10px;}
+    .dt-res{margin-top:10px;background:#eff6ff;border-radius:10px;padding:9px 11px;font-weight:800;color:#1e3a8a;font-size:14px;}
+    .dt-res:empty{display:none;}
+    body.gs-in .dt-box:not(.dt-man) .dt-grid,body.gs-in .dt-box .dt-note{display:none;}
+    body.gs-in .dt-box .dt-grid{margin-top:10px;}
+    .dt-chips,.dt-res,.dt-lab{display:none;} body.gs-in .dt-chips{display:flex;} body.gs-in .dt-res,body.gs-in .dt-lab{display:block;} body.gs-in .dt-res:empty{display:none;}
+    .sp-chips{display:none;flex-wrap:wrap;gap:6px;margin:4px 0 8px;}
+    body.gs-in .sp-chips{display:flex;}
+    .sp-chips button{border:2px solid #e2e8f0;background:#fff;border-radius:12px;padding:7px 10px;font:inherit;font-weight:800;font-size:13px;color:#334155;cursor:pointer;text-align:left;line-height:1.15;}
+    .sp-chips button small{display:block;font-weight:400;font-size:10.5px;color:#64748b;}
+    .sp-chips button.on{background:linear-gradient(145deg,#3b82f6,#1d4ed8);border-color:#1d4ed8;color:#fff;} .sp-chips button.on small{color:#dbeafe;}
+    .sp-chips button.on b:before{content:"✓ ";}
+    .sp-chips .sp-hint{font-size:12px;color:#64748b;} .sp-chips .sp-hint a{color:#2563eb;font-weight:800;cursor:pointer;}
+    .sp-need{display:none;font-size:12.5px;font-weight:800;margin:2px 0 8px;} body.gs-in .sp-need{display:block;}
+    .sp-need.ok{color:#166534;} .sp-need.bad{color:#b45309;}
+    body.gs-in #pgSup #supNeed,body.gs-in #pgSup>.gm-note{display:none;}
+    body.gs-in #mmSups .sup-sel[value=""]~.sp-sel{display:none;}
+    /* bottom bar on ③ like ② */
+    body.gs-in.list-open.step-1:not(.list-readonly) #pgSup .pg-btns{position:fixed;left:0;right:0;bottom:0;z-index:65;margin:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -4px 14px rgba(0,0,0,.08);}
+    body.gs-in.list-open.step-1:not(.list-readonly) #pgSup .pg-btns .btn-light{flex:.6;}
+    body.gs-in.list-open.step-1:not(.list-readonly) #pgSup .pg-btns .btn-primary{background:linear-gradient(120deg,#1e40af,#3b82f6);border:0;}
+    body.gs-in.list-open.step-1:not(.list-readonly){padding-bottom:80px;}
+    /* light picture background: fields, a canal and the bridge, very faint */
+    body.gs-in:before{content:"";position:fixed;left:0;right:0;bottom:0;height:46vh;z-index:-1;pointer-events:none;opacity:.55;
+      background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='320' cy='120' r='34' fill='%23fde68a' opacity='.55'/%3E%3Cpath d='M0 190 Q90 150 190 178 T400 160 V300 H0Z' fill='%23dcfce7'/%3E%3Cpath d='M0 225 Q120 190 240 214 T400 205 V300 H0Z' fill='%23bbf7d0' opacity='.8'/%3E%3Cpath d='M0 262 Q140 236 270 254 T400 248 V300 H0Z' fill='%23bfdbfe' opacity='.7'/%3E%3Cpath d='M60 250 Q200 170 340 250' fill='none' stroke='%2393c5fd' stroke-width='4'/%3E%3Cg stroke='%2393c5fd' stroke-width='2'%3E%3Cline x1='100' y1='250' x2='100' y2='226'/%3E%3Cline x1='150' y1='250' x2='150' y2='206'/%3E%3Cline x1='200' y1='250' x2='200' y2='199'/%3E%3Cline x1='250' y1='250' x2='250' y2='206'/%3E%3Cline x1='300' y1='250' x2='300' y2='226'/%3E%3C/g%3E%3Cpath d='M20 214 l6 -14 l6 14 M40 210 l6 -14 l6 14 M360 206 l6 -14 l6 14' stroke='%2386efac' stroke-width='2' fill='none'/%3E%3C/svg%3E") center bottom/cover no-repeat;}
   </style>
 
 </head>
@@ -1761,6 +1797,9 @@
         <div class="wc-hint wm-manual" id="liCodeHint"></div>
         <div class="dt-box">
           <div class="dt-h">📅 কাজের তারিখ</div>
+          <div class="dt-lab">কবে থেকে</div><div class="dt-chips" id="dtFromChips"></div>
+          <div class="dt-lab">Working day</div><div class="dt-chips" id="dtDayChips"></div>
+          <div class="dt-res" id="dtRes"></div>
           <div class="dt-grid">
             <label>From<input type="date" id="dtFrom" onchange="dtCalc()"></label>
             <label>Working Day<input type="number" id="dtDays" min="1" max="100" inputmode="numeric" placeholder="14" oninput="dtCalc()"></label>
@@ -1775,6 +1814,8 @@
         <div class="pg-h">👷 Supervisor</div>
         <div class="pg-sub" id="supNeed"></div>
         <div class="gm-warn" id="supMsg" style="display:none;"></div>
+        <div class="sp-need" id="spNeed"></div>
+        <div class="sp-chips" id="spChips"></div>
         <div id="mmSups"></div>
         <button class="link-btn" type="button" onclick="addSupRow('')">+ আরেকজন Supervisor</button>
         <div class="gm-note"><span id="supNoteTyped">নাম ইংরেজিতে লিখুন (PDF-এ বাংলা অক্ষর ঠিক দেখায় না)। </span>নিয়ম: প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)।</div>
@@ -3950,7 +3991,7 @@ function supValues(){
     const id=supNumber(c); return id?name+' ('+id+')':name;
   }).filter(function(v){ if(!v||seen[v.toUpperCase()]) return false; seen[v.toUpperCase()]=1; return true; });
 }
-function renumberSups(){ Array.prototype.forEach.call(document.querySelectorAll('#mmSups .sup-card .sc-n'),function(e,i){ e.textContent='👤 Supervisor '+(i+1); }); }
+function renumberSups(){ Array.prototype.forEach.call(document.querySelectorAll('#mmSups .sup-card .sc-n'),function(e,i){ e.textContent='👤 Supervisor '+(i+1); }); if(typeof supChips==='function') setTimeout(supChips,0); }
 function addSupRow(v){
   if(masters.supervisors.length){ addSupPick(v); return; }
   const box=document.getElementById('mmSups'), sp=supSplit(v), p=supIdPrefix();
@@ -3978,6 +4019,7 @@ function setStep(n, fromPreview){
   if(typeof renderChrome==='function') renderChrome();
 }
 function fillInfo(msg){
+  const dbx=document.querySelector('.dt-box'); if(dbx) dbx.classList.remove('dt-man'); document.getElementById('pgInfo').classList.remove('wm-edit');
   const m=document.getElementById('liMsg'); m.textContent=msg||''; m.style.display=msg?'block':'none';
   document.getElementById('liName').value=isPendingName(listState.workName)?'':(listState.workName||''); wcFill('li', listState.workCode||''); wmReset('li');
   document.getElementById('dtFrom').value=listState.fromDate||''; document.getElementById('dtDays').value=listState.workDays||14; dtCalc();
@@ -3989,8 +4031,9 @@ function fillSup(msg){
   document.getElementById('supNeed').textContent='এখন '+selected.size+' জন worker, '+req+' জন Supervisor লাগবে।';
   const box=document.getElementById('mmSups'); box.innerHTML='';
   const tn=document.getElementById('supNoteTyped'); if(tn) tn.style.display=masters.supervisors.length?'none':'';
-  sups.forEach(addSupRow);
+    sups.forEach(addSupRow);
   for(let i=sups.length;i<Math.max(req,1);i++) addSupRow('');
+  if(typeof supChips==='function') supChips();
 }
 // kept for older calls: opens the right page
 function openMeta(msg){
@@ -4058,7 +4101,8 @@ function dtCalc(){
   to.textContent=dtToText(dt.from,dt.days)||'—';
   const en=document.documentElement.lang==='en', r=Math.floor(dt.days/6);
   note.textContent=!dt.days?'':en?(dt.days+' working days + '+r+' rest day(s) = '+dtTotal(dt.days)+' days in all')
-    :(dt.days+' দিন কাজ + '+r+' দিন ছুটি = মোট '+dtTotal(dt.days)+' দিন');
+        :(dt.days+' দিন কাজ + '+r+' দিন ছুটি = মোট '+dtTotal(dt.days)+' দিন');
+  if(typeof dtChips==='function') dtChips();
 }
 function saveSup(next){
   if(listLocked(true)) return;
@@ -4268,7 +4312,7 @@ function addSupPick(v){
       const lb=supPickLabel(x), used=!!taken[lb.toUpperCase()];
       const b=document.createElement('button'); b.type='button'; b.className='wm-item'+(used?' used':'');
       b.innerHTML='<b>'+escapeHtml(x.name)+(used?' (আগেই বাছা)':'')+'</b><span>'+escapeHtml(x.sup_id)+'</span>';
-      b.onclick=function(){ if(used){ showStatus('এই Supervisor আগেই বাছা হয়েছে। অন্য একজন বাছুন।','error'); return; } val=lb; q.value=''; list.style.display='none'; paint(); };
+      b.onclick=function(){ if(used){ showStatus('এই Supervisor আগেই বাছা হয়েছে। অন্য একজন বাছুন।','error'); return; } val=lb; q.value=''; list.style.display='none'; paint(); if(typeof supChips==='function') supChips(); };
       list.appendChild(b);
     });
     list.style.display='block';
@@ -4288,8 +4332,9 @@ function wmShow(w){
   const box=document.getElementById(w+'WmSel'); if(!box) return;
   const name=document.getElementById(w+'Name').value.trim(), code=wcFull(w);
   box.classList.toggle('empty', !name);
-  box.innerHTML=name?('<b>✓ '+escapeHtml(name)+'</b><span>'+escapeHtml(code||'Work Code নেই')+'</span>')
+  box.innerHTML=name?('<b>✓ '+escapeHtml(name)+'</b><span>'+escapeHtml(code||'Work Code নেই')+'</span>'+(w==='li'?'<button type="button" class="wm-chg" onclick="wmEdit()">✏️ কাজ বদলান</button>':''))
                     :'<span class="wm-none">এখনো কোনো কাজ বাছা হয়নি — খুঁজে নিচের তালিকা থেকে বাছুন।</span>';
+  if(w==='li'){ const pg=document.getElementById('pgInfo'); pg.classList.toggle('wm-done', !!name && masters.works.length>0); if(!name) pg.classList.remove('wm-edit'); }
 }
 function wmSearch(w){
   const q=document.getElementById(w+'WmQ').value.trim().toLowerCase(), box=document.getElementById(w+'WmList');
@@ -4305,7 +4350,9 @@ function wmSearch(w){
   if(hits.length>MAX){ const d=document.createElement('div'); d.className='wm-empty'; d.textContent='আরও '+(hits.length-MAX)+'টা কাজ আছে — আরও লিখে খুঁজুন।'; box.appendChild(d); }
   box.style.display='block';
 }
+function wmEdit(){ const pg=document.getElementById('pgInfo'); pg.classList.add('wm-edit'); const q=document.getElementById('liWmQ'); try{ q.focus(); }catch(e){} wmSearch('li'); }
 function wmPick(w,x){
+  if(w==='li') document.getElementById('pgInfo').classList.remove('wm-edit');
   document.getElementById(w+'Name').value=x.name; wcFill(w, x.code||'');
   document.getElementById(w+'WmQ').value=''; const l=document.getElementById(w+'WmList'); l.innerHTML=''; l.style.display='none';
   wmShow(w);
@@ -4765,6 +4812,62 @@ function renderSnTiles(){
     m.textContent=snShowAll?'▲ শুধু আমার Sansad':'▼ অন্য Sansad ('+(all.length-mine.length)+')';
     m.onclick=function(){ snShowAll=!snShowAll; renderSnTiles(); }; box.appendChild(m);
   }
+}
+/* ---------- ③ simple: date chips, supervisor chips of My Sansad (2026-11-14) ---------- */
+function isoLocal(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function dtQuick(){
+  const t=new Date(); t.setHours(12,0,0,0);
+  const k=function(n){ const d=new Date(t); d.setDate(d.getDate()+n); return d; };
+  const mon=k(((8-t.getDay())%7)||7);
+  const dm=function(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); };
+  return [['আজ',k(0)],['কাল '+dm(k(1)),k(1)],['সোম '+dm(mon),mon]].map(function(x){ return {t:x[0],iso:isoLocal(x[1])}; });
+}
+function dtChips(){
+  const box=document.querySelector('.dt-box'); if(!box) return;
+  const f=document.getElementById('dtFrom').value, d=String(parseInt(document.getElementById('dtDays').value,10)||'');
+  const fc=document.getElementById('dtFromChips'), dc=document.getElementById('dtDayChips');
+  if(fc){
+    const q=dtQuick(); let hit=false; fc.innerHTML='';
+    q.forEach(function(x){ const b=document.createElement('button'); b.type='button'; b.textContent=x.t; if(f===x.iso){ b.className='on'; hit=true; }
+      b.onclick=function(){ document.getElementById('dtFrom').value=x.iso; box.classList.remove('dt-man'); dtCalc(); }; fc.appendChild(b); });
+    const o=document.createElement('button'); o.type='button'; o.textContent=(f&&!hit)?'📅 '+dtFmtIso(f).slice(0,5):'📅 অন্য'; if(f&&!hit) o.className='on';
+    o.onclick=function(){ box.classList.add('dt-man'); const i=document.getElementById('dtFrom'); try{ i.showPicker?i.showPicker():i.focus(); }catch(e){ i.focus(); } }; fc.appendChild(o);
+  }
+  if(dc){
+    let hit=false; dc.innerHTML='';
+    ['6','12','14'].forEach(function(n){ const b=document.createElement('button'); b.type='button'; b.textContent=n; if(d===n){ b.className='on'; hit=true; }
+      b.onclick=function(){ document.getElementById('dtDays').value=n; dtCalc(); }; dc.appendChild(b); });
+    const o=document.createElement('button'); o.type='button'; o.textContent=(d&&!hit)?'✎ '+d:'✎'; if(d&&!hit) o.className='on';
+    o.onclick=function(){ box.classList.add('dt-man'); const i=document.getElementById('dtDays'); i.focus(); i.select&&i.select(); }; dc.appendChild(o);
+  }
+  const r=document.getElementById('dtRes'), dt=dtRead();
+  if(r) r.textContent=(dt.from&&dt.days)?(dtFmtIso(dt.from).slice(0,5)+' → '+dtToText(dt.from,dt.days).slice(0,5)+' · মোট '+dtTotal(dt.days)+' দিন ('+Math.floor(dt.days/6)+' দিন ছুটি)'):'';
+}
+function supVillage(id){ const m=/^S-[A-Z]{2}-\d{2}-\d{3}-\d{3}-(\d{3})/i.exec(String(id||'')); return m?Number(m[1]):0; }
+function supChips(){
+  const box=document.getElementById('spChips'), need=document.getElementById('spNeed'); if(!box) return;
+  const vals=supValues(), up=vals.map(function(v){ return v.toUpperCase(); }), req=requiredSupervisors(selected.size);
+  if(need){ const ok=vals.length>=req; need.className='sp-need '+(ok?'ok':'bad'); need.textContent=(ok?'✓ ':'⚠ ')+selected.size+' জন worker → '+req+' জন Supervisor লাগবে'+(ok?' (হয়ে গেছে)':' (দেওয়া আছে '+vals.length+' জন)'); }
+  box.innerHTML='';
+  if(!masters.supervisors.length) return;
+  const mine=mySansad();
+  if(!mine.length){ box.innerHTML='<span class="sp-hint">আপনার Sansad-এর mate-দের নাম এখানে পেতে <a onclick="openSansadPick()">📍 আমার Sansad বাছুন</a>। এখন নিচে খুঁজে বাছুন।</span>'; return; }
+  const list=masters.supervisors.filter(function(x){ return mine.indexOf(supVillage(x.sup_id))>=0 || up.indexOf(supPickLabel(x).toUpperCase())>=0; });
+  if(!list.length){ box.innerHTML='<span class="sp-hint">আপনার Sansad-এ কোনো mate পাওয়া যায়নি। নিচে খুঁজে বাছুন।</span>'; return; }
+  list.slice(0,40).forEach(function(x){
+    const lb=supPickLabel(x), on=up.indexOf(lb.toUpperCase())>=0;
+    const b=document.createElement('button'); b.type='button'; b.className=on?'on':'';
+    b.innerHTML='<b>'+escapeHtml(x.name)+'</b><small>'+escapeHtml(x.sup_id)+'</small>';
+    b.onclick=function(){ supToggle(lb); }; box.appendChild(b);
+  });
+}
+function supToggle(lb){
+  let vals=supValues(); const i=vals.map(function(v){ return v.toUpperCase(); }).indexOf(lb.toUpperCase());
+  if(i>=0) vals.splice(i,1); else vals.push(lb);
+  const box=document.getElementById('mmSups'); box.innerHTML='';
+  vals.forEach(addSupRow);
+  for(let k=vals.length;k<Math.max(requiredSupervisors(selected.size),1);k++) addSupRow('');
+  supChips();
 }
 let curSection='home';
 function setSection(sec){

@@ -462,6 +462,13 @@
         throw bnError(e || {});
       });
     },
+    // IAY works of this GP with MRs now or ahead (SQL v210) → warn about workers the portal Demand will leave out
+    iayBusy: function () {
+      return SB.rpc('get_iay_busy', {}, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) return null;                       // SQL v210 not run yet
+        throw bnError(e || {});
+      });
+    },
     workName: function () { return st.workName; },
     whenIdle: whenIdle
   };

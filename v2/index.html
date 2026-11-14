@@ -1357,6 +1357,52 @@
     body.gs-in .ac-row .go{width:42px;height:42px;border-radius:10px;background:#ea580c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;}
     body.gs-in .ac-row .go small{display:none;}
     body.gs-in .ac-row.sent .go{background:#16a34a;}
+    /* ===== v7 premium look (2026-11-14, Koushik: "too flat") + Select Sansad ===== */
+    body.gs-in{background:linear-gradient(180deg,#e8eefc 0px,#f4f6fb 360px,#f6f7fb 100%);background-attachment:fixed;}
+    body.gs-in .gsbar{background:linear-gradient(120deg,#172554 0%,#1e40af 55%,#2563eb 100%);box-shadow:0 2px 10px rgba(23,37,84,.25);}
+    body.gs-in.sec-home .gsbar{box-shadow:none;}
+    .gs-hero{position:relative;overflow:hidden;background:linear-gradient(120deg,#172554 0%,#1e40af 55%,#2563eb 100%);padding:4px 14px 54px;border-radius:0 0 28px 28px;}
+    .gs-hero:before{content:"";position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(251,146,60,.45),rgba(251,146,60,0) 70%);}
+    .gs-hero svg.gs-arc{position:absolute;left:0;right:0;bottom:8px;width:100%;height:46px;opacity:.28;}
+    .gs-hello{position:relative;font-size:21px;letter-spacing:.2px;} .gs-date{position:relative;}
+    .gs-grid{position:relative;margin:-40px 2px 12px;gap:10px;}
+    .gs-tile{background:#fff !important;border:0 !important;border-radius:20px;padding:14px 4px 12px;box-shadow:0 10px 24px -8px rgba(15,23,42,.22),0 2px 6px rgba(15,23,42,.06);transition:transform .12s;}
+    .gs-tile:active,.gs-new:active,.gs-mini:active{transform:scale(.97);}
+    .gs-tile i{width:58px;height:58px;border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35);}
+    .gs-tile.t1 i{background:linear-gradient(145deg,#60a5fa,#1d4ed8);box-shadow:0 8px 16px -6px rgba(29,78,216,.6),inset 0 1px 0 rgba(255,255,255,.35);}
+    .gs-tile.t2 i{background:linear-gradient(145deg,#fdba74,#ea580c);box-shadow:0 8px 16px -6px rgba(234,88,12,.6),inset 0 1px 0 rgba(255,255,255,.35);}
+    .gs-tile.t3 i{background:linear-gradient(145deg,#6ee7b7,#059669);box-shadow:0 8px 16px -6px rgba(5,150,105,.6),inset 0 1px 0 rgba(255,255,255,.35);}
+    .gs-n{top:8px;right:10px;background:linear-gradient(145deg,#f87171,#dc2626);box-shadow:0 2px 6px rgba(220,38,38,.45);border:2px solid #fff;padding:0 7px;}
+    .gs-new{display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(120deg,#1e40af,#3b82f6);border-radius:16px;padding:14px;font-size:16.5px;letter-spacing:.2px;box-shadow:0 10px 22px -8px rgba(37,99,235,.7);}
+    .gs-new span{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;}
+    .gs-sh{margin:18px 4px 6px;font-size:14.5px;color:#1e293b;}
+    .gs-mini{border:0;border-left:0;border-radius:14px;padding:11px 12px 11px 14px;box-shadow:0 4px 14px -6px rgba(15,23,42,.18),0 1px 2px rgba(15,23,42,.05);position:relative;overflow:hidden;}
+    .gs-mini:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:#94a3b8;}
+    .gs-mini.k-draft:before{background:#eab308;} .gs-mini.k-sent:before{background:#2563eb;} .gs-mini.k-portal:before{background:#16a34a;} .gs-mini.k-ac:before{background:#ea580c;} .gs-mini.k-sn:before{background:#059669;}
+    .gs-cam{background:linear-gradient(145deg,#fb923c,#ea580c);box-shadow:0 4px 10px -3px rgba(234,88,12,.6);border-radius:10px;}
+    .gs-kb{background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px -6px rgba(15,23,42,.18);margin:6px 0;}
+    .gs-kb .bar{height:9px;background:#e2e8f0;} .gs-kb .bar div{background:linear-gradient(90deg,#34d399,#059669);border-radius:5px;}
+    .gs-alert{display:flex;gap:10px;align-items:flex-start;background:linear-gradient(120deg,#fff7ed,#fffbeb);border:1px solid #fed7aa;border-radius:14px;padding:11px 12px;margin:2px 0 4px;font-size:13px;color:#7c2d12;box-shadow:0 4px 12px -6px rgba(234,88,12,.35);}
+    .gs-alert b{display:block;font-size:14px;color:#9a3412;margin-bottom:2px;} .gs-alert i{font-style:normal;font-size:20px;}
+    .gs-sn-row{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;}
+    .gs-sn-row .bar{flex:1;max-width:120px;height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden;} .gs-sn-row .bar div{height:100%;background:linear-gradient(90deg,#34d399,#059669);}
+    .gs-left{font-size:12px;font-weight:800;color:#991b1b;background:#fee2e2;border-radius:20px;padding:2px 9px;white-space:nowrap;} .gs-left.ok{color:#166534;background:#dcfce7;}
+    .gs-pick{font-size:12.5px;color:#475569;padding:8px 4px 2px;} .gs-pick button{background:none;border:0;color:#2563eb;font:inherit;font-weight:800;cursor:pointer;padding:0;}
+    /* sub pages get the same depth */
+    body.gs-in .sec-page,body.gs-in .list-panel,body.gs-in .control-box{border-radius:16px;box-shadow:0 6px 18px -8px rgba(15,23,42,.18);}
+    body.gs-in .lcard{border:0 !important;border-left:5px solid #94a3b8 !important;box-shadow:0 4px 14px -6px rgba(15,23,42,.2);}
+    body.gs-in .lcard.k-draft{border-left-color:#eab308 !important;} body.gs-in .lcard.k-sent{border-left-color:#2563eb !important;} body.gs-in .lcard.k-portal{border-left-color:#16a34a !important;}
+    body.gs-in .lp-row #newListBtn{background:linear-gradient(120deg,#1e40af,#3b82f6);border-radius:16px;box-shadow:0 10px 22px -8px rgba(37,99,235,.7);animation:none;}
+    body.gs-in .lc-chips button.on{background:linear-gradient(120deg,#1e40af,#3b82f6);box-shadow:0 4px 10px -4px rgba(37,99,235,.7);}
+    body.gs-in .ac-grp{border:0;box-shadow:0 6px 18px -8px rgba(15,23,42,.2);}
+    body.gs-in .ac-row .go{background:linear-gradient(145deg,#fb923c,#ea580c);box-shadow:0 4px 10px -3px rgba(234,88,12,.55);}
+    body.gs-in .ac-row.sent .go{background:linear-gradient(145deg,#4ade80,#16a34a);}
+    /* Sansad picker */
+    .sn-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 14px;}
+    .sn-list label{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:10px 4px;font-weight:800;font-size:15px;cursor:pointer;}
+    .sn-list label small{font-weight:400;font-size:11px;color:#64748b;}
+    .sn-list input{display:none;} .sn-list label.on{border-color:#059669;background:#ecfdf5;color:#065f46;}
+    .sn-btns{display:flex;gap:8px;} .sn-btns button{flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:15px;}
   </style>
 
 </head>
@@ -1503,7 +1549,7 @@
             <h3>৮. PDF Download</h3><p>Download PDF চাপলে সরাসরি A4 PDF তৈরি হবে। একাধিক page হলে table header প্রতিটি page-এ থাকবে।</p>
             <h3>৯. Edit List</h3><p>Final Preview থেকে Edit List ব্যবহার করে আবার worker যোগ বা বাদ দিতে পারবেন।</p>
             <h3>১০. Clear Selected</h3><p>পুরো Selected List মুছতে Clear Selected ব্যবহার করুন। এতে saved selection-ও মুছে যাবে।</p>
-            <h3>১০ক. প্রতি কাজে আলাদা list</h3><p>উপরে <b>➕ নতুন list</b> চেপে কাজের নাম (Work Name) দিন। একই গ্রামে ২–৩টা কাজ চললে প্রতি কাজের জন্য আলাদা list খুলুন (একসঙ্গে সর্বোচ্চ ৫টা), উপরের তালিকা থেকে list বদলান। একজন worker একসময়ে একটাই list-এ থাকতে পারেন — অন্য list-এ থাকলে পাশে 🔒 দেখাবে, বাছা যাবে না। Family card-এ ডানদিকে <b>eKYC</b> আর <b>ABPS</b> heading-এর নিচে সবুজ ✓ মানে YES, লাল ✗ মানে NO।</p><h3>১০খ. Supervisor-এর নাম ও Submit</h3><p><b>✏️ নাম/Supervisor</b> চেপে Supervisor-এর নাম দিন (ইংরেজিতে)। প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)। Work Name আর যথেষ্ট Supervisor না থাকলে <b>📤 Submit</b> হবে না। জমা দেওয়ার পর বদলাতে <b>↩ Edit</b> চাপুন, তারপর আবার Submit করুন। Admin list <b>Lock</b> করলে আর বদলানো যাবে না; কাজ শেষ হলে Admin list বন্ধ করবেন, তখন worker-রা আবার নতুন কাজে বাছাইযোগ্য হবেন।</p><h3>১০গ. Phone-এ app হিসেবে</h3><p>উপরে <b>📲 Install</b> দেখালে চাপুন, home screen-এ icon আসবে। iPhone-এ Safari-র Share → Add to Home Screen।</p><h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
+            <h3>১০ক. প্রতি কাজে আলাদা list</h3><p>উপরে <b>➕ New Demand</b> চেপে কাজের নাম (Work Name) দিন। একই গ্রামে ২–৩টা কাজ চললে প্রতি কাজের জন্য আলাদা list খুলুন (একসঙ্গে সর্বোচ্চ ৫টা), উপরের তালিকা থেকে list বদলান। একজন worker একসময়ে একটাই list-এ থাকতে পারেন — অন্য list-এ থাকলে পাশে 🔒 দেখাবে, বাছা যাবে না। Family card-এ ডানদিকে <b>eKYC</b> আর <b>ABPS</b> heading-এর নিচে সবুজ ✓ মানে YES, লাল ✗ মানে NO।</p><h3>১০খ. Supervisor-এর নাম ও Submit</h3><p><b>✏️ নাম/Supervisor</b> চেপে Supervisor-এর নাম দিন (ইংরেজিতে)। প্রতি ২০ জন worker-এ ১ জন Supervisor, কমপক্ষে ১ জন (৪০ জনে ২, ৬০ জনে ৩)। Work Name আর যথেষ্ট Supervisor না থাকলে <b>📤 Submit</b> হবে না। জমা দেওয়ার পর বদলাতে <b>↩ Edit</b> চাপুন, তারপর আবার Submit করুন। Admin list <b>Lock</b> করলে আর বদলানো যাবে না; কাজ শেষ হলে Admin list বন্ধ করবেন, তখন worker-রা আবার নতুন কাজে বাছাইযোগ্য হবেন।</p><h3>১০গ. Phone-এ app হিসেবে</h3><p>উপরে <b>📲 Install</b> দেখালে চাপুন, home screen-এ icon আসবে। iPhone-এ Safari-র Share → Add to Home Screen।</p><h3>১১. গুরুত্বপূর্ণ সতর্কতা</h3><p>Demand তৈরি করার আগে eKYC, ABPS এবং Bank Account/IFSC তথ্য যাচাই করুন। ভুল worker নির্বাচন করে Demand List তৈরি করবেন না।</p>
             <h3>১২. Help &amp; Support</h3><p>সমস্যা হলে প্রথমে এই User Guide দেখুন। প্রয়োজন হলে administrator/VLE-এর সঙ্গে যোগাযোগ করুন।</p>
           </div>
         </div>
@@ -1534,18 +1580,19 @@
 
     <!-- v6 HOME: 3 tiles + new list + recent lists + passbook + eKYC/ABPS -->
     <div class="sec-page" id="homePage">
-      <div class="gs-hero"><div class="gs-hello" id="gsHello"></div><div class="gs-date" id="gsDate"></div></div>
+      <div class="gs-hero"><svg class="gs-arc" viewBox="0 0 390 46" preserveAspectRatio="none"><path d="M-10 46 Q195 -8 400 46" fill="none" stroke="#fff" stroke-width="3"/><g stroke="#fff" stroke-width="2"><line x1="60" y1="46" x2="60" y2="27"/><line x1="125" y1="46" x2="125" y2="15"/><line x1="195" y1="46" x2="195" y2="11"/><line x1="265" y1="46" x2="265" y2="15"/><line x1="330" y1="46" x2="330" y2="27"/></g></svg><div class="gs-hello" id="gsHello"></div><div class="gs-date" id="gsDate"></div></div>
       <div class="gs-grid">
         <button type="button" class="gs-tile t1" onclick="openSec('list')"><span class="gs-n" id="gsNList"></span><i><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 11h6M9 15h4"/></svg></i>My List</button>
         <button type="button" class="gs-tile t2" onclick="openSec('acc')"><span class="gs-n" id="gsNAcc"></span><i><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg></i>Bank Account</button>
-        <button type="button" class="gs-tile t3" onclick="openSec('abps')"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i>eKYC / ABPS</button>
+        <button type="button" class="gs-tile t3" onclick="openSec('abps')"><span class="gs-n" id="gsNAbps"></span><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i>eKYC / ABPS</button>
       </div>
-      <button type="button" class="gs-new" onclick="homeNewList()">＋ নতুন list</button>
+      <div id="gsAlert"></div>
+      <button type="button" class="gs-new" onclick="homeNewList()"><span>＋</span>New Demand</button>
       <div class="gs-sh"><span>সাম্প্রতিক list</span><button type="button" onclick="openSec('list')">সব ›</button></div>
       <div id="gsRecent"></div>
       <div class="gs-sh"><span>Passbook চাই</span><button type="button" id="gsAccAll" onclick="openSec('acc')">সব ›</button></div>
       <div id="gsAcc"></div>
-      <div class="gs-sh"><span>eKYC / ABPS</span><button type="button" id="gsAbpsPct" onclick="openSec('abps')">›</button></div>
+      <div class="gs-sh"><span id="gsAbpsHead">eKYC / ABPS</span><button type="button" id="gsAbpsPct" onclick="openSec('abps')">›</button></div>
       <div id="gsAbps"></div>
       <div class="gs-data" id="gsData"></div>
     </div>
@@ -1611,6 +1658,7 @@
     <div class="sec-page" id="otherPage">
       <div class="sp-h">⋯ Others</div>
       <div class="oth-who" id="othWho"></div>
+      <button type="button" class="oth-row" onclick="openSansadPick()"><i>📍</i><span><b>আমার Sansad বাছুন</b><small id="othSansad">যে Sansad-এ কাজ করেন, তার খবর Home-এ আসবে</small></span></button>
       <button type="button" class="oth-row" onclick="openUserGuide()"><i>📖</i><span><b>User Guide &amp; Help</b><small>App কীভাবে চালাবেন</small></span></button>
       <button type="button" class="oth-row" id="othInstall" onclick="installApp()" style="display:none;"><i>📲</i><span><b>Phone-এ app হিসেবে রাখুন</b><small>Home screen-এ icon বসবে</small></span></button>
       <button type="button" class="oth-row" onclick="toggleOthLang()"><i>🌐</i><span><b>ভাষা / Language</b><small id="othLang"></small></span></button>
@@ -1645,11 +1693,11 @@
       </div>
       <div class="lp-row">
         <select id="listSelect" aria-label="কোন কাজের list" onchange="listSelectChanged()"></select>
-        <button class="btn-light btn-small" id="newListBtn" onclick="toggleNewList()">➕ নতুন list</button>
+        <button class="btn-light btn-small" id="newListBtn" onclick="toggleNewList()">➕ New Demand</button>
       </div>
       <!-- NEW LIST (page, no popup) -->
       <div class="pg" id="pgNew">
-        <div class="pg-h">➕ নতুন list (নতুন কাজ)</div>
+        <div class="pg-h">➕ New Demand (নতুন কাজ)</div>
         <div class="wm-pick">
           <label for="nlWmQ">🔍 কাজ খুঁজে বাছুন (নাম বা Work Code)</label>
           <input type="search" id="nlWmQ" autocomplete="off" placeholder="যেমন: pukur অথবা 93393" oninput="wmSearch('nl')" onfocus="wmSearch('nl')">
@@ -1956,6 +2004,15 @@
       </div>
       <input type="search" id="acrSearch" class="ac-search" placeholder="🔎 নাম বা Job Card খুঁজুন" autocomplete="off">
       <div id="acrList"></div>
+    </div>
+  </div>
+  <!-- Select Sansad -->
+  <div class="acpage" id="snPage" role="dialog" aria-modal="true" aria-labelledby="snTitle">
+    <div class="ac-top"><button class="btn-light btn-small" onclick="closePage('snPage')">← ফিরে যান</button><b id="snTitle">📍 আমার Sansad</b></div>
+    <div class="ac-body">
+      <div class="ac-note">আপনি যে Sansad (village)-এ কাজ করেন সেগুলো ছুঁয়ে বাছুন (একাধিক বাছা যাবে)। Home-এ শুধু এই Sansad-এর eKYC/ABPS বাকি আর খবর দেখাবে।</div>
+      <div class="sn-list" id="snList"></div>
+      <div class="sn-btns"><button class="btn-light" onclick="saveSansad([])">সব Sansad</button><button class="btn-primary" onclick="saveSansad(null)">Save</button></div>
     </div>
   </div>
   <!-- Account copy: send form -->
@@ -3709,7 +3766,7 @@ function isTakenElsewhere(m){
 function takenLabel(m){ return m.takenOther ? 'অন্য supervisor-এর list-এ আছে' : ('আপনার "'+(m.takenWork||'অন্য')+'" list-এ আছে'); }
 function listLocked(showMsg){
   if(currentUser && listState.noList){
-    if(showMsg){ showStatus('আগে একটা list খুলুন: উপরে "➕ নতুন list" চাপুন।','error'); openNewList(); }
+    if(showMsg){ showStatus('আগে একটা list খুলুন: উপরে "➕ New Demand" চাপুন।','error'); openNewList(); }
     return true;
   }
   const locked=listState.state!=='draft';
@@ -3774,7 +3831,7 @@ function renderListState(){
     const e=document.createElement('div'); e.className='lp-empty';
     e.textContent=(listState.lists||[]).length>=5
       ? '⚠ ৫টা list হয়ে গেছে। নতুন list খুলতে আগে পুরনো একটা list বেছে "🗑 List মুছুন" চাপুন, অথবা Admin-কে বলুন।'
-      : '📝 নতুন কাজের জন্য "➕ নতুন list" চাপুন আর কাজের নাম (Work Name) দিন। একই গ্রামে একাধিক কাজ থাকলে প্রতি কাজে আলাদা list।'+((listState.lists||[]).length?' জমা দেওয়া list উপরের তালিকা থেকে বেছে দেখা যাবে।':'');
+      : '📝 নতুন কাজের জন্য "➕ New Demand" চাপুন আর কাজের নাম (Work Name) দিন। একই গ্রামে একাধিক কাজ থাকলে প্রতি কাজে আলাদা list।'+((listState.lists||[]).length?' জমা দেওয়া list উপরের তালিকা থেকে বেছে দেখা যাবে।':'');
     panel.appendChild(e);
     }
     bar.style.display='none'; if(sbtn) sbtn.style.display='none'; renderListCards(); renderListMeta(); return;
@@ -3862,7 +3919,7 @@ function quickNewList(){
     showStatus('✅ নতুন list খোলা হয়েছে। প্রথমে worker খুঁজে বাছুন, তারপর Next চাপুন।','success');
   }, function(e){ hideLoading(); if(e&&e.authLost) return; showStatus((e&&e.message)||String(e),'error'); });
 }
-function renderNewListBtn(){ const b=document.getElementById('newListBtn'); if(b) b.textContent=document.body.classList.contains('nl-open')?'✕ নতুন list বন্ধ করুন':'➕ নতুন list'; }
+function renderNewListBtn(){ const b=document.getElementById('newListBtn'); if(b) b.textContent=document.body.classList.contains('nl-open')?'✕ নতুন list বন্ধ করুন':'➕ New Demand'; }
 function saveNewList(){
   const name=document.getElementById('nlName').value.trim();
   if(!name){ showStatus(masters.works.length?'তালিকা থেকে কাজ খুঁজে বাছুন।':'Work Name লিখুন।','error'); return; }
@@ -4067,7 +4124,7 @@ function submitMyListNow(){
     document.getElementById('searchInput').value=''; clearSearchResults();   // fresh screen for the next work
     const blank=gramgAdapter.closeList ? gramgAdapter.closeList().then(afterListLoaded) : Promise.resolve();
     return blank.catch(function(){ hideLoading(); }).then(function(){
-      showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে। নতুন কাজের জন্য "➕ নতুন list" চাপুন।','success');
+      showStatus('✅ '+r.count+' জন worker সহ list জমা দেওয়া হয়েছে। নতুন কাজের জন্য "➕ New Demand" চাপুন।','success');
     });
   },function(e){
     hideLoading(); if(e && e.authLost) return;
@@ -4542,7 +4599,7 @@ function renderGsBar(){
   let t='🌉 Gram Setu', sub=(currentUser.name||currentUser.username||'')+' · '+(currentUser.gp||'');
   if(sec==='list'){
     if(listState.noList){ t='📋 My List'; sub=(listState.lists||[]).length+' টা list'; }
-    else { t=isPendingName(listState.workName)?'নতুন list':(listState.workName||'(নাম নেই)'); sub=gsStepText(); }
+    else { t=isPendingName(listState.workName)?'New Demand':(listState.workName||'(নাম নেই)'); sub=gsStepText(); }
   }else if(sec==='acc'){
     const n=acReqs.filter(function(r){ return r.status==='open'; }).length;
     t='🏦 Bank Account'; sub=n?n+' জনের passbook বাকি':'কোনো passbook বাকি নেই';
@@ -4596,7 +4653,7 @@ function renderHome(){
   const drafts=lists.filter(function(l){ return (l.submit_state||'draft')==='draft'; }).length;
   document.getElementById('gsNList').textContent=drafts?String(drafts):'';
   const rec=document.getElementById('gsRecent'); rec.innerHTML='';
-  if(!lists.length) rec.innerHTML='<div class="gs-none">এখনো কোনো list নেই। "＋ নতুন list" চাপুন।</div>';
+  if(!lists.length) rec.innerHTML='<div class="gs-none">এখনো কোনো list নেই। "＋ New Demand" চাপুন।</div>';
   gsListOrder(lists).slice(0,2).forEach(function(l){
     const k=listKind(l);
     rec.appendChild(gsMini('k-'+k.k,'<b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b><span class="gst k-'+k.k+'">'+escapeHtml(k.t)+'</span>',
@@ -4617,14 +4674,59 @@ function renderHome(){
   gd.textContent=(ds&&ds.style.display!=='none')?ds.textContent:'';
   ensureListRes();
 }
+/* ---------- My Sansad (village) choice: per supervisor, on this phone ---------- */
+function snKey(){ return 'gs.sansad.'+String((currentUser&&(currentUser.username||currentUser.name))||''); }
+function mySansad(){ try{ const a=JSON.parse(localStorage.getItem(snKey())||'[]'); return Array.isArray(a)?a.map(Number).filter(function(x){ return x>0; }):[]; }catch(e){ return []; } }
+function snName(v){ return 'Sansad '+String(v).padStart(3,'0'); }
+function openSansadPick(){
+  const sel=mySansad(), box=document.getElementById('snList'); box.innerHTML='';
+  let vs=(villages||[]).map(function(v){ return {v:Number(v.v),f:v.families}; });
+  if(!vs.length && abpsRows) vs=abpsRows.map(function(r){ return {v:Number(r.village_no),f:null,w:r.workers}; });
+  if(!vs.length){ box.innerHTML='<div class="ac-hint">Village list এখনো আসেনি। একটু পরে আবার চেষ্টা করুন।</div>'; }
+  vs.forEach(function(x){
+    const l=document.createElement('label'); l.className=sel.indexOf(x.v)>=0?'on':'';
+    l.innerHTML='<input type="checkbox" value="'+x.v+'"'+(sel.indexOf(x.v)>=0?' checked':'')+'>'+String(x.v).padStart(3,'0')+(x.f!=null?'<small>'+x.f+' families</small>':'');
+    l.querySelector('input').onchange=function(){ l.classList.toggle('on',this.checked); };
+    box.appendChild(l);
+  });
+  openPage('snPage');
+}
+function saveSansad(list){
+  if(list===null) list=Array.prototype.map.call(document.querySelectorAll('#snList input:checked'),function(i){ return Number(i.value); });
+  try{ localStorage.setItem(snKey(), JSON.stringify(list)); }catch(e){}
+  closePage('snPage'); renderOthers(); renderHome();
+  showStatus(list.length?'✅ আপনার Sansad: '+list.map(function(v){ return String(v).padStart(3,'0'); }).join(', ')+'। Home-এ এদের খবর দেখাবে।':'✅ সব Sansad-এর খবর Home-এ দেখাবে।','success');
+}
 function renderHomeAbps(){
-  const box=document.getElementById('gsAbps'), pc=document.getElementById('gsAbpsPct'); if(!box) return;
+  const box=document.getElementById('gsAbps'), pc=document.getElementById('gsAbpsPct'), al=document.getElementById('gsAlert'), tn=document.getElementById('gsNAbps'); if(!box) return;
+  const mine=mySansad(), en=gsEn();
+  box.innerHTML=''; al.innerHTML=''; tn.textContent='';
+  document.getElementById('gsAbpsHead').textContent=mine.length?(en?'My Sansad · eKYC / ABPS':'আমার Sansad · eKYC / ABPS'):'eKYC / ABPS';
   if(abpsRows && abpsRows.length){
-    let tw=0,tb=0,worst=null; abpsRows.forEach(function(r){ tw+=r.workers; tb+=r.both; const left=r.workers-r.both; if(left>0 && (!worst||left>worst.left)) worst={v:r.village_no,left:left}; });
-    const p=tw?Math.round(tb*100/tw):0;
+    const rows=mine.length?abpsRows.filter(function(r){ return mine.indexOf(Number(r.village_no))>=0; }):abpsRows;
+    let tw=0,tb=0,worst=null; rows.forEach(function(r){ tw+=r.workers; tb+=r.both; const left=r.workers-r.both; if(left>0 && (!worst||left>worst.left)) worst={v:r.village_no,left:left}; });
+    const p=tw?Math.round(tb*100/tw):0, left=tw-tb;
     pc.textContent=p+'% ›';
-    box.innerHTML='<div class="gs-kb"><div class="bar"><div style="width:'+p+'%"></div></div><small>'+
-      (worst?'সবচেয়ে বেশি বাকি: Village '+String(worst.v).padStart(3,'0')+' ('+worst.left+' জন)':'সবার ABPS আর eKYC হয়ে গেছে ✓')+'</small></div>';
+    if(mine.length){
+      tn.textContent=left?String(left):'';
+      rows.forEach(function(r){
+        const l=r.workers-r.both, rp=r.workers?Math.round(r.both*100/r.workers):0;
+        box.appendChild(gsMini('k-sn','<span class="gs-sn-row"><b>'+snName(r.village_no)+'</b><span class="bar"><div style="width:'+rp+'%"></div></span><span class="gs-left'+(l?'':' ok')+'">'+(l?l+' জন বাকি':'সব ✓')+'</span></span>',
+          function(){ setSection('abps'); openAbpsVillage(r.village_no); }));
+      });
+      if(!rows.length) box.innerHTML='<div class="gs-none">বাছা Sansad-এর কোনো তথ্য নেই।</div>';
+      // message for the chosen Sansad(s): eKYC/ABPS pending + passbook requests there
+      const accN=acReqs.filter(function(r){ return r.status==='open' && mine.indexOf(Number(r.village_no))>=0; }).length;
+      if(left || accN){
+        al.innerHTML='<div class="gs-alert"><i>🔔</i><div><b>'+escapeHtml(mine.map(function(v){ return String(v).padStart(3,'0'); }).join(', '))+' নং Sansad-এর খবর</b>'+
+          (left?left+' জনের eKYC / ABPS বাকি।':'')+(left&&accN?' ':'')+(accN?accN+' জনের passbook photo চাই।':'')+'</div></div>';
+        al.firstChild.style.cursor='pointer'; al.firstChild.onclick=function(){ if(left) openSec('abps'); else openSec('acc'); };
+      }
+    }else{
+      box.innerHTML='<div class="gs-kb"><div class="bar"><div style="width:'+p+'%"></div></div><small>'+
+        (worst?'সবচেয়ে বেশি বাকি: '+snName(worst.v)+' ('+worst.left+' জন)':'সবার ABPS আর eKYC হয়ে গেছে ✓')+'</small></div>'+
+        '<div class="gs-pick">আপনার Sansad-এর খবর পেতে <button type="button" onclick="openSansadPick()">📍 আমার Sansad বাছুন</button></div>';
+    }
   }else{
     pc.textContent='›';
     box.innerHTML='<div class="gs-none">'+escapeHtml(gsAbpsErr||(abpsRows?'কোনো worker নেই।':'আনছি...'))+'</div>';
@@ -4722,6 +4824,7 @@ function renderOthers(){
   const u=currentUser||{};
   document.getElementById('othWho').innerHTML='👤 <b>'+escapeHtml(u.name||u.username||'')+'</b>'+(u.username?' (@'+escapeHtml(u.username)+')':'')+'<br>🏛 GP: '+escapeHtml(u.gp||'')+
     (u.jcPrefix?' · '+escapeHtml(u.jcPrefix):'')+'<br><span id="othData">'+escapeHtml((document.getElementById('dataStatus')||{}).textContent||'')+'</span>';
+  const ms=mySansad(); document.getElementById('othSansad').textContent=ms.length?'এখন: '+ms.map(function(v){ return String(v).padStart(3,'0'); }).join(', ')+' · বদলাতে চাপুন':'যে Sansad-এ কাজ করেন, তার খবর Home-এ আসবে';
   const ib=document.getElementById('installBtn'); document.getElementById('othInstall').style.display=(ib && ib.style.display!=='none')?'':'none';
   let en=false; try{ en=localStorage.getItem('GramG2_lang')==='en'; }catch(e){}
   document.getElementById('othLang').textContent=en?'এখন: English · বাংলা করতে চাপুন':'এখন: বাংলা · English করতে চাপুন';
@@ -4889,7 +4992,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261114a"></script>
+<script src="./js/i18n.js?v=20261114b"></script>
 </body>
 
 </html>

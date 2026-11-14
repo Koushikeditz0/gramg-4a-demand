@@ -1,5 +1,5 @@
 -- =====================================================================
--- Gram Setu — Supervisor account requests with Admin approval (v212, 2026-11-14)
+-- Gram Setu — Supervisor account requests with Admin approval (v213, 2026-11-14)
 --
 -- The login page stays exactly as it is. Instead the Admin / GP Admin turns on a
 -- REQUEST LINK for a GP (Admin panel → 🙋 Requests). Only people who open that link
@@ -287,4 +287,4 @@ grant execute on function public.admin_get_signup_link(smallint), public.admin_s
   public.admin_list_account_requests(smallint), public.admin_accept_account_request(bigint),
   public.admin_reject_account_request(bigint), public.admin_count_account_requests(smallint) to authenticated;
 
-select 'Supervisor account requests ready (v212)' as result;
+select 'Supervisor account requests ready (v213)' as result;

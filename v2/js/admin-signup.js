@@ -1,5 +1,5 @@
 /* =====================================================================
-   Admin panel — "🙋 Requests" tab (SQL v212).
+   Admin panel — "🙋 Requests" tab (SQL v213).
    Per GP request link (+ QR) for supervisors; their account requests are
    accepted / rejected here. All checks are in the database
    (admin_* functions use private.require_admin_gp: a GP Admin only reaches
@@ -18,7 +18,7 @@
   function status(msg, kind) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (msg ? ' show ' + (kind || 'info') : ''); if (msg) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function missing(e) { return e && (e.status === 404 || /admin_(get_signup_link|list_account_requests|count_account_requests)/.test(e.message || '')); }
   function errText(e) {
-    if (missing(e)) return 'Run supabase/2026-11-14_supervisor_signup_requests_v212.sql in Supabase → SQL Editor first.';
+    if (missing(e)) return 'Run supabase/2026-11-14_supervisor_signup_requests_v213.sql in Supabase → SQL Editor first.';
     var map = { NOT_AUTHORIZED: 'You are not allowed to do this.', NOT_FOUND: 'Request not found. Refresh.',
                 ALREADY_DONE: 'This request was already accepted or rejected. Refresh.',
                 USERNAME_TAKEN: 'A user with this mobile number already exists. Reject this request.',

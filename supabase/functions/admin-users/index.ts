@@ -18,7 +18,7 @@
 //   * The profile is created through public.admin_create_profile (validated
 //     and audited in the database). If that fails, the new login is deleted.
 //   * PIN reset ends every device session of that user (audited).
-//   * v212: two actions WITHOUT a login, for the supervisor request page
+//   * v213: two actions WITHOUT a login, for the supervisor request page
 //     v2/join.html (opened only from the Admin's request link / QR):
 //       check_link      → GP name + supervisor list of that link
 //       request_account → login created BANNED + pending request; the Admin
@@ -195,7 +195,7 @@ async function handler(req: Request): Promise<Response> {
   let body: any;
   try { body = await req.json(); } catch (_e) { return reply(req, 400, { error: 'BAD_INPUT' }); }
 
-  // supervisor request page: no login (v212)
+  // supervisor request page: no login (v213)
   if (body && (body.action === 'check_link' || body.action === 'request_account')) {
     try { return await publicAction(req, body, url, secret); }
     catch (_e) { return reply(req, 500, { error: 'SERVER_ERROR' }); }

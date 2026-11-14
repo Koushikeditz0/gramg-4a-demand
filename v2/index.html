@@ -1469,6 +1469,23 @@
     body.gs-in.step-4 .preview-actions #pvSubmit{flex:2;font-size:18px!important;padding:14px 10px;background:linear-gradient(120deg,#15803d,#22c55e);border:0;color:#fff;box-shadow:0 6px 16px rgba(22,163,74,.35);}
     body.gs-in.step-4 .preview-overlay.show{padding-bottom:92px;}
   }
+
+    /* ===== 2026-11-14 v214: Aadhaar চাই + মৃত / Migrant (eKYC/ABPS section) ===== */
+    .ab-w{flex-wrap:wrap;}
+    .ab-w .fl .a{background:#ffedd5;color:#9a3412;} .ab-w .fl .ok{background:#dcfce7;color:#166534;} .ab-w .fl .m{background:#e2e8f0;color:#334155;}
+    .aa-act{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:5px;}
+    .aa-act button{border:0;border-radius:9px;padding:6px 10px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;}
+    .aa-act .aa-go{background:#2563eb;color:#fff;} .aa-act .mk-go{background:#f1f5f9;color:#334155;}
+    .aa-note{flex-basis:100%;font-size:12px;border-radius:8px;padding:5px 8px;margin-top:4px;}
+    .aa-note.ret{background:#fef2f2;color:#991b1b;font-weight:700;} .aa-note.ok{background:#f0fdf4;color:#166534;font-weight:700;} .aa-note.wait{background:#eff6ff;color:#1e40af;}
+    .ab-w.mk{opacity:.75;background:#f8fafc;}
+    .aa-sex{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;} .aa-sex label{flex:1;min-width:80px;border:1px solid #cbd5e1;border-radius:9px;padding:9px 6px;text-align:center;font-weight:700;cursor:pointer;}
+    .aa-sex label.on{background:#2563eb;color:#fff;border-color:#2563eb;} .aa-sex input{display:none;}
+    .aa-consent{display:flex;gap:8px;align-items:flex-start;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 10px;margin-top:10px;font-size:13px;font-weight:700;color:#78350f;}
+    .aa-consent input{width:20px;height:20px;flex:0 0 auto;margin:0;}
+    .aa-safe{font-size:12px;color:#475569;background:#f1f5f9;border-radius:10px;padding:8px 10px;margin-top:10px;line-height:1.5;}
+    .gs-news{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:9px 11px;margin-bottom:6px;font:inherit;font-size:13px;color:inherit;cursor:pointer;}
+    .gs-news i{font-style:normal;font-size:17px;} .gs-news small{display:block;color:#64748b;font-size:11.5px;margin-top:2px;}
   </style>
 
 </head>
@@ -1653,6 +1670,8 @@
         <button type="button" class="gs-tile t3" onclick="openSec('abps')"><span class="gs-n" id="gsNAbps"></span><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i>eKYC / ABPS</button>
       </div>
       <div id="gsAlert"></div>
+      <div class="gs-sh" id="gsNewsHead" style="display:none;"><span>🔔 খবর · Aadhaar / মৃত-Migrant</span><button type="button" onclick="openSec('abps')">›</button></div>
+      <div id="gsNews"></div>
       <button type="button" class="gs-new" onclick="homeNewList()"><span>＋</span>New Demand</button>
       <div class="gs-sh"><span>সাম্প্রতিক list</span><button type="button" onclick="openSec('list')">সব ›</button></div>
       <div id="gsRecent"></div>
@@ -1716,7 +1735,7 @@
     <!-- ABPS section -->
     <div class="sec-page" id="abpsPage">
       <div class="sp-h">✅ ABPS / eKYC</div>
-      <div class="sp-sub" id="abpsSub">আপনার GP-র কোন village-এ কতজনের ABPS আর eKYC হয়েছে। Village ছুঁয়ে বাকি থাকা worker-দের দেখুন।</div>
+      <div class="sp-sub" id="abpsSub">আপনার GP-র কোন village-এ কতজনের ABPS আর eKYC হয়েছে। Village ছুঁয়ে বাকি থাকা worker-দের দেখুন। <b>🪪</b> = যাদের Aadhaar চাই (দেওয়া নেই বা যাচাই হয়নি) — card-এর photo, নম্বর আর নাম পাঠান। মৃত বা স্থায়ী Migrant হলে "⋯ মৃত / Migrant" চাপুন।</div>
       <div id="abpsBody"></div>
     </div>
 
@@ -2098,6 +2117,53 @@
     </div>
   </div>
 
+
+  <!-- v214: Aadhaar send form (Aadhaar card photo + number + Name as per Aadhaar) -->
+  <input type="file" id="aaCamInput" accept="image/*" capture="environment" style="display:none">
+  <input type="file" id="aaGalInput" accept="image/*" style="display:none">
+  <div class="acpage" id="aaForm" role="dialog" aria-modal="true" aria-labelledby="aaTitle">
+    <div class="ac-top"><button class="btn-light btn-small" onclick="closeAaForm()">← ফিরে যান</button><b id="aaTitle">🪪 Aadhaar পাঠান</b></div>
+    <div class="ac-body">
+      <div class="ac-who"><div class="nm" id="aaWho"></div><div class="jc" id="aaJc"></div></div>
+      <div class="ac-ret" id="aaRet" style="display:none;"></div>
+      <div class="ac-h">Aadhaar card-এর photo</div>
+      <div class="ac-hint">নাম, জন্ম তারিখ, লিঙ্গ আর Aadhaar নম্বর লেখা দিকটার পরিষ্কার photo তুলুন।</div>
+      <button type="button" class="ac-cam" onclick="aaPick(true)">📷 Camera</button>
+      <button type="button" class="ac-gal" onclick="aaPick(false)">🖼️ Gallery</button>
+      <img id="aaImg" alt="" style="display:none;max-width:100%;border-radius:12px;margin-top:8px;">
+      <div class="ac-hint" id="aaInfo"></div>
+      <div class="ph-acc">
+        <label for="aaNo">Aadhaar নম্বর (১২ সংখ্যা)</label><input type="text" id="aaNo" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="যেমন 4521 7790 4821">
+        <label for="aaNo2">Aadhaar নম্বর আবার লিখুন</label><input type="text" id="aaNo2" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="মিলিয়ে দেখার জন্য">
+        <label for="aaName">Name as per Aadhaar (Card-এ ইংরেজিতে যেমন লেখা)</label><input type="text" id="aaName" autocomplete="off" autocapitalize="characters" maxlength="80" placeholder="যেমন BRINDABAN BARMAN" style="font-family:inherit;">
+        <label>Aadhaar-এ লিঙ্গ</label>
+        <div class="aa-sex" id="aaSex"><label><input type="radio" name="aaSex" value="M">পুরুষ</label><label><input type="radio" name="aaSex" value="F">মহিলা</label><label><input type="radio" name="aaSex" value="T">অন্য</label></div>
+        <label class="aa-consent"><input type="checkbox" id="aaConsent"><span>কর্মী নিজে Aadhaar দিতে রাজি হয়েছেন (consent নেওয়া হয়েছে)।</span></label>
+        <div class="ph-err" id="aaErr"></div>
+      </div>
+      <div class="aa-safe">🔒 পাঠানোর পর আপনি আর ছবি বা পুরো নম্বর দেখতে পাবেন না, শুধু শেষ ৪টা সংখ্যা। Portal-এ কাজ হয়ে গেলে, বা বড়জোর ৭ দিনে, ছবি আর নম্বর মুছে যাবে।</div>
+      <button type="button" class="ac-send" id="aaSend" onclick="aaSend()">⬆ Admin-কে পাঠান</button>
+    </div>
+  </div>
+  <!-- v214: mark Expired / Permanently Migrant / Duplicate -->
+  <div class="acpage" id="mkForm" role="dialog" aria-modal="true" aria-labelledby="mkTitle">
+    <div class="ac-top"><button class="btn-light btn-small" onclick="closePage('mkForm')">← ফিরে যান</button><b id="mkTitle">⋯ মৃত / Migrant</b></div>
+    <div class="ac-body">
+      <div class="ac-who"><div class="nm" id="mkWho"></div><div class="jc" id="mkJc"></div></div>
+      <div class="ac-ret" id="mkRet" style="display:none;"></div>
+      <div class="ph-acc">
+        <label>কী হয়েছে?</label>
+        <div class="aa-sex" id="mkWhy"><label><input type="radio" name="mkWhy" value="dead">✝ মৃত</label><label><input type="radio" name="mkWhy" value="migrant">🧳 স্থায়ী Migrant</label><label><input type="radio" name="mkWhy" value="duplicate">⧉ Duplicate</label></div>
+        <label for="mkWhen">কবে (আন্দাজে হলেও, যেমন মার্চ 2026)</label><input type="text" id="mkWhen" autocomplete="off" maxlength="40" style="font-family:inherit;">
+        <label for="mkNote">মন্তব্য (ঐচ্ছিক)</label><input type="text" id="mkNote" autocomplete="off" maxlength="300" placeholder="যেমন: পরিবারের ছেলে জানিয়েছে" style="font-family:inherit;">
+        <div class="ph-err" id="mkErr"></div>
+      </div>
+      <div class="aa-safe">Mark করলে এই কর্মীকে নতুন Demand list-এ আর বাছা যাবে না। Admin দেখে Portal-এ delete-এর জন্য পাঠাবেন। ভুল হলে নিচের বোতামে mark তুলে নিন।</div>
+      <button type="button" class="ac-send" id="mkSave" onclick="mkSave()">⬆ Admin-কে পাঠান</button>
+      <button type="button" class="btn-light" id="mkUndo" onclick="mkUndo()" style="display:none;width:100%;margin-top:10px;padding:12px;">↩ Mark তুলে নিন</button>
+    </div>
+  </div>
+
   <div class="gm-modal" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
     <div class="gm-box" style="max-width:680px;">
       <h3 id="rsTitle">📋 K-Desk ফলাফল</h3>
@@ -2152,7 +2218,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/gramg-adapter.js?v=20261114e"></script>
+<script src="./js/gramg-adapter.js?v=20261114f"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -2901,17 +2967,19 @@
 
             const checked = selected.has(member.id);
             const taken = isTakenElsewhere(member);
-            const canPick = member.ekyc && member.abps && !taken;
+            const marked = typeof markedSet!=='undefined' && markedSet.has(Number(member.wid));
+            const canPick = member.ekyc && member.abps && !taken && !marked;
             row.className = 'member' + (taken ? ' taken' : '') + (iayHit(member) ? ' iay-busy' : '');
             const dupName = nameCount[String(member.name || '').trim().toUpperCase()] > 1;
             row.innerHTML =
               '<input type="checkbox" class="member-check" data-id="' + escapeAttr(member.id) + '" ' +
               (checked ? 'checked ' : '') +
-              (canPick ? '' : 'disabled title="' + (taken ? 'এই worker অন্য list-এ আছেন' : 'eKYC এবং ABPS দুটোই YES না হলে select করা যাবে না') + '"') + '>' +
+              (canPick ? '' : 'disabled title="' + (taken ? 'এই worker অন্য list-এ আছেন' : marked ? 'মৃত / Migrant mark করা আছে' : 'eKYC এবং ABPS দুটোই YES না হলে select করা যাবে না') + '"') + '>' +
               '<div class="member-main">' +
               '<div class="member-name">' + escapeHtml(member.name) + '</div>' +
               (dupName ? '<div class="member-sub">App ' + escapeHtml(member.applicantNo) + '</div>' : '') +
               (taken ? '<div class="member-taken">🔒 ' + escapeHtml(takenLabel(member)) + '</div>' : '') +
+              (marked ? '<div class="member-taken">✝ মৃত / Migrant mark করা</div>' : '') +
               iayLine(member) +
               '</div>' +
               '<div class="yn-wrap">' +
@@ -3207,6 +3275,7 @@
 
             if(!member.ekyc || !member.abps) return;
             if(isTakenElsewhere(member)) return;
+            if(typeof markedSet!=='undefined' && markedSet.has(Number(member.wid))) return;
             if(iayHit(member)){ iaySkipped++; return; }
             selected.set(
 
@@ -3271,7 +3340,7 @@
         family.members.forEach(
           function(member){
 
-            if(member.ekyc && member.abps && !isTakenElsewhere(member)){
+            if(member.ekyc && member.abps && !isTakenElsewhere(member) && !(typeof markedSet!=='undefined' && markedSet.has(Number(member.wid)))){
               if(iayHit(member)){ iaySkipped++; return; }
               selected.set(
 
@@ -3826,7 +3895,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillageNames(); loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy();
+  loadVillageNames(); loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy(); if(typeof loadMarked==="function") loadMarked();
   document.body.classList.add('gs-in'); renderGsBar(); renderHome();
 }
 const AUTH_LOST_MSG={
@@ -4780,6 +4849,7 @@ function renderHome(){
       function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); }));
   });
   renderHomeAbps();
+  renderAaNews(); loadAaNews(false);
   const ds=document.getElementById('dataStatus'), gd=document.getElementById('gsData');
   gd.textContent=(ds&&ds.style.display!=='none')?ds.textContent:'';
   ensureListRes();
@@ -4966,7 +5036,7 @@ function renderAbpsSummary(){
   abpsRows.forEach(function(r){
     const left=r.workers-r.both, pc=r.workers?Math.round(r.both*100/r.workers):0;
     const b=document.createElement('button'); b.type='button'; b.className='abv';
-    b.innerHTML='<span class="vn">Village '+String(r.village_no).padStart(3,'0')+(vLocal(r.village_no)?'<small>'+escapeHtml(vLocal(r.village_no))+'</small>':'')+'</span><span class="bars">'+r.workers+' জন · ABPS '+r.abps+' · eKYC '+r.ekyc+
+    b.innerHTML='<span class="vn">Village '+String(r.village_no).padStart(3,'0')+(vLocal(r.village_no)?'<small>'+escapeHtml(vLocal(r.village_no))+'</small>':'')+'</span><span class="bars">'+r.workers+' জন · ABPS '+r.abps+' · eKYC '+r.ekyc+(r.aadhaar?' · <b style="color:#9a3412">🪪 '+r.aadhaar+'</b>':'')+
       '<div class="bar"><div style="width:'+pc+'%"></div></div></span><span class="left'+(left?'':' ok')+'">'+(left?left+' বাকি':'সব ✓')+'</span>';
     b.onclick=function(){ openAbpsVillage(r.village_no); };
     body.appendChild(b);
@@ -4981,32 +5051,209 @@ function openAbpsVillage(v){
   gramgAdapter.abpsVillage(v).then(function(rows){ if(abpsVillage!==v) return; abpsList=rows||[]; renderAbpsVillage(); },
     function(e){ if(e&&e.authLost) return; body.lastChild.textContent=(e&&e.message)||String(e); });
 }
+function aaWaiting(x){ return x.aa && (x.aa.status==='sent'||x.aa.status==='verified'||x.aa.status==='updated'); }
+function aaWant(x){ return x.aa_need && !x.mark && !aaWaiting(x); }        // still needs the supervisor to send Aadhaar
 function renderAbpsVillage(){
   const v=abpsVillage, body=document.getElementById('abpsBody');
   const q=(document.getElementById('abQ')||{}).value||'';
-  const cnt={all:abpsList.length, abps:abpsList.filter(function(x){return !x.abps;}).length, ekyc:abpsList.filter(function(x){return !x.ekyc;}).length, both:abpsList.filter(function(x){return !x.abps&&!x.ekyc;}).length};
+  const cnt={all:abpsList.length, aa:abpsList.filter(aaWant).length, abps:abpsList.filter(function(x){return !x.abps;}).length, ekyc:abpsList.filter(function(x){return !x.ekyc;}).length, both:abpsList.filter(function(x){return !x.abps&&!x.ekyc;}).length, mark:abpsList.filter(function(x){return !!x.mark;}).length};
+  const fs=[['all','সব বাকি'],['aa','🪪 Aadhaar চাই'],['abps','ABPS নেই'],['ekyc','eKYC নেই'],['both','দুটোই নেই']];
+  if(cnt.mark) fs.push(['mark','✝ মৃত / Migrant']);
   body.innerHTML='<div class="ab-top"><button class="btn-light btn-small" onclick="openAbps()">← সব village</button><b>'+escapeHtml(vLabel(v,'Village'))+'</b></div>'+
-    '<div class="ab-f">'+[['all','সব বাকি'],['abps','ABPS নেই'],['ekyc','eKYC নেই'],['both','দুটোই নেই']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(abpsFilter===f[0]?'on':'')+'">'+f[1]+' ('+cnt[f[0]]+')</button>'; }).join('')+'</div>'+
+    '<div class="ab-f">'+fs.map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(abpsFilter===f[0]?'on':'')+'">'+f[1]+' ('+cnt[f[0]]+')</button>'; }).join('')+'</div>'+
     '<input type="search" id="abQ" class="ab-q" placeholder="🔎 নাম বা Job Card খুঁজুন" autocomplete="off"><div id="abList"></div>';
   const qi=document.getElementById('abQ'); qi.value=q; qi.oninput=paintAbpsList;
   body.querySelectorAll('.ab-f button').forEach(function(b){ b.onclick=function(){ abpsFilter=b.dataset.f; renderAbpsVillage(); }; });
   paintAbpsList();
 }
+const MK_TXT={dead:'✝ মৃত',migrant:'🧳 স্থায়ী Migrant',duplicate:'⧉ Duplicate'};
+const MK_ST={new:'Admin-এর কাছে',accepted:'Admin মেনেছেন',sent_delete:'Delete-এর জন্য পাঠানো হয়েছে',returned:'Admin ফেরত দিয়েছেন',deleted:'Portal থেকে বাদ'};
 function paintAbpsList(){
   const box=document.getElementById('abList'); if(!box) return; box.innerHTML='';
   const q=document.getElementById('abQ').value.trim().toLowerCase();
   const rows=abpsList.filter(function(x){
+    if(abpsFilter==='aa' && !aaWant(x)) return false;
+    if(abpsFilter==='mark' && !x.mark) return false;
     if(abpsFilter==='abps' && x.abps) return false;
     if(abpsFilter==='ekyc' && x.ekyc) return false;
     if(abpsFilter==='both' && (x.abps||x.ekyc)) return false;
     return !q || String(x.applicant_name||'').toLowerCase().indexOf(q)>=0 || String(x.job_card_no||'').toLowerCase().indexOf(q)>=0;
   });
-  if(!rows.length){ box.innerHTML='<div class="selected-empty">'+(abpsList.length?'কেউ মেলেনি।':'এই village-এ সবার ABPS আর eKYC হয়ে গেছে ✓')+'</div>'; return; }
+  if(!rows.length){ box.innerHTML='<div class="selected-empty">'+(abpsList.length?'কেউ মেলেনি।':'এই village-এ সবার ABPS, eKYC আর Aadhaar হয়ে গেছে ✓')+'</div>'; return; }
   rows.forEach(function(x){
-    const d=document.createElement('div'); d.className='ab-w';
+    const d=document.createElement('div'); d.className='ab-w'+(x.mark&&x.mark.status!=='returned'?' mk':'');
+    const aaPill=x.aa_need?(x.seeded?'<span class="a" title="Aadhaar seeded, কিন্তু Authentication হয়নি">Aadhaar যাচাই ✕</span>':'<span class="a">Aadhaar নেই</span>'):'';
     d.innerHTML='<div><div class="nm">'+escapeHtml(x.applicant_name||'')+'</div><div class="jc">'+escapeHtml(x.job_card_no||'')+(x.applicant_no?' · App '+escapeHtml(String(x.applicant_no)):'')+'</div></div>'+
-      '<div class="fl"><span class="'+(x.abps?'y':'n')+'">ABPS '+(x.abps?'✓':'✕')+'</span><span class="'+(x.ekyc?'y':'n')+'">eKYC '+(x.ekyc?'✓':'✕')+'</span></div>';
+      '<div class="fl"><span class="'+(x.abps?'y':'n')+'">ABPS '+(x.abps?'✓':'✕')+'</span><span class="'+(x.ekyc?'y':'n')+'">eKYC '+(x.ekyc?'✓':'✕')+'</span>'+aaPill+'</div>';
+    // status notes
+    const a=x.aa;
+    if(a){
+      let cls='wait', t='';
+      if(a.status==='sent') t='🪪 Aadhaar পাঠানো হয়েছে (…'+escapeHtml(a.last4||'')+') · Admin দেখবেন';
+      else if(a.status==='verified') t=a.portal==='fail'?'🪪 Portal-এ মেলেনি, Admin দেখছেন'+(a.comment?': '+escapeHtml(a.comment):''):'🪪 Admin ঠিক করেছেন · Portal-এ উঠবে';
+      else if(a.status==='updated'){ cls='ok'; t='✅ Aadhaar Portal-এ update হয়েছে (…'+escapeHtml(a.last4||'')+')'; }
+      else if(a.status==='returned'){ cls='ret'; t='↩ ফেরত: '+escapeHtml(a.comment||'আবার পাঠান'); }
+      if(t) d.insertAdjacentHTML('beforeend','<div class="aa-note '+cls+'">'+t+'</div>');
+    }
+    const m=x.mark;
+    if(m) d.insertAdjacentHTML('beforeend','<div class="aa-note '+(m.status==='returned'?'ret':'wait')+'">'+(MK_TXT[m.reason]||'')+' · '+escapeHtml(MK_ST[m.status]||m.status)+(m.admin_note?': '+escapeHtml(m.admin_note):'')+'</div>');
+    // actions
+    const act=document.createElement('div'); act.className='aa-act';
+    if(x.aa_need && (!m || m.status==='returned') && (!a || a.status==='returned' || (a.status==='sent'))){
+      const b=document.createElement('button'); b.type='button'; b.className='aa-go';
+      b.textContent=a&&a.status==='returned'?'🪪 আবার পাঠান':a&&a.status==='sent'?'🪪 বদলে পাঠান':'🪪 Aadhaar পাঠান';
+      b.onclick=function(){ openAaForm(x); }; act.appendChild(b);
+    }
+    if(!m || m.status==='new' || m.status==='returned'){
+      const b=document.createElement('button'); b.type='button'; b.className='mk-go';
+      b.textContent=m&&m.status==='new'?'✏️ মৃত / Migrant বদলান':'⋯ মৃত / Migrant';
+      b.onclick=function(){ openMkForm(x); }; act.appendChild(b);
+    }
+    if(act.childNodes.length) d.appendChild(act);
     box.appendChild(d);
+  });
+}
+/* ---------- v214: Aadhaar send form ---------- */
+let aaItem=null, aaBlob=null, aaUrl=null;
+function aaVerhoeff(n){
+  const d=[[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+  const p=[[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+  if(!/^[2-9]\d{11}$/.test(n)) return false;
+  let c=0; n.split('').reverse().forEach(function(ch,i){ c=d[c][p[i%8][Number(ch)]]; });
+  return c===0;
+}
+function aaFmt(v){ return v.replace(/\D/g,'').slice(0,12).replace(/(\d{4})(?=\d)/g,'$1 '); }
+function aaCheck(final){
+  const a=document.getElementById('aaNo'), a2=document.getElementById('aaNo2'), nm=document.getElementById('aaName');
+  a.value=aaFmt(a.value); a2.value=aaFmt(a2.value); nm.value=nm.value.replace(/[^A-Za-z .()'-]/g,'').toUpperCase();
+  const n=a.value.replace(/\D/g,''), n2=a2.value.replace(/\D/g,''), ok=aaVerhoeff(n), ok2=ok&&n2===n;
+  a.classList.toggle('good',ok); a.classList.toggle('bad',(final||n.length===12)&&!ok);
+  a2.classList.toggle('good',ok2); a2.classList.toggle('bad',(final||n2.length===12)&&!ok2);
+  const sex=document.querySelector('input[name="aaSex"]:checked');
+  let err='';
+  if(n.length===12 && !ok) err='এই Aadhaar নম্বরটা ঠিক নয় — Card দেখে আবার লিখুন।';
+  if(final){
+    if(!aaBlob) err='আগে Aadhaar card-এর photo তুলুন।';
+    else if(!ok) err='Aadhaar নম্বর ঠিক নয় — Card দেখে ১২টা সংখ্যা লিখুন।';
+    else if(!ok2) err='দুবারের Aadhaar নম্বর মেলেনি।';
+    else if(!/^[A-Z][A-Z .()'-]{1,79}$/.test(nm.value.trim())) err='Name as per Aadhaar ইংরেজিতে লিখুন।';
+    else if(!sex) err='Aadhaar-এ লিঙ্গ বাছুন।';
+    else if(!document.getElementById('aaConsent').checked) err='কর্মীর সম্মতি (consent) টিক দিন।';
+  }
+  document.getElementById('aaErr').textContent=err;
+  return !err;
+}
+document.addEventListener('input',function(e){ if(e.target&&/^aa(No|No2|Name)$/.test(e.target.id)) aaCheck(false); });
+document.addEventListener('change',function(e){ if(e.target&&(e.target.name==='aaSex'||e.target.name==='mkWhy')){ document.querySelectorAll('input[name="'+e.target.name+'"]').forEach(function(i){ i.parentNode.classList.toggle('on',i.checked); }); } });
+function openAaForm(x){
+  aaItem=x; aaBlob=null; if(aaUrl){ URL.revokeObjectURL(aaUrl); aaUrl=null; }
+  document.getElementById('aaWho').textContent=x.applicant_name||'';
+  document.getElementById('aaJc').textContent=(x.job_card_no||'')+(x.applicant_no?' · App '+x.applicant_no:'')+' · '+(x.seeded?'Aadhaar seeded, যাচাই হয়নি':'Aadhaar দেওয়া নেই');
+  const a=x.aa, ret=document.getElementById('aaRet');
+  ret.style.display=a&&a.status==='returned'?'':'none'; ret.textContent=a&&a.status==='returned'?'↩ Admin ফেরত পাঠিয়েছেন: '+(a.comment||''):'';
+  ['aaNo','aaNo2','aaName'].forEach(function(id){ const e=document.getElementById(id); e.value=''; e.classList.remove('bad','good'); });
+  document.getElementById('aaName').value=(a&&a.name)||String(x.applicant_name||'').toUpperCase().replace(/[^A-Z .]/g,'');
+  document.querySelectorAll('input[name="aaSex"]').forEach(function(i){ i.checked=false; i.parentNode.classList.remove('on'); });
+  document.getElementById('aaConsent').checked=false;
+  const img=document.getElementById('aaImg'); img.style.display='none'; img.removeAttribute('src');
+  document.getElementById('aaInfo').textContent=a&&a.status==='sent'?'আগে একবার পাঠানো হয়েছে; নতুন পাঠালে আগেরটা বদলে যাবে।':'';
+  document.getElementById('aaErr').textContent='';
+  openPage('aaForm');
+}
+function closeAaForm(){ closePage('aaForm'); if(aaUrl){ URL.revokeObjectURL(aaUrl); aaUrl=null; } aaBlob=null; aaItem=null; }
+function aaPick(camera){ const inp=document.getElementById(camera?'aaCamInput':'aaGalInput'); inp.value=''; inp.click(); }
+function aaChosen(){
+  const f=this.files&&this.files[0]; if(!f||!aaItem) return;
+  showLoading('ছবি ছোট করা হচ্ছে...');
+  compressPhoto(f).then(function(b){
+    hideLoading(); aaBlob=b; if(aaUrl) URL.revokeObjectURL(aaUrl); aaUrl=URL.createObjectURL(b);
+    const img=document.getElementById('aaImg'); img.src=aaUrl; img.style.display='block';
+    document.getElementById('aaInfo').textContent='✓ Photo নেওয়া হয়েছে ('+Math.round(b.size/1024)+' KB)। নাম আর নম্বর পরিষ্কার পড়া যাচ্ছে কিনা দেখে নিন।';
+    document.getElementById('aaErr').textContent='';
+  },function(e){ hideLoading(); showStatus((e&&e.message)||String(e),'error'); });
+}
+document.getElementById('aaCamInput').addEventListener('change',aaChosen);
+document.getElementById('aaGalInput').addEventListener('change',aaChosen);
+function aaSend(){
+  if(!aaItem || !aaCheck(true)) return;
+  const x=aaItem, no=document.getElementById('aaNo').value.replace(/\D/g,''), nm=document.getElementById('aaName').value.trim().replace(/\s+/g,' '),
+        sex=document.querySelector('input[name="aaSex"]:checked').value;
+  showLoading('Aadhaar পাঠানো হচ্ছে...');
+  gramgAdapter.aadhaarSubmit(Number(x.worker_id),aaBlob,no,nm,sex).then(function(){
+    hideLoading(); closeAaForm();
+    x.aa={status:'sent',last4:no.slice(-4),name:nm,comment:null,at:new Date().toISOString()};
+    if(abpsVillage!==null) renderAbpsVillage();
+    showStatus('✅ '+(x.applicant_name||'')+' — Aadhaar Admin-কে পাঠানো হয়েছে।','success');
+  },function(e){ hideLoading(); if(e&&e.authLost) return; document.getElementById('aaErr').textContent=(e&&e.message)||String(e); });
+}
+/* ---------- v214: Expired / Migrant mark ---------- */
+let mkItem=null;
+const markedSet=new Set();     // worker ids that cannot be picked in a Demand list
+function loadMarked(){
+  if(!currentUser || !gramgAdapter.markedWorkers) return;
+  gramgAdapter.markedWorkers().then(function(ids){ markedSet.clear(); (ids||[]).forEach(function(i){ markedSet.add(Number(i)); }); },function(){});
+}
+function openMkForm(x){
+  mkItem=x; const m=x.mark;
+  document.getElementById('mkWho').textContent=x.applicant_name||'';
+  document.getElementById('mkJc').textContent=(x.job_card_no||'')+(x.applicant_no?' · App '+x.applicant_no:'');
+  const ret=document.getElementById('mkRet'); ret.style.display=m&&m.status==='returned'?'':'none'; ret.textContent=m&&m.status==='returned'?'↩ Admin ফেরত দিয়েছেন: '+(m.admin_note||''):'';
+  document.querySelectorAll('input[name="mkWhy"]').forEach(function(i){ i.checked=!!(m&&m.reason===i.value); i.parentNode.classList.toggle('on',i.checked); });
+  document.getElementById('mkWhen').value=(m&&m.when)||''; document.getElementById('mkNote').value=(m&&m.note)||'';
+  document.getElementById('mkUndo').style.display=m?'':'none';
+  document.getElementById('mkErr').textContent='';
+  openPage('mkForm');
+}
+function mkDone(x,mark,msg){
+  closePage('mkForm'); x.mark=mark;
+  if(mark && mark.status!=='returned') markedSet.add(Number(x.worker_id)); else markedSet.delete(Number(x.worker_id));
+  if(abpsVillage!==null) renderAbpsVillage(); showStatus(msg,'success');
+}
+function mkSave(){
+  const x=mkItem; if(!x) return;
+  const why=document.querySelector('input[name="mkWhy"]:checked');
+  if(!why){ document.getElementById('mkErr').textContent='মৃত / Migrant / Duplicate — একটা বাছুন।'; return; }
+  const w=document.getElementById('mkWhen').value.trim(), n=document.getElementById('mkNote').value.trim();
+  showLoading('পাঠানো হচ্ছে...');
+  gramgAdapter.workerMark(Number(x.worker_id),why.value,w,n).then(function(){
+    hideLoading(); mkDone(x,{reason:why.value,status:'new',when:w,note:n},'✅ '+(x.applicant_name||'')+' — '+MK_TXT[why.value]+' হিসেবে Admin-কে পাঠানো হয়েছে।');
+  },function(e){ hideLoading(); if(e&&e.authLost) return; document.getElementById('mkErr').textContent=(e&&e.message)||String(e); });
+}
+function mkUndo(){
+  const x=mkItem; if(!x) return;
+  showLoading('Mark তুলে নেওয়া হচ্ছে...');
+  gramgAdapter.workerMark(Number(x.worker_id),'').then(function(){ hideLoading(); mkDone(x,null,'✅ Mark তুলে নেওয়া হয়েছে।'); },
+    function(e){ hideLoading(); if(e&&e.authLost) return; document.getElementById('mkErr').textContent=(e&&e.message)||String(e); });
+}
+/* ---------- v214: খবর (Aadhaar / মৃত-Migrant status from Admin and Portal) ---------- */
+let aaNews=[], aaNewsAt=0, aaNewsBusy=false;
+function loadAaNews(force){
+  if(!currentUser || !gramgAdapter.aadhaarNews || aaNewsBusy) return;
+  if(!force && Date.now()-aaNewsAt<5*60000) return;
+  aaNewsBusy=true;
+  gramgAdapter.aadhaarNews().then(function(r){ aaNews=r||[]; aaNewsAt=Date.now(); aaNewsBusy=false; renderAaNews(); },function(){ aaNewsBusy=false; aaNewsAt=Date.now(); });
+}
+function aaNewsText(n){
+  if(n.kind==='aa'){
+    if(n.status==='updated') return {i:'✅',t:'Aadhaar Portal-এ update হয়েছে'};
+    if(n.status==='returned') return {i:'↩',t:'Aadhaar ফেরত: '+(n.comment||'আবার পাঠান')};
+    return {i:'🪪',t:'Admin Aadhaar ঠিক করেছেন, Portal-এ উঠবে'};
+  }
+  const r=MK_TXT[n.reason]||'';
+  if(n.status==='returned') return {i:'↩',t:r+' ফেরত: '+(n.comment||'')};
+  return {i:n.status==='deleted'?'🗑':'✔',t:r+' · '+(MK_ST[n.status]||n.status)};
+}
+function renderAaNews(){
+  const box=document.getElementById('gsNews'), hd=document.getElementById('gsNewsHead'); if(!box) return;
+  const mine=mySansad();
+  const rows=aaNews.filter(function(n){ return n.mine || !mine.length || mine.indexOf(Number(n.village_no))>=0; });
+  box.innerHTML=''; hd.style.display=rows.length?'':'none';
+  rows.slice(0,4).forEach(function(n){
+    const t=aaNewsText(n), b=document.createElement('button'); b.type='button'; b.className='gs-news';
+    let when=''; try{ when=new Date(n.at).toLocaleDateString('bn-IN',{day:'numeric',month:'short'}); }catch(e){}
+    b.innerHTML='<i>'+t.i+'</i><span><b>'+escapeHtml(n.name||'')+'</b> '+escapeHtml(shortJobCard(n.job_card_no||''))+'<small>'+escapeHtml(t.t)+(when?' · '+escapeHtml(when):'')+'</small></span>';
+    b.onclick=function(){ setSection('abps'); openAbpsVillage(n.village_no); };
+    box.appendChild(b);
   });
 }
 // Others
@@ -5114,7 +5361,7 @@ document.getElementById('acOtherQ').addEventListener('input',function(){
   },400);
 });
 document.getElementById('acrSearch').addEventListener('input',renderAcReqList);
-document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') loadAcRequests(); });
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'){ loadAcRequests(); if(typeof loadAaNews==='function') loadAaNews(false); } });
 function openResults(){
   showLoading('ফলাফল আনছি...');
   gramgAdapter.listResults().then(function(rows){

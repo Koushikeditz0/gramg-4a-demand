@@ -256,6 +256,8 @@
     <button class="tab active" data-tab="dash"><i>📊</i><span>Dashboard</span></button>
     <button class="tab" data-tab="iay"><i>🏠</i><span>IAY</span></button>
     <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
+    <button class="tab" data-tab="aadhaar"><i>🪪</i><span>Aadhaar <b class="badge badge-admin hidden" id="aaBadge"></b></span></button>
+    <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
     <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
@@ -531,6 +533,63 @@
     </div>
   </section>
 
+
+  <!-- ============ AADHAAR COLLECTION (v214) ============ -->
+  <section id="tab-aadhaar" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🪪 Aadhaar from supervisors</h2><button class="btn-light btn-small" id="aaRefresh">🔄 Refresh</button></div>
+      <div class="muted">Workers whose Aadhaar is <b>not seeded</b>, or seeded but <b>Authentication not done</b> (from K-Desk ABPS Sync), show in the supervisor app under eKYC/ABPS as <b>🪪 Aadhaar চাই</b>. The supervisor sends the Aadhaar card photo, the number, Name as per Aadhaar and gender. Check them against the photo: <b>✔ Verify</b> = ready for the portal (K-Desk 🪪 Aadhaar Update on <i>BulkAadhaarUpdate.aspx</i>), <b>↩ Return</b> = back to the supervisor with your comment, <b>✅ Portal done</b> = you entered it yourself. The full number is shown only here and to the K-Desk login; it is wiped (last 4 digits stay) and the photo deleted when the work is done, or after 7 days at most.</div>
+      <label class="f" for="aaGp">Gram Panchayat</label>
+      <select id="aaGp"></select>
+      <div class="muted" id="aaSetup"></div>
+      <div class="stats" id="aaStats" style="margin-top:8px;"></div>
+      <div class="filters" id="aaFilters" style="margin-top:8px;">
+        <button data-f="sent" class="active">New</button>
+        <button data-f="verified">Verified (for portal)</button>
+        <button data-f="fail">Portal failed</button>
+        <button data-f="returned">Returned</button>
+        <button data-f="updated">Done on portal</button>
+        <button data-f="all">All</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <label class="check" style="margin:0;"><input type="checkbox" id="aaAll"><span>Select all shown</span></label>
+        <button class="btn-success btn-small" id="aaBulkVerify" disabled>✔ Verify ticked</button>
+        <button class="btn-primary btn-small" id="aaBulkDone" disabled>✅ Portal done (ticked)</button>
+        <button class="btn-light btn-small" id="aaXlsx">⭳ Excel (last 4 digits only)</button>
+      </div>
+    </div>
+    <div class="phcards" id="aaCards"></div>
+  </section>
+
+  <!-- ============ EXPIRED / MIGRANT MARKS (v214) ============ -->
+  <section id="tab-marks" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🗑 Expired / Permanently Migrant</h2><button class="btn-light btn-small" id="mkRefresh">🔄 Refresh</button></div>
+      <div class="muted">Supervisors mark workers who have died, moved away for good, or are duplicates. Those workers cannot be picked in a new Demand list. <b>✔ Accept</b> the right ones, <b>↩ Return</b> wrong ones with a comment (the mark is lifted and the supervisor sees your comment). Then download the <b>Delete Excel</b> in one go for the deletion proposal on the portal and press <b>Sent for delete</b>.</div>
+      <label class="f" for="mkGp">Gram Panchayat</label>
+      <select id="mkGp"></select>
+      <div class="muted" id="mkSetup"></div>
+      <div class="filters" id="mkFilters" style="margin-top:8px;">
+        <button data-f="new" class="active">New</button>
+        <button data-f="accepted">Accepted</button>
+        <button data-f="sent_delete">Sent for delete</button>
+        <button data-f="deleted">Deleted</button>
+        <button data-f="returned">Returned</button>
+        <button data-f="all">All</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn-success btn-small" id="mkAccept" disabled>✔ Accept ticked</button>
+        <button class="btn-danger btn-small" id="mkReturn" disabled>↩ Return ticked</button>
+        <button class="btn-primary btn-small" id="mkXlsx" disabled>⭳ Delete Excel (ticked)</button>
+        <button class="btn-light btn-small" id="mkSent" disabled>📤 Sent for delete</button>
+        <button class="btn-light btn-small" id="mkDeleted" disabled>🗑 Deleted on portal</button>
+      </div>
+      <div class="table-wrap stack" style="margin-top:8px;"><table>
+        <thead><tr><th><input type="checkbox" id="mkAll"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>Reason</th><th>When / note</th><th>Supervisor</th><th>Status</th></tr></thead>
+        <tbody id="mkBody"></tbody></table></div>
+    </div>
+  </section>
+
   <!-- ============ IMPORT ============ -->
   <section id="tab-import" class="hidden">
     <div class="card super-only" id="gpAddCard">
@@ -775,6 +834,29 @@
     </div>
   </div>
 
+
+  <!-- Aadhaar viewer (v214) -->
+  <div class="modal" id="aavModal" role="dialog" aria-modal="true" aria-labelledby="aavTitle">
+    <div class="modal-box" style="max-width:760px;">
+      <div class="modal-head">
+        <div><h2 id="aavTitle">Aadhaar</h2><div class="muted" id="aavSub"></div></div>
+        <button class="btn-light btn-small" id="aavClose">✕ Close</button>
+      </div>
+      <div id="aavInfo" style="font-size:13px;line-height:1.6;"></div>
+      <img id="aavImg" alt="Aadhaar card photo" style="max-width:100%;border-radius:8px;margin-top:6px;">
+      <div class="muted" id="aavHist" style="margin-top:6px;white-space:pre-line;"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:6px;" id="aavBtns"></div>
+    </div>
+  </div>
+  <!-- comment box (v214) -->
+  <div class="modal" id="cmModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+    <div class="modal-box" style="max-width:520px;">
+      <div class="modal-head"><div><h2 id="cmTitle">Comment</h2><div class="muted" id="cmSub"></div></div><button class="btn-light btn-small" id="cmClose">✕</button></div>
+      <div class="chips" id="cmChips"></div>
+      <textarea id="cmText" rows="3" maxlength="300" style="width:100%;margin-top:8px;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font:inherit;"></textarea>
+      <div class="row" style="justify-content:flex-end;margin-top:6px;"><button class="btn-light btn-small" id="cmNo">Cancel</button><button class="btn-danger btn-small" id="cmYes">Send</button></div>
+    </div>
+  </div>
   <div class="ask" id="askBox" role="dialog" aria-modal="true">
     <div class="ask-box"><div class="ask-msg" id="askMsg" style="white-space:pre-line;"></div>
       <input type="text" id="askInput" class="hidden" maxlength="200" style="margin-top:8px;">
@@ -792,5 +874,6 @@
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
 <script src="./js/admin-signup.js?v=20261114a"></script>
+<script src="./js/admin-aadhaar.js?v=20261114a"></script>
 </body>
 </html>

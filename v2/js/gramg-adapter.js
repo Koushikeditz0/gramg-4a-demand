@@ -31,7 +31,12 @@
     PHOTO_SETUP: 'Account copy-র ব্যবস্থা এখনো চালু হয়নি (Admin SQL চালাননি)।',
     PHOTO_TOO_BIG: 'Photo খুব বড়। আবার তুলুন।',
     BAD_ACCOUNT_NO: 'Account No ঠিক নয় (৬–২০টা সংখ্যা)।',
-    BAD_IFSC: 'IFSC ঠিক নয় (যেমন SBIN0001234)।'
+    BAD_IFSC: 'IFSC ঠিক নয় (যেমন SBIN0001234)।',
+    BAD_AADHAAR: 'Aadhaar নম্বর ঠিক নয়। Card দেখে ১২টা সংখ্যা আবার লিখুন।',
+    BAD_NAME: 'Name as per Aadhaar ইংরেজি অক্ষরে লিখুন (Card-এ যেমন লেখা)।',
+    NO_CONSENT: 'কর্মীর সম্মতি (consent) টিক দিন।',
+    ALREADY_DONE: 'এটা আগেই Portal-এ হয়ে গেছে / Admin কাজ শেষ করেছেন। App reload করুন।',
+    AADHAAR_SETUP: 'Aadhaar / মৃত-Migrant অংশ এখনো চালু হয়নি (Admin SQL v214 চালাননি)।'
   };
   function bnError(e) {
     var out = new Error(BN[e.code] || ('Server error: ' + (e.message || e)));
@@ -484,6 +489,42 @@
     iayBusy: function () {
       return SB.rpc('get_iay_busy', {}, { retry: true }).catch(function (e) {
         if (e && e.status === 404) return null;                       // SQL v210 not run yet
+        throw bnError(e || {});
+      });
+    },
+    // ---- Aadhaar collection + Expired / Migrant marks (SQL v214) ----
+    aadhaarSubmit: function (wid, blob, no, name, gender) {
+      var gp = st.ctx && st.ctx.gp_id, uid = SB.userId();
+      if (!gp || !uid) return Promise.reject(bnError({ code: 'NOT_AUTHORIZED' }));
+      if (!SB.photos.usesR2()) return Promise.reject(bnError({ code: 'PHOTO_SETUP' }));
+      var path = gp + '/' + uid + '/r2a' + wid + '_' + Date.now().toString(36) + '.jpg';
+      return SB.photos.upload(path, blob).catch(function (e) {
+        e = e || {}; var m = e.message || '';
+        if (/exceeded|too large|payload|PHOTO_TOO_BIG/i.test(m) || e.code === 'PHOTO_TOO_BIG') e.code = 'PHOTO_TOO_BIG';
+        else if (/unauthorized/i.test(m)) e.code = 'NOT_AUTHORIZED';
+        throw e;
+      }).then(function () {
+        return SB.rpc('aadhaar_submit', { p_worker_id: wid, p_aadhaar: no, p_name: name, p_gender: gender,
+                                          p_consent: true, p_path: path, p_size: blob.size });
+      }).catch(function (e) {
+        e = e || {};
+        if (e.status === 404 && /aadhaar_submit/.test(e.message || '')) e.code = 'AADHAAR_SETUP';
+        throw bnError(e);
+      });
+    },
+    workerMark: function (wid, reason, when, note) {
+      return SB.rpc('worker_mark', { p_worker_id: wid, p_reason: reason || '', p_when: when || null, p_note: note || null })
+        .catch(function (e) { if (e && e.status === 404) e.code = 'AADHAAR_SETUP'; throw bnError(e || {}); });
+    },
+    markedWorkers: function () {
+      return SB.rpc('get_marked_workers', {}, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) return [];                         // SQL v214 not run yet
+        throw bnError(e || {});
+      });
+    },
+    aadhaarNews: function () {
+      return SB.rpc('get_aadhaar_news', {}, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) return [];                         // SQL v214 not run yet
         throw bnError(e || {});
       });
     },

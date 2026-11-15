@@ -258,6 +258,7 @@
     <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
     <button class="tab" data-tab="aadhaar"><i>🪪</i><span>Aadhaar <b class="badge badge-admin hidden" id="aaBadge"></b></span></button>
     <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
+    <button class="tab" data-tab="wlcaste"><i>⚖</i><span>WL Caste</span></button>
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
     <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
@@ -559,6 +560,21 @@
       </div>
     </div>
     <div class="phcards" id="aaCards"></div>
+  </section>
+
+  <!-- ============ WAGE LIST CASTE BREAKUP REPORTS (v215) ============ -->
+  <section id="tab-wlcaste" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">⚖ Wage List Caste Breakup</h2><button class="btn-light btn-small" id="wcRefresh">🔄 Refresh</button></div>
+      <div class="muted">K-Desk (View Wagelist → <b>⚖ WL Caste Breakup</b>) reads many wage lists at once and makes the official General / SC / ST report. Every time the report is taken there (Excel or Copy), the wage lists are saved here, so the next report — from any PC — takes only the <b>new</b> wage lists. <b>⭳ Excel</b> downloads a report again in the same official format. <b>↩ Undo</b> forgets a report: its wage lists count as new again in K-Desk.</div>
+      <label class="f" for="wcGp">Gram Panchayat</label>
+      <select id="wcGp"></select>
+      <div class="muted" id="wcSetup"></div>
+      <div class="stats" id="wcStats" style="margin-top:8px;"></div>
+      <div class="table-wrap stack" style="margin-top:8px;"><table>
+        <thead><tr><th>When</th><th>Wage lists</th><th>From – To</th><th>Workers</th><th>General</th><th>SC</th><th>ST</th><th>No caste</th><th>Total</th><th></th></tr></thead>
+        <tbody id="wcBody"></tbody></table></div>
+    </div>
   </section>
 
   <!-- ============ EXPIRED / MIGRANT MARKS (v214) ============ -->
@@ -875,5 +891,6 @@
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
 <script src="./js/admin-signup.js?v=20261114a"></script>
 <script src="./js/admin-aadhaar.js?v=20261114a"></script>
+<script src="./js/admin-wlcaste.js?v=20261115a"></script>
 </body>
 </html>

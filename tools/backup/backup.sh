@@ -82,21 +82,21 @@ fi
 : "${R2_ACCOUNT_ID:?}"; : "${R2_ACCESS_KEY_ID:?}"; : "${R2_SECRET_ACCESS_KEY:?}"; : "${R2_BUCKET:?}"
 export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" AWS_DEFAULT_REGION=auto
 export AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
-S3=(aws s3 --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" --only-show-errors)
+S3=(aws s3 --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com")
 
 echo "5/5 Uploading to R2…"
-"${S3[@]}" cp "$WORK/$OUT_NAME" "s3://$R2_BUCKET/daily/$OUT_NAME"
+"${S3[@]}" cp --only-show-errors "$WORK/$OUT_NAME" "s3://$R2_BUCKET/daily/$OUT_NAME"
 if [ "$(TZ=Asia/Kolkata date +%d)" = "01" ] || [ "${FORCE_MONTHLY:-0}" = "1" ]; then
-  "${S3[@]}" cp "$WORK/$OUT_NAME" "s3://$R2_BUCKET/monthly/$OUT_NAME"
+  "${S3[@]}" cp --only-show-errors "$WORK/$OUT_NAME" "s3://$R2_BUCKET/monthly/$OUT_NAME"
   echo "   also kept as monthly copy"
 fi
 
 # Retention: keep the newest KEEP_DAILY daily files and KEEP_MONTHLY monthly files.
 prune() {
   local prefix="$1" keep="$2"
-  "${S3[@]}" ls "s3://$R2_BUCKET/$prefix/" | awk '{print $4}' | grep -E '^gramsetu_.*\.tar\.age$' | sort -r \
+  { "${S3[@]}" ls "s3://$R2_BUCKET/$prefix/" 2>/dev/null || true; } | awk '{print $4}' | { grep -E '^gramsetu_.*\.tar\.age$' || true; } | sort -r \
     | tail -n +"$((keep+1))" | while read -r key; do
-        "${S3[@]}" rm "s3://$R2_BUCKET/$prefix/$key"; echo "   removed old $prefix/$key"
+        "${S3[@]}" rm --only-show-errors "s3://$R2_BUCKET/$prefix/$key"; echo "   removed old $prefix/$key"
       done
 }
 prune daily "$KEEP_DAILY"

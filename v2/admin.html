@@ -257,7 +257,6 @@
     <button class="tab" data-tab="pipeline"><i>💸</i><span>Pipeline</span></button>
     <button class="tab" data-tab="iay"><i>🏠</i><span>IAY</span></button>
     <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
-    <button class="tab" data-tab="aadhaar"><i>🪪</i><span>Aadhaar <b class="badge badge-admin hidden" id="aaBadge"></b></span></button>
     <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
     <button class="tab" data-tab="pmiss"><i>🚫</i><span>Portal removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
     <button class="tab" data-tab="wlcaste"><i>⚖</i><span>WL Caste</span></button>
@@ -536,33 +535,6 @@
     </div>
   </section>
 
-
-  <!-- ============ AADHAAR COLLECTION (v214) ============ -->
-  <section id="tab-aadhaar" class="hidden">
-    <div class="card">
-      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🪪 Aadhaar from supervisors</h2><button class="btn-light btn-small" id="aaRefresh">🔄 Refresh</button></div>
-      <div class="muted">Workers whose Aadhaar is <b>not seeded</b>, or seeded but <b>Authentication not done</b> (from K-Desk ABPS Sync), show in the supervisor app under eKYC/ABPS as <b>🪪 Aadhaar চাই</b>. The supervisor sends the Aadhaar card photo, the number, Name as per Aadhaar and gender. Check them against the photo: <b>✔ Verify</b> = ready for the portal (K-Desk 🪪 Aadhaar Update on <i>BulkAadhaarUpdate.aspx</i>), <b>↩ Return</b> = back to the supervisor with your comment, <b>✅ Portal done</b> = you entered it yourself. The full number is shown only here and to the K-Desk login; it is wiped (last 4 digits stay) and the photo deleted when the work is done, or after 7 days at most.</div>
-      <label class="f" for="aaGp">Gram Panchayat</label>
-      <select id="aaGp"></select>
-      <div class="muted" id="aaSetup"></div>
-      <div class="stats" id="aaStats" style="margin-top:8px;"></div>
-      <div class="filters" id="aaFilters" style="margin-top:8px;">
-        <button data-f="sent" class="active">New</button>
-        <button data-f="verified">Verified (for portal)</button>
-        <button data-f="fail">Portal failed</button>
-        <button data-f="returned">Returned</button>
-        <button data-f="updated">Done on portal</button>
-        <button data-f="all">All</button>
-      </div>
-      <div class="row" style="margin-top:8px;">
-        <label class="check" style="margin:0;"><input type="checkbox" id="aaAll"><span>Select all shown</span></label>
-        <button class="btn-success btn-small" id="aaBulkVerify" disabled>✔ Verify ticked</button>
-        <button class="btn-primary btn-small" id="aaBulkDone" disabled>✅ Portal done (ticked)</button>
-        <button class="btn-light btn-small" id="aaXlsx">⭳ Excel (last 4 digits only)</button>
-      </div>
-    </div>
-    <div class="phcards" id="aaCards"></div>
-  </section>
 
   <!-- ============ PAYMENT PIPELINE (v217) ============ -->
   <section id="tab-pipeline" class="hidden">
@@ -934,19 +906,6 @@
   </div>
 
 
-  <!-- Aadhaar viewer (v214) -->
-  <div class="modal" id="aavModal" role="dialog" aria-modal="true" aria-labelledby="aavTitle">
-    <div class="modal-box" style="max-width:760px;">
-      <div class="modal-head">
-        <div><h2 id="aavTitle">Aadhaar</h2><div class="muted" id="aavSub"></div></div>
-        <button class="btn-light btn-small" id="aavClose">✕ Close</button>
-      </div>
-      <div id="aavInfo" style="font-size:13px;line-height:1.6;"></div>
-      <img id="aavImg" alt="Aadhaar card photo" style="max-width:100%;border-radius:8px;margin-top:6px;">
-      <div class="muted" id="aavHist" style="margin-top:6px;white-space:pre-line;"></div>
-      <div class="row" style="justify-content:flex-end;margin-top:6px;" id="aavBtns"></div>
-    </div>
-  </div>
   <!-- comment box (v214) -->
   <div class="modal" id="cmModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
     <div class="modal-box" style="max-width:520px;">
@@ -973,7 +932,7 @@
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
 <script src="./js/admin-signup.js?v=20261114a"></script>
-<script src="./js/admin-aadhaar.js?v=20261114a"></script>
+<script src="./js/admin-aadhaar.js?v=20261116r"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261116g"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>

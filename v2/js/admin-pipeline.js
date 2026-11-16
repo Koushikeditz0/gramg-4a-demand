@@ -74,7 +74,9 @@
   /* ---------------------- working out each step ---------------------- */
   function model() {
     var d = pp.data || {}, pba = pp.mode === 'pba';
-    var wls = d.wls || [], byWl = {}, byCode = {};
+    var wls = d.wls || [], byWl = {}, byCode = {}, pbaWl = {};
+    (d.pba_wls || []).forEach(function (w) { pbaWl[String(w).toUpperCase()] = 1; });   // v218: PBA by WL number
+    function wlPba(wl, code) { return isPba(code) || !!pbaWl[String(wl || '').toUpperCase()]; }
     wls.forEach(function (w) {
       var k = String(w.wl).toUpperCase(); byWl[k] = w;
       if (w.code) (byCode[String(w.code).toUpperCase()] = byCode[String(w.code).toUpperCase()] || []).push(w);
@@ -90,9 +92,9 @@
     send.items = send.items.map(function (x) {
       var w = byWl[String(x.wl).toUpperCase()] || {};
       return Object.assign({ code: w.code || '', date: w.date || '', n: w.n }, x);
-    }).filter(function (x) { return !pba || isPba(x.code); });
+    }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return !pba || x.pba; });
     var weekAgo = Date.now() - 7 * 864e5;
-    var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && (!pba || isPba(w.code)); });
+    var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && (!pba || wlPba(w.wl, w.code)); });
     return { d: d, iay: d.iay || {}, gen: gen, send: send, sent: sent, byWl: byWl, byCode: byCode };
   }
 
@@ -185,7 +187,7 @@
     if (key === 'send') {
       if (!m.send.items.length) { box.appendChild(el('div', m.send.at ? 'No wage list is waiting to be sent.' : 'Open Send Wagelist For Payment on the portal with K-Desk once.', 'muted')); return box; }
       box.appendChild(table(['Wage list', 'FY', 'Work code', 'Amount'], m.send.items.map(function (x) {
-        return [shortWl(x.wl), x.scope || '', x.code ? el('span', shortCode(x.code), 'pp-code') : '—', x.amt != null ? money(x.amt) : '—'];
+        return [shortWl(x.wl), x.scope || '', x.code ? el('span', shortCode(x.code), 'pp-code') : x.pba ? tag('PBA', 't1') : '—', x.amt != null ? money(x.amt) : '—'];
       })));
       return box;
     }

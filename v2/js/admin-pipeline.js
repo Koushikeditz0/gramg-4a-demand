@@ -82,13 +82,24 @@
       if (w.code) (byCode[String(w.code).toUpperCase()] = byCode[String(w.code).toUpperCase()] || []).push(w);
     });
     var gen = { items: [], at: null, scopes: [] }, send = { items: [], at: null, scopes: [] };
+    var att = { items: [], at: null, scopes: [] }, pay = { items: [], at: null, scopes: [] };   // v220: MR Attendance / Payment pages
     (d.snaps || []).forEach(function (s) {
-      var t = s.kind === 'wl_gen' ? gen : send;
+      var t = s.kind === 'wl_gen' ? gen : s.kind === 'mr_att' ? att : s.kind === 'mr_pay' ? pay : send;
       t.scopes.push({ scope: s.scope, at: s.at, n: s.n });
       if (!t.at || s.at > t.at) t.at = s.at;
       (s.items || []).forEach(function (x) { t.items.push(Object.assign({ scope: s.scope }, x)); });
     });
     gen.items = gen.items.filter(function (x) { return !pba || isPba(x.code); });
+    // works whose MR still has to be filled (attendance and/or payment), from K-Desk
+    var mr = { items: [], at: att.at && pay.at ? (att.at > pay.at ? att.at : pay.at) : att.at || pay.at, attAt: att.at, payAt: pay.at }, mrBy = {};
+    [[att, 'att'], [pay, 'pay']].forEach(function (z) {
+      z[0].items.forEach(function (x) {
+        var k = String(x.code).toUpperCase();
+        if (!mrBy[k]) { mrBy[k] = { code: x.code, name: x.name || '', att: 0, pay: 0 }; mr.items.push(mrBy[k]); }
+        mrBy[k][z[1]] = 1; if (!mrBy[k].name && x.name) mrBy[k].name = x.name;
+      });
+    });
+    mr.items = mr.items.filter(function (x) { return !pba || isPba(x.code); });
     send.items = send.items.map(function (x) {
       var w = byWl[String(x.wl).toUpperCase()] || {};
       var c = (d.wl_caste || {})[String(x.wl).toUpperCase()] || {};     // v219: amount from ⚖ WL Caste
@@ -98,7 +109,7 @@
     }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return !pba || x.pba; });
     var weekAgo = Date.now() - 7 * 864e5;
     var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && (!pba || wlPba(w.wl, w.code)); });
-    return { d: d, iay: d.iay || {}, gen: gen, send: send, sent: sent, byWl: byWl, byCode: byCode };
+    return { d: d, iay: d.iay || {}, mr: mr, mrBy: mrBy, gen: gen, send: send, sent: sent, byWl: byWl, byCode: byCode };
   }
 
   function sum(a, f) { return a.reduce(function (t, x) { return t + (Number(f(x)) || 0); }, 0); }
@@ -114,9 +125,14 @@
     var iayWhen = iay.report_at ? ' · IAY Tracker ' + fmtDay(iay.report_at) : '';
 
     var steps = [
-      { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending',
-        sub: 'PBA MRs whose period has ended but are not filled' + (iay.fill_today ? ' · ' + iay.fill_today + ' end today' : '') + iayWhen +
-             (pp.mode === 'all' ? '. Other works: not tracked yet.' : '') },
+      pp.mode === 'all' && m.mr.at
+        ? { key: 'fill', n: m.mr.items.length, unit: 'work', title: 'MR fill pending',
+            sub: 'Works on the MR Attendance / Payment pages: ' + m.mr.items.filter(function (x) { return x.att; }).length + ' attendance, ' +
+                 m.mr.items.filter(function (x) { return x.pay; }).length + ' payment' +
+                 (iay.fill_due ? ' · PBA: ' + iay.fill_due + ' MRs ended, not filled' + iayWhen : '') }
+        : { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending',
+            sub: 'PBA MRs whose period has ended but are not filled' + (iay.fill_today ? ' · ' + iay.fill_today + ' end today' : '') + iayWhen +
+                 (pp.mode === 'all' ? '. Other works: open MR Attendance / Payment on the portal with K-Desk once.' : '') },
       { key: 'gen', n: m.gen.at ? m.gen.items.length : null, unit: 'work', title: 'Wage List not generated',
         sub: (m.gen.at ? 'MR filled, no wage list yet (Generate Wagelist page)' + (held.length ? ' · ' + held.length + ' held back for accounts' : '')
                        : 'K-Desk has not read the Generate Wagelist page yet') +
@@ -157,8 +173,10 @@
     function seen(label, at) { var old = ageDays(at) > 2; return label + ': <span class="' + (old ? 'old' : '') + '">' + (at ? fmtAt(at) + (old ? ' (old)' : '') : 'never') + '</span>'; }
     lines.push(seen('K-Desk last read Generate Wagelist', m.gen.at));
     lines.push(seen('Send Wagelist For Payment', m.send.at));
+    lines.push(seen('MR Attendance', m.mr.attAt));
+    lines.push(seen('MR Payment', m.mr.payAt));
     lines.push(seen('IAY Tracker report', iay.report_at));
-    f.innerHTML = lines.join(' · ') + '<br>To update: open those two portal pages with K-Desk (logged in to Gram Setu). Nothing is clicked on the portal; K-Desk only reads the lists.';
+    f.innerHTML = lines.join(' · ') + '<br>To update: open those portal pages with K-Desk (logged in to Gram Setu). Nothing is clicked on the portal; K-Desk only reads the lists.';
 
     renderLists(m);
   }
@@ -174,6 +192,14 @@
 
   function detail(key, m) {
     var box = el('div', null, 'pp-detail');
+    if (key === 'fill' && pp.mode === 'all' && m.mr.at) {
+      if (!m.mr.items.length) { box.appendChild(el('div', 'No work is waiting for MR fill.', 'muted')); return box; }
+      box.appendChild(table(['Work code', 'Work', 'Pending'], m.mr.items.map(function (x) {
+        var c = el('span'); if (x.att) c.appendChild(tag('Attendance', 't1')); if (x.pay) { if (x.att) c.appendChild(document.createTextNode(' ')); c.appendChild(tag('Payment', 't1')); }
+        return [el('span', shortCode(x.code), 'pp-code'), x.name || '', c];
+      })));
+      return box;
+    }
     if (key === 'fill') {
       box.appendChild(el('div', 'The IAY tab has the MR-wise list (which MR, which beneficiary, fill date).', 'muted'));
       var b = el('button', '🏠 Open IAY tab', 'btn-light btn-small'); b.style.marginTop = '6px';
@@ -219,6 +245,8 @@
     m.send.items.forEach(function (x) { inSend[String(x.wl).toUpperCase()] = 1; });
     var waiting = ws.filter(function (w) { return w.stage !== 'sent' && inSend[String(w.wl).toUpperCase()]; });
     if (waiting.length) return tag('Send pending · ' + waiting.length + ' WL', 't3');
+    var mf = m.mrBy[code];
+    if (mf) return tag(mf.att ? 'MR attendance pending' : 'MR payment pending', 't1');
     var sent = ws.filter(function (w) { return w.stage === 'sent'; });
     if (sent.length) return tag('Sent · ' + money(sum(sent, function (w) { return w.amt; })), 't4');
     if (ws.length) return tag('WL generated', 't3');

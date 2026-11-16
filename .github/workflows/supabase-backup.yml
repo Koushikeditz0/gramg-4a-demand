@@ -59,7 +59,7 @@ jobs:
           DB_URL: ${{ secrets.SUPABASE_BACKUP_DB_URL }}
           DB_PASSWORD: ${{ secrets.SUPABASE_BACKUP_PASSWORD }}
           AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID || '3537cbd0ce5ce4ae3ae2cedeaf27ca85' }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ vars.R2_BACKUP_BUCKET || 'gramg-backups' }}

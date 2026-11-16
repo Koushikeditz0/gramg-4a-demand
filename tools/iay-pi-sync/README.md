@@ -76,3 +76,6 @@ cd tools/iay-pi-sync && docker compose up -d --build
 - **`Page failed to load` / `HTTP 403`**: portal সাময়িকভাবে বন্ধ, অথবা Pi-কে আটকাচ্ছে। পরের run-এ আবার চেষ্টা হবে। বারবার এলে `INTERVAL_MIN` বাড়াও।
 - **`R6.12 not read`**: mandays আর Job Card আগের মতোই থেকে যাবে, MR-এর status তবুও update হবে।
 - Portal-এ খুব বেশি চাপ যাতে না পড়ে, তাই 15 মিনিটের কম interval দেওয়া যায় না।
+
+## Payment pipeline (Gram Setu SQL v220)
+প্রতিবার চলার সময় Pi এখন IAY ছাড়াও **সব work-এর MR-wise data** (MR filled / Zero, e-MB, AE verification, Wagelist) একই sync key দিয়ে Gram Setu-তে পাঠায় (`mr_report_sync`)। Admin → 💸 Pipeline-এ MR fill → e-MB → AE verification → Wage List ধাপ এখান থেকেই দেখা যায়। নতুন কিছু বসাতে হবে না: Gram Setu-তে v220 SQL চালানো থাকলেই হবে, না থাকলে log-এ শুধু একটা ⚠ লাইন আসে, IAY sync আগের মতোই চলে। নতুন code নিতে Pi-তে `git pull` করে `docker compose up -d --build` দিন।

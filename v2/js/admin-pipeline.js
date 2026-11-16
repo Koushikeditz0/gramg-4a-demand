@@ -15,7 +15,7 @@
   function $(id) { return document.getElementById(id); }
   if (!$('tab-pipeline') || !SB) return;
 
-  var COLORS = ['#f59e0b', '#8b5cf6', '#3b82f6', '#22c55e'];
+  var COLORS = ['#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#22c55e'];
   var pp = { gp: null, data: null, mode: 'all', open: '' };
 
   function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
@@ -61,7 +61,11 @@
   function load() {
     var g = gp(); if (!g) return;
     pp.gp = g; loading('Loading pipeline...');
+    // v220: MR-wise report (R4.2 + R4.4) — optional, ignored when the SQL is not run yet
+    var mrs = SB.rpc('admin_pipeline_mrs', { p_gp_id: g }).then(function (x) { return x || null; }, function () { return null; });
     SB.rpc('admin_pipeline', { p_gp_id: g }).then(function (d) {
+      return mrs.then(function (r) { (d = d || {}).mrRep = r; return d; });
+    }).then(function (d) {
       loading(''); if (pp.gp !== g) return;
       $('ppSetup').textContent = ''; pp.data = d || {}; render();
     }, function (e) {
@@ -98,7 +102,14 @@
     }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return !pba || x.pba; });
     var weekAgo = Date.now() - 7 * 864e5;
     var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && (!pba || wlPba(w.wl, w.code)); });
-    return { d: d, iay: d.iay || {}, gen: gen, send: send, sent: sent, byWl: byWl, byCode: byCode };
+    // MR-wise report: rows still to move, filtered by mode; per work code the earliest open stage
+    var rep = d.mrRep || null, mrRows = [], mrByCode = {}, ORDER = { fill_pending: 1, fill_today: 1, emb: 2, verify: 3, wl_pending: 4 };
+    if (rep) {
+      mrRows = (rep.rows || []).filter(function (x) { return !pba || isPba(x.code); });
+      (rep.rows || []).forEach(function (x) { var k = String(x.code).toUpperCase(); if (!mrByCode[k] || ORDER[x.s] < ORDER[mrByCode[k]]) mrByCode[k] = x.s; });
+    }
+    function cnt(st) { var c = rep && rep.counts && rep.counts[st]; return c ? (pba ? c.pba : c.all) || 0 : 0; }
+    return { d: d, iay: d.iay || {}, rep: rep, mrRows: mrRows, mrByCode: mrByCode, cnt: cnt, gen: gen, send: send, sent: sent, byWl: byWl, byCode: byCode };
   }
 
   function sum(a, f) { return a.reduce(function (t, x) { return t + (Number(f(x)) || 0); }, 0); }
@@ -113,10 +124,21 @@
     var sentAmt = sum(m.sent, function (x) { return x.amt; });
     var iayWhen = iay.report_at ? ' · IAY Tracker ' + fmtDay(iay.report_at) : '';
 
+    var rep = m.rep, repWhen = rep ? ' · MR report ' + fmtAt(rep.at) : '';
+    var embAmt = sum(m.mrRows.filter(function (x) { return x.s === 'verify' || x.s === 'wl_pending'; }), function (x) { return x.tot; });
     var steps = [
-      { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending',
-        sub: 'PBA MRs whose period has ended but are not filled' + (iay.fill_today ? ' · ' + iay.fill_today + ' end today' : '') + iayWhen +
-             (pp.mode === 'all' ? '. Other works: not tracked yet.' : '') },
+      rep
+        ? { key: 'fill', n: m.cnt('fill_today') + m.cnt('fill_pending'), unit: 'MR', title: 'MR fill pending',
+            sub: 'MR period ended, not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') +
+                 ' · ' + m.cnt('running') + ' running' + repWhen }
+        : { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending',
+            sub: 'PBA MRs whose period has ended but are not filled' + (iay.fill_today ? ' · ' + iay.fill_today + ' end today' : '') + iayWhen +
+                 (pp.mode === 'all' ? '. Other works: send the MR-wise report (R4.2 + R4.4) to Gram Setu.' : '') },
+      rep
+        ? { key: 'emb', n: m.cnt('emb') + m.cnt('verify'), unit: 'MR', title: 'e-MB / AE verification pending',
+            sub: m.cnt('emb') + ' e-MB entry · ' + m.cnt('verify') + ' AE verification' + (m.cnt('wl_pending') ? ' · ' + m.cnt('wl_pending') + ' verified MRs wait for a wage list' + (embAmt ? ' (' + money(embAmt) + ')' : '') : '') }
+        : { key: 'emb', n: null, unit: '', title: 'e-MB / AE verification pending', off: true,
+            sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
       { key: 'gen', n: m.gen.at ? m.gen.items.length : null, unit: 'work', title: 'Wage List not generated',
         sub: (m.gen.at ? 'MR filled, no wage list yet (Generate Wagelist page)' + (held.length ? ' · ' + held.length + ' held back for accounts' : '')
                        : 'K-Desk has not read the Generate Wagelist page yet') +
@@ -132,10 +154,10 @@
     ];
 
     // bar
-    var parts = steps.slice(0, 4).map(function (s, i) { return { n: s.n || 0, c: COLORS[i], t: s.title }; });
+    var parts = steps.slice(0, 5).map(function (s, i) { return { n: s.n || 0, c: COLORS[i], t: s.title }; });
     var tot = sum(parts, function (p) { return p.n; });
     parts.forEach(function (p) { if (!p.n) return; var i = el('i'); i.style.width = (p.n * 100 / tot) + '%'; i.style.background = p.c; i.title = p.t + ': ' + p.n; bar.appendChild(i); });
-    $('ppBarText').textContent = tot ? steps.slice(0, 4).map(function (s) { return (s.n == null ? '—' : s.n) + ' ' + s.unit; }).join(' · ') : 'Nothing to show yet.';
+    $('ppBarText').textContent = tot ? steps.slice(0, 5).map(function (s) { return (s.n == null ? '—' : s.n) + ' ' + s.unit; }).join(' · ') : 'Nothing to show yet.';
 
     steps.forEach(function (s, i) {
       var row = el('div', null, 'pp-step' + (s.off ? ' off' : '') + (pp.open === s.key ? ' open' : ''));
@@ -157,6 +179,7 @@
     function seen(label, at) { var old = ageDays(at) > 2; return label + ': <span class="' + (old ? 'old' : '') + '">' + (at ? fmtAt(at) + (old ? ' (old)' : '') : 'never') + '</span>'; }
     lines.push(seen('K-Desk last read Generate Wagelist', m.gen.at));
     lines.push(seen('Send Wagelist For Payment', m.send.at));
+    lines.push(seen('MR-wise report', rep && rep.at));
     lines.push(seen('IAY Tracker report', iay.report_at));
     f.innerHTML = lines.join(' · ') + '<br>To update: open those two portal pages with K-Desk (logged in to Gram Setu). Nothing is clicked on the portal; K-Desk only reads the lists.';
 
@@ -174,6 +197,18 @@
 
   function detail(key, m) {
     var box = el('div', null, 'pp-detail');
+    var STXT = { fill_today: ['Ends today', 'bad'], fill_pending: ['Not filled', 'bad'], emb: ['e-MB pending', 't1'], verify: ['AE verify pending', 't2'], wl_pending: ['WL pending', 't3'] };
+    function mrTable(keys) {
+      var rows = m.mrRows.filter(function (x) { return keys.indexOf(x.s) >= 0; });
+      if (!rows.length) { box.appendChild(el('div', 'Nothing here.', 'muted')); return box; }
+      box.appendChild(table(['Work code', 'Work', 'MR', 'MR ended', 'Stage', 'Amount'], rows.slice(0, 800).map(function (x) {
+        return [el('span', shortCode(x.code), 'pp-code'), x.name || '', x.mr, fmtDay(x.to), tag(STXT[x.s][0], STXT[x.s][1]), x.tot ? money(x.tot) : '—'];
+      })));
+      if (rows.length > 800) box.appendChild(el('div', 'First 800 of ' + rows.length + ' MRs.', 'muted'));
+      return box;
+    }
+    if (key === 'fill' && m.rep) return mrTable(['fill_today', 'fill_pending']);
+    if (key === 'emb') return mrTable(['emb', 'verify', 'wl_pending']);
     if (key === 'fill') {
       box.appendChild(el('div', 'The IAY tab has the MR-wise list (which MR, which beneficiary, fill date).', 'muted'));
       var b = el('button', '🏠 Open IAY tab', 'btn-light btn-small'); b.style.marginTop = '6px';
@@ -215,6 +250,11 @@
     var g = m.gen.items.filter(function (x) { return String(x.code).toUpperCase() === code; })[0];
     if (g && g.held > 0) return tag('WL held · ' + g.held + ' A/c', 'bad');
     if (g) return tag('MR filled · WL pending', 't2');
+    var ms = m.mrByCode[code];
+    if (ms === 'fill_pending' || ms === 'fill_today') return tag('MR fill pending', 'bad');
+    if (ms === 'emb') return tag('e-MB pending', 't1');
+    if (ms === 'verify') return tag('AE verify pending', 't2');
+    if (ms === 'wl_pending') return tag('MR verified · WL pending', 't2');
     var ws = m.byCode[code] || [], inSend = {};
     m.send.items.forEach(function (x) { inSend[String(x.wl).toUpperCase()] = 1; });
     var waiting = ws.filter(function (w) { return w.stage !== 'sent' && inSend[String(w.wl).toUpperCase()]; });

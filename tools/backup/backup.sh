@@ -13,9 +13,19 @@
 set -euo pipefail
 umask 077
 
+# Simplest setup: only the password secret. User + pooler host are fixed here
+# (not secret). A full DB_URL secret still works when no password secret is set.
+POOLER_URL="postgresql://gramg_backup.wbzybizfpdalpukfzefk@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
+if [ -n "${DB_PASSWORD:-}" ]; then
+  DB_URL="$POOLER_URL"; export PGPASSWORD="$DB_PASSWORD"
+  echo "Using SUPABASE_BACKUP_PASSWORD (user gramg_backup, session pooler)"
+fi
 : "${DB_URL:?DB_URL missing}"
 : "${AGE_RECIPIENT:?AGE_RECIPIENT missing}"
 case "$AGE_RECIPIENT" in age1*) ;; *) echo "AGE_RECIPIENT must be an age public key (age1...)"; exit 1;; esac
+if [ "${SKIP_UPLOAD:-0}" != "1" ] && [ -z "${R2_ACCOUNT_ID:-}" ]; then
+  echo "R2_ACCOUNT_ID is empty: add it as a GitHub secret or variable named exactly R2_ACCOUNT_ID"; exit 1
+fi
 KEEP_DAILY="${KEEP_DAILY:-30}"
 KEEP_MONTHLY="${KEEP_MONTHLY:-12}"
 

@@ -77,7 +77,8 @@
 
   /* ---------------------- working out each step ---------------------- */
   function model() {
-    var d = pp.data || {}, pba = pp.mode === 'pba';
+    var d = pp.data || {}, pba = pp.mode === 'pba', other = pp.mode === 'other';
+    function want(isP) { return pba ? !!isP : other ? !isP : true; }   // All / PBA / Other
     var wls = d.wls || [], byWl = {}, byCode = {}, pbaWl = {};
     (d.pba_wls || []).forEach(function (w) { pbaWl[String(w).toUpperCase()] = 1; });   // v218: PBA by WL number
     function wlPba(wl, code) { return isPba(code) || !!pbaWl[String(wl || '').toUpperCase()]; }
@@ -92,23 +93,23 @@
       if (!t.at || s.at > t.at) t.at = s.at;
       (s.items || []).forEach(function (x) { t.items.push(Object.assign({ scope: s.scope }, x)); });
     });
-    gen.items = gen.items.filter(function (x) { return !pba || isPba(x.code); });
+    gen.items = gen.items.filter(function (x) { return want(isPba(x.code)); });
     send.items = send.items.map(function (x) {
       var w = byWl[String(x.wl).toUpperCase()] || {};
       var c = (d.wl_caste || {})[String(x.wl).toUpperCase()] || {};     // v219: amount from ⚖ WL Caste
       var o = Object.assign({ code: w.code || '', date: w.date || c.date || '', n: w.n != null ? w.n : c.n }, x);
       if (o.amt == null && c.amt != null) { o.amt = Number(c.amt); o.amtFrom = 'wlc'; }
       return o;
-    }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return !pba || x.pba; });
+    }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return want(x.pba); });
     var weekAgo = Date.now() - 7 * 864e5;
-    var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && (!pba || wlPba(w.wl, w.code)); });
+    var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && want(wlPba(w.wl, w.code)); });
     // MR-wise report: rows still to move, filtered by mode; per work code the earliest open stage
     var rep = d.mrRep || null, mrRows = [], mrByCode = {}, ORDER = { fill_pending: 1, fill_today: 1, emb: 2, verify: 3, wl_pending: 4 };
     if (rep) {
-      mrRows = (rep.rows || []).filter(function (x) { return !pba || isPba(x.code); });
+      mrRows = (rep.rows || []).filter(function (x) { return want(isPba(x.code)); });
       (rep.rows || []).forEach(function (x) { var k = String(x.code).toUpperCase(); if (!mrByCode[k] || ORDER[x.s] < ORDER[mrByCode[k]]) mrByCode[k] = x.s; });
     }
-    function cnt(st) { var c = rep && rep.counts && rep.counts[st]; return c ? (pba ? c.pba : c.all) || 0 : 0; }
+    function cnt(st) { var c = rep && rep.counts && rep.counts[st]; return c ? (pba ? c.pba || 0 : other ? (c.all || 0) - (c.pba || 0) : c.all || 0) : 0; }
     return { d: d, iay: d.iay || {}, rep: rep, mrRows: mrRows, mrByCode: mrByCode, cnt: cnt, gen: gen, send: send, sent: sent, byWl: byWl, byCode: byCode };
   }
 
@@ -131,9 +132,12 @@
         ? { key: 'fill', n: m.cnt('fill_today') + m.cnt('fill_pending'), unit: 'MR', title: 'MR fill pending',
             sub: 'MR period ended, not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') +
                  ' · ' + m.cnt('running') + ' running' + repWhen }
-        : { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending',
+        : pp.mode === 'other'
+        ? { key: 'fill', n: null, unit: '', title: 'MR fill pending', off: true,
+            sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' }
+        : { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending' + (pp.mode === 'all' ? ' (PBA only)' : ''),
             sub: 'PBA MRs whose period has ended but are not filled' + (iay.fill_today ? ' · ' + iay.fill_today + ' end today' : '') + iayWhen +
-                 (pp.mode === 'all' ? '. Other works: send the MR-wise report (R4.2 + R4.4) to Gram Setu.' : '') },
+                 (pp.mode === 'all' ? '. Other works show after the MR-wise report (R4.2 + R4.4) is sent to Gram Setu.' : '') },
       rep
         ? { key: 'emb', n: m.cnt('emb') + m.cnt('verify'), unit: 'MR', title: 'e-MB / AE verification pending',
             sub: m.cnt('emb') + ' e-MB entry · ' + m.cnt('verify') + ' AE verification' + (m.cnt('wl_pending') ? ' · ' + m.cnt('wl_pending') + ' verified MRs wait for a wage list' + (embAmt ? ' (' + money(embAmt) + ')' : '') : '') }
@@ -142,7 +146,7 @@
       { key: 'gen', n: m.gen.at ? m.gen.items.length : null, unit: 'work', title: 'Wage List not generated',
         sub: (m.gen.at ? 'MR filled, no wage list yet (Generate Wagelist page)' + (held.length ? ' · ' + held.length + ' held back for accounts' : '')
                        : 'K-Desk has not read the Generate Wagelist page yet') +
-             (iay.wl_wait ? ' · PBA: ' + iay.wl_wait + ' filled MRs waiting' + iayWhen : ''),
+             (iay.wl_wait && pp.mode !== 'other' ? ' · PBA: ' + iay.wl_wait + ' filled MRs waiting' + iayWhen : ''),
         bad: held.length > 0 },
       { key: 'send', n: m.send.at ? m.send.items.length : null, unit: 'WL', title: 'Send for payment pending',
         sub: m.send.at ? (sendKnown ? money(sendAmt) + (sendKnown < m.send.items.length ? ' (amount read for ' + sendKnown + ' of ' + m.send.items.length + ')' : '') : 'Amount not read yet — run K-Desk 🧪 Test run once')
@@ -265,8 +269,8 @@
     return tag('Work running · MR', 't1');
   }
   function renderLists(m) {
-    var body = $('ppLists'), lists = (m.d.lists || []).filter(function (l) { return pp.mode !== 'pba' || isPba(l.code); });
-    if (!lists.length) { var tr = el('tr'), c = el('td', 'No demand list' + (pp.mode === 'pba' ? ' with a PBA work code.' : '.'), 'muted'); c.colSpan = 6; tr.appendChild(c); body.appendChild(tr); return; }
+    var body = $('ppLists'), lists = (m.d.lists || []).filter(function (l) { return pp.mode === 'pba' ? isPba(l.code) : pp.mode === 'other' ? !isPba(l.code) : true; });
+    if (!lists.length) { var tr = el('tr'), c = el('td', 'No demand list' + (pp.mode === 'pba' ? ' with a PBA work code.' : pp.mode === 'other' ? ' with a non-PBA work code.' : '.'), 'muted'); c.colSpan = 6; tr.appendChild(c); body.appendChild(tr); return; }
     lists.forEach(function (l) {
       var tr = el('tr');
       function td(v, label) { var c = el('td'); c.setAttribute('data-label', label); if (v instanceof Node) c.appendChild(v); else c.textContent = v; tr.appendChild(c); }

@@ -1,5 +1,5 @@
 -- =====================================================================
--- v221 · Workers deleted on the portal → inactive in Gram Setu (soft, undoable)
+-- v222 · Workers deleted on the portal → inactive in Gram Setu (soft, undoable)
 --
 -- K-Desk ABPS Sync reads EVERY village's full applicant list (All workers).
 -- From K-Desk v1.23.0 each sync sends a run id with its batches, and after a

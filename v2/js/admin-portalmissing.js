@@ -1,5 +1,5 @@
 /* =====================================================================
-   Admin panel — "🚫 Portal removed" tab (SQL v221).
+   Admin panel — "🚫 Portal removed" tab (SQL v222).
    Workers that a complete K-Desk ABPS Sync no longer found on the portal
    (Job Card or applicant deleted) are made inactive (soft). Here the Admin
    sees them, restores wrong ones, and decides syncs that were held by the
@@ -18,7 +18,7 @@
   function status(msg, kind) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (msg ? ' show ' + (kind || 'info') : ''); if (msg) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function missing(e) { return e && (e.status === 404 || /admin_portal_/.test(e.message || '')); }
   function errText(e) {
-    if (missing(e)) return 'Run supabase/2026-11-16_portal_missing_v221.sql in Supabase → SQL Editor first.';
+    if (missing(e)) return 'Run supabase/2026-11-16_portal_missing_v222.sql in Supabase → SQL Editor first.';
     var map = { NOT_AUTHORIZED: 'You are not allowed to do this.', NOT_HELD: 'This sync was already decided. Refresh.',
                 NETWORK: 'Could not reach the server. Check the internet connection.' };
     return map[e && e.code] || (e && e.message) || String(e);

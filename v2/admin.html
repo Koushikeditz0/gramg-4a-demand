@@ -259,6 +259,7 @@
     <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
     <button class="tab" data-tab="aadhaar"><i>🪪</i><span>Aadhaar <b class="badge badge-admin hidden" id="aaBadge"></b></span></button>
     <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
+    <button class="tab" data-tab="pmiss"><i>🚫</i><span>Portal removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
     <button class="tab" data-tab="wlcaste"><i>⚖</i><span>WL Caste</span></button>
     <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
     <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
@@ -615,6 +616,35 @@
     </div>
   </section>
 
+  <!-- ============ WORKERS DELETED ON THE PORTAL (v221) ============ -->
+  <section id="tab-pmiss" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🚫 Deleted on the portal</h2><button class="btn-light btn-small" id="pmRefresh">🔄 Refresh</button></div>
+      <div class="muted">After a <b>complete</b> K-Desk <b>ABPS Sync</b> (every village read, not stopped), workers that the portal no longer lists — a whole Job Card deleted, or one applicant deleted — become <b>inactive</b> here. They are not erased: supervisors simply cannot see or pick them. If a later sync finds someone again, they come back by themselves. <b>Safety:</b> when fewer than 95% of the workers match, or more than 2% (at least 20) are missing, nothing changes and the sync is <b>Held</b> below for you to check. Needs K-Desk v1.23.0 or newer.</div>
+      <label class="f" for="pmGp">Gram Panchayat</label>
+      <select id="pmGp"></select>
+      <div class="muted" id="pmSetup"></div>
+      <div id="pmHeld"></div>
+      <h3 style="margin:14px 0 4px;">Inactive · not on the portal (<span id="pmCount">0</span>)</h3>
+      <div class="row">
+        <input type="text" id="pmFind" placeholder="Search Job Card / name" style="max-width:260px;">
+        <button class="btn-success btn-small" id="pmRestore" disabled>↩ Restore ticked</button>
+        <button class="btn-primary btn-small" id="pmXlsx">⭳ Excel</button>
+      </div>
+      <div class="muted" style="margin-top:4px;">Restore = active again and <b>kept</b>: later syncs will not make them inactive again (use it only when the portal really still has them, e.g. a Job Card number that changed).</div>
+      <div class="table-wrap stack" style="margin-top:8px;"><table>
+        <thead><tr><th><input type="checkbox" id="pmAll"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>Inactive since</th></tr></thead>
+        <tbody id="pmBody"></tbody></table></div>
+      <div id="pmKept"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0;">Last syncs</h2>
+      <div class="table-wrap stack" style="margin-top:8px;"><table>
+        <thead><tr><th>When</th><th>Rows from portal</th><th>Matched</th><th>Villages</th><th>Missing</th><th>Made inactive</th><th>Came back</th><th>Result</th></tr></thead>
+        <tbody id="pmRuns"></tbody></table></div>
+    </div>
+  </section>
+
   <!-- ============ WAGE LIST CASTE BREAKUP REPORTS (v215) ============ -->
   <section id="tab-wlcaste" class="hidden">
     <div class="card">
@@ -946,5 +976,6 @@
 <script src="./js/admin-aadhaar.js?v=20261114a"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261116f"></script>
+<script src="./js/admin-portalmissing.js?v=20261116a"></script>
 </body>
 </html>

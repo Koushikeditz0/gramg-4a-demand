@@ -89,10 +89,10 @@ Repo → **Actions** → **Supabase nightly backup** → **Run workflow**। স
 ### পুরো database ফেরত (নতুন বা খালি Supabase project-এ)
 PostgreSQL 17 client লাগবে (Windows-এ PostgreSQL installer থেকে শুধু "Command Line Tools", বা Pi-তে `postgresql-client-17`)। নতুন project-এর **Session pooler** URL `postgres` user দিয়ে:
 ```bash
-# 1) App tables + functions + RLS (একটা "schema public already exists" error আসবে, ওটা স্বাভাবিক)
+# 1) আগে Login গুলো (কিছু app table auth.users-কে দেখায়, তাই এটা আগে)
+pg_restore --no-owner --data-only -d "NEW_DB_URL" auth.dump
+# 2) তারপর App tables + functions + RLS (একটা "schema public already exists" error আসবে, ওটা স্বাভাবিক)
 pg_restore --no-owner -d "NEW_DB_URL" app.dump
-# 2) Login গুলো
-pg_restore --data-only -d "NEW_DB_URL" auth.dump
 ```
 তারপর app-এর `v2/js/config.js`-এ নতুন project-এর URL/key, edge function `admin-users` আবার deploy, আর Cloudflare Worker-এর Supabase URL বদলাতে হবে।
 
@@ -102,6 +102,26 @@ pg_restore --list app.dump | grep "TABLE DATA"          # কোন কোন ta
 pg_restore -a -t workers -f workers.sql app.dump         # শুধু workers table-এর data, SQL file হিসেবে
 ```
 পুরো DB overwrite না করে এভাবে একটা table আলাদা দেখে দরকারি row ফেরত বসানো নিরাপদ।
+
+## Restore drill (test project-এ backup ফেরত এনে দেখা)
+
+Backup file তৈরি হওয়া মানেই সেটা থেকে data ফেরত আনা যাবে, এমন নয়। তাই **৩ মাসে একবার** এই drill চালাও। এটা সবচেয়ে নতুন backup-টা **gramsetu-test** project-এ (আসল database-এ নয়) restore করে, তারপর প্রতিটা table-এর row সংখ্যা backup-এর সঙ্গে মিলিয়ে দেখে।
+
+Script নিজে আটকে দেয়: TEST_DB_URL-এ আসল project-এর ref (`wbzybizfpdalpukfzefk`) থাকলে কিছুই করে না।
+
+### প্রথমবার (একবারই)
+1. Supabase → **gramsetu-test** project → Project Settings → Database → **Reset database password** → নতুন password দাও, নোট করে রাখো।
+2. ওই পাতার **Connect** → **Session pooler** URI copy করো (`postgresql://postgres.<test-ref>:[YOUR-PASSWORD]@aws-…pooler.supabase.com:5432/postgres`), `[YOUR-PASSWORD]`-এর জায়গায় password বসাও।
+3. GitHub repo → Settings → Secrets and variables → Actions → **New repository secret**: নাম `TEST_DB_URL`, value = ওই URI।
+4. gramsetu-test → Authentication → Sign In / Providers → **Allow new users to sign up = OFF** (test-এও আসল data থাকবে)।
+
+### প্রতিবার drill
+1. GitHub secret **`BACKUP_AGE_KEY`** বানাও: value = age private key file-এর `AGE-SECRET-KEY-1…` লাইনটা পুরো।
+2. Actions → **Backup restore drill (TEST project)** → **Run workflow**।
+3. শেষে `✅ Restore drill passed` আর `RESULT: 38 of 38 tables match`-এর মতো লাইন দেখলে backup ঠিক আছে। লাল ✗ থাকলে সেই লাইনগুলো Claude-কে দেখাও।
+4. Drill শেষ হলে **`BACKUP_AGE_KEY` secret মুছে দাও**। (GitHub-এ R2-এর চাবি আর backup খোলার চাবি একসঙ্গে পড়ে থাকা ঠিক নয়।)
+
+Log-এ শুধু table-এর নাম আর সংখ্যা থাকে, কোনো data বা password নয়।
 
 ## কিছু কথা
 - Backup-এ **শুধু database** থাকে। R2-এর ছবি (gramg-photos) আলাদা; ওগুলো এমনিতেই কিছুদিন পর auto-delete হয়।

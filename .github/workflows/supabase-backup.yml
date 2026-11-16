@@ -1,0 +1,67 @@
+name: Supabase nightly backup
+
+# Every night 02:30 IST (21:00 UTC). GitHub may start it a little late.
+on:
+  schedule:
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+    inputs:
+      monthly:
+        description: 'এই backup-টা monthly folder-এও রাখবে?'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/backup
+          sparse-checkout-cone-mode: false
+
+      - name: Check setup
+        id: cfg
+        env:
+          DB_URL: ${{ secrets.SUPABASE_BACKUP_DB_URL }}
+          R2_KEY: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$R2_KEY" ] || [ -z "$AGE_RECIPIENT" ]; then
+            echo "::warning::Backup এখনও set up হয়নি (secrets/variables নেই) — tools/backup/README.md দেখুন। এবার skip করা হল।"
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install PostgreSQL 17 client + age
+        if: steps.cfg.outputs.ready == 'yes'
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common age >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Dump → encrypt → upload to R2
+        if: steps.cfg.outputs.ready == 'yes'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_BACKUP_DB_URL }}
+          AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.R2_BACKUP_BUCKET || 'gramg-backups' }}
+          FORCE_MONTHLY: ${{ inputs.monthly && '1' || '0' }}
+        run: |
+          pg_dump --version
+          bash tools/backup/backup.sh

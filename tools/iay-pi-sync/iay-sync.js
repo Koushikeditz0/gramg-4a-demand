@@ -117,6 +117,26 @@ function payload(list) {
     mrs: ws.flatMap(w => w.ph.map((p, i) => { const d = String(p.dates || '').split('--'); return { work_code: w.code, mr_no: String(p.mr), seq: String(i + 1), start_date: isoD(d[0]), end_date: isoD(d[1] || d[0]), status: p.s }; }))
   };
 }
+// MR-wise report of ALL works → Gram Setu Admin 💸 Pipeline (SQL v220)
+function mrPayload(gp, rows) {
+  const mine = rows.filter(o => o.gp === gp && o.code && o.mr);
+  const pc = {}; for (const o of mine) { const x = gpPrefix(o.code); if (x) pc[x] = (pc[x] || 0) + 1; }
+  const prefix = Object.keys(pc).sort((a, b) => pc[b] - pc[a])[0] || '';
+  return { prefix, rows: mine.filter(o => gpPrefix(o.code) === prefix).map(o => {
+    const d = String(o.dates || '').split('--');
+    return { code: o.code, name: o.name || '', mr: String(o.mr), type: o.type || '', from: (d[0] || '').trim(), to: (d[1] || d[0] || '').trim(),
+      filled: !!o.filled, zero: !!o.zero, meas: o.meas || '', verif: o.verif || '', tot: +(o.tot || 0).toFixed(2), usk: +(o.usk || 0).toFixed(2), mat: +(o.mat || 0).toFixed(2),
+      wl_date: o.wlDate || '', wl_no: o.wlNo || '' };
+  }) };
+}
+async function sendMrs(gp, p) {
+  const r = await nodeFetch(TRK_URL.replace('iay_sync_gp', 'mr_report_sync'), { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: TRK_PUB },
+    body: JSON.stringify({ p_key: CFG.key, p_jc_prefix: p.prefix, p_gp_name: gp, p_rows: p.rows, p_source: 'Raspberry Pi sync' }) });
+  const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  if (r.status === 404) return { missing: true };                    // v220 SQL not run yet
+  if (!r.ok) throw new Error((j && (j.message || j.hint)) || ('HTTP ' + r.status));
+  return j || {};
+}
 async function send(gp, p) {
   const r = await nodeFetch(TRK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: TRK_PUB },
     body: JSON.stringify({ p_key: CFG.key, p_jc_prefix: p.prefix, p_gp_name: gp, p_works: p.works, p_mrs: p.mrs, p_source: 'Raspberry Pi sync' }) });
@@ -181,6 +201,14 @@ async function runOnce() {
   const dist = (String(res.block).match(/District\s*:\s*(.+?)\s+Block/i) || [])[1] || 'COOCHBEHAR';
   const gps = CFG.gps.length ? CFG.gps : res.order;
   for (const gp of gps) {
+    // all works, MR-wise → Gram Setu Pipeline (does not stop the IAY step if it fails)
+    try {
+      const mp = mrPayload(gp, res.rows);
+      if (mp.prefix && mp.rows.length && !CFG.dry) {
+        const r = await sendMrs(gp, mp);
+        log(r.missing ? `  ⚠ ${gp}: Gram Setu v220 SQL not run yet — MR report not sent` : r.skipped ? `  – ${gp}: ${r.skipped}` : `  📡 ${gp}: Pipeline MR report sent (${r.mrs} MR)`);
+      } else if (CFG.dry) log(`  (dry run) ${gp}: ${mp.rows.length} MR for Pipeline`);
+    } catch (e) { log(`  ⚠ ${gp}: Pipeline MR report not sent (${e.message})`); }
     try {
       let meta = {}, emp = {};
       try { const r = await VBR.readR612(CFG.r612, { dist: dist.trim(), blk: blk.trim(), gp }); meta = r.by[gp] || r.by[gp.toUpperCase()] || {}; }
@@ -222,4 +250,4 @@ async function loop() {
   }
 }
 if (require.main === module) loop();
-module.exports = { iayWorks, payload, phStatus, liveStage, sendDigest };
+module.exports = { iayWorks, payload, mrPayload, phStatus, liveStage, sendDigest };

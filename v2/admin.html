@@ -595,11 +595,11 @@
       <div class="pp-head">
         <h2 style="margin:0;">💸 Payment pipeline</h2>
         <div class="row">
-          <div class="pp-seg" id="ppMode"><button class="on" data-m="all">All works</button><button data-m="pba">PBA only</button></div>
+          <div class="pp-seg" id="ppMode"><button class="on" data-m="all">All works</button><button data-m="pba">PBA</button><button data-m="other">Other</button></div>
           <button class="btn-light btn-small" id="ppRefresh">🔄 Refresh</button>
         </div>
       </div>
-      <div class="muted">Where the money is stuck: MR fill → Wage List → Send for payment. K-Desk fills this by itself when the <b>Generate Wagelist</b> and <b>Send Wagelist For Payment</b> pages are opened on the portal (K-Desk logged in to Gram Setu). PBA MRs come from the IAY Tracker. Tap a step to see its works.</div>
+      <div class="muted">Where the money is stuck: MR fill → Wage List → Send for payment. K-Desk fills this by itself when the <b>Generate Wagelist</b> and <b>Send Wagelist For Payment</b> pages are opened on the portal (K-Desk logged in to Gram Setu). MR fill / e-MB / AE verification come from the MR-wise report (R4.2 + R4.4) that the Tampermonkey script or the Raspberry Pi sends; without it, PBA MRs come from the IAY Tracker. Tap a step to see its works.</div>
       <label class="f" for="ppGp">Gram Panchayat</label>
       <select id="ppGp"></select>
       <div class="muted" id="ppSetup"></div>
@@ -945,6 +945,6 @@
 <script src="./js/admin-signup.js?v=20261114a"></script>
 <script src="./js/admin-aadhaar.js?v=20261114a"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
-<script src="./js/admin-pipeline.js?v=20261116c"></script>
+<script src="./js/admin-pipeline.js?v=20261116f"></script>
 </body>
 </html>

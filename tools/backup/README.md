@@ -58,7 +58,8 @@ Repo → Settings → **Secrets and variables → Actions**
 **Secrets** tab:
 | Name | Value |
 |---|---|
-| `SUPABASE_BACKUP_DB_URL` | step 3-এর URL |
+| `SUPABASE_BACKUP_PASSWORD` | step 2-এর password (শুধু password, আর কিছু না) — **সবচেয়ে সহজ** |
+| `SUPABASE_BACKUP_DB_URL` | (ঐচ্ছিক) পুরো URL; password secret থাকলে এটা লাগে না |
 | `R2_ACCOUNT_ID` | Cloudflare Account ID |
 | `R2_BACKUP_ACCESS_KEY_ID` | R2 Access Key ID |
 | `R2_BACKUP_SECRET_ACCESS_KEY` | R2 Secret Access Key |

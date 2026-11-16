@@ -32,10 +32,11 @@ jobs:
         id: cfg
         env:
           DB_URL: ${{ secrets.SUPABASE_BACKUP_DB_URL }}
+          DB_PW: ${{ secrets.SUPABASE_BACKUP_PASSWORD }}
           R2_KEY: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
           AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
         run: |
-          if [ -z "$DB_URL" ] || [ -z "$R2_KEY" ] || [ -z "$AGE_RECIPIENT" ]; then
+          if { [ -z "$DB_URL" ] && [ -z "$DB_PW" ]; } || [ -z "$R2_KEY" ] || [ -z "$AGE_RECIPIENT" ]; then
             echo "::warning::Backup এখনও set up হয়নি (secrets/variables নেই) — tools/backup/README.md দেখুন। এবার skip করা হল।"
             echo "ready=no" >> "$GITHUB_OUTPUT"
           else
@@ -56,8 +57,9 @@ jobs:
         if: steps.cfg.outputs.ready == 'yes'
         env:
           DB_URL: ${{ secrets.SUPABASE_BACKUP_DB_URL }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_BACKUP_PASSWORD }}
           AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ vars.R2_BACKUP_BUCKET || 'gramg-backups' }}

@@ -54,16 +54,28 @@ AUTH_TABLES=$(pg_restore --list "$DIR/auth.dump" | grep -c ' TABLE DATA ' || tru
 if [ "$APP_TABLES" -lt 10 ] || [ "$AUTH_TABLES" -lt 2 ]; then
   echo "Dump looks incomplete (app tables: $APP_TABLES, auth tables: $AUTH_TABLES)"; exit 1
 fi
-# Row counts go INSIDE the encrypted file only (handy to compare backups).
+# Exact row counts go INSIDE the encrypted file only. The restore drill
+# (restore-drill.sh) compares them with the restored copy.
+COUNTS=exact
 psql "$DB_URL" -X -q -A -t -F $'\t' -c "
-  select schemaname||'.'||relname, n_live_tup
-  from pg_stat_user_tables where schemaname in ('public','auth')
-  order by 1" > "$DIR/row_counts.tsv" 2>/dev/null || echo "(row counts skipped)"
+  select t.table_schema||'.'||t.table_name,
+         (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', t.table_schema, t.table_name), false, true, '')))[1]::text
+  from information_schema.tables t
+  where t.table_type = 'BASE TABLE'
+    and (t.table_schema in ('public','private') or (t.table_schema = 'auth' and t.table_name in ('users','identities')))
+  order by 1" > "$DIR/row_counts.tsv" 2>/dev/null || {
+  COUNTS=estimate
+  psql "$DB_URL" -X -q -A -t -F $'\t' -c "
+    select schemaname||'.'||relname, n_live_tup
+    from pg_stat_user_tables where schemaname in ('public','auth')
+    order by 1" > "$DIR/row_counts.tsv" 2>/dev/null || { COUNTS=none; echo "(row counts skipped)"; }
+}
 {
   echo "created_ist=$STAMP_TIME"
   echo "pg_dump=$(pg_dump --version)"
   echo "app_tables=$APP_TABLES"
   echo "auth_tables=$AUTH_TABLES"
+  echo "row_counts=$COUNTS"
 } > "$DIR/manifest.txt"
 
 echo "4/5 Encrypting…"

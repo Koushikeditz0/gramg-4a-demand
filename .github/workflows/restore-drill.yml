@@ -1,0 +1,64 @@
+name: Backup restore drill (TEST project)
+
+# Manual only. Restores the newest backup into the TEST Supabase project and
+# checks every table's row count. It never touches the live database.
+# Needs (add just before the drill, remove BACKUP_AGE_KEY afterwards):
+#   secret TEST_DB_URL      TEST project's session-pooler URI with its password
+#   secret BACKUP_AGE_KEY   the age private key line (AGE-SECRET-KEY-1...)
+# Uses the same R2 secrets as the nightly backup.
+on:
+  workflow_dispatch:
+    inputs:
+      backup_name:
+        description: 'কোন backup? খালি রাখলে সবচেয়ে নতুনটা (যেমন gramsetu_2026-11-16_1644.tar.age)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-drill
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/backup
+          sparse-checkout-cone-mode: false
+
+      - name: Check setup
+        id: cfg
+        env:
+          TEST_DB_URL: ${{ secrets.TEST_DB_URL }}
+          AGE_KEY: ${{ secrets.BACKUP_AGE_KEY }}
+          R2_KEY: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+        run: |
+          if [ -z "$TEST_DB_URL" ] || [ -z "$AGE_KEY" ] || [ -z "$R2_KEY" ]; then
+            echo "::error::TEST_DB_URL / BACKUP_AGE_KEY secret নেই — tools/backup/README.md-এর 'Restore drill' অংশ দেখো।"
+            exit 1
+          fi
+
+      - name: Install PostgreSQL 17 client + age
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common age >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Restore newest backup into TEST and compare
+        env:
+          TEST_DB_URL: ${{ secrets.TEST_DB_URL }}
+          AGE_KEY: ${{ secrets.BACKUP_AGE_KEY }}
+          BACKUP_NAME: ${{ inputs.backup_name }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID || '3537cbd0ce5ce4ae3ae2cedeaf27ca85' }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.R2_BACKUP_BUCKET || 'gramg-backups' }}
+        run: bash tools/backup/restore-drill.sh

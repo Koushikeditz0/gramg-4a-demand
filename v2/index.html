@@ -3870,6 +3870,8 @@ function enterApp(res){
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
   loadVillageNames(); loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy(); if(typeof loadMarked==="function") loadMarked();
   document.body.classList.add('gs-in'); renderGsBar(); renderHome();
+  // refresh (F5) restores the last section from localStorage, but its page was never filled -> blank eKYC/ABPS etc.
+  try{ if(curSection==='abps') openAbps(); else if(curSection==='other') renderOthers(); else if(curSection==='acc') renderAcReqList(); }catch(e){}
 }
 const AUTH_LOST_MSG={
   SESSION_REVOKED:'এই account-এ অন্য একটি device-এ নতুন Login হয়েছে। একটি account সর্বোচ্চ ২টি device-এ চালু থাকতে পারে, তাই এই device-এর session বন্ধ করা হয়েছে। আবার Login করুন।',
@@ -4886,7 +4888,7 @@ function renderHomeAbps(){
   }
   if(!gsAbpsBusy && Date.now()-gsAbpsAt>10*60000 && currentUser){
     gsAbpsBusy=true;
-    gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; gsAbpsErr=''; gsAbpsAt=Date.now(); gsAbpsBusy=false; renderHomeAbps(); },
+    gramgAdapter.abpsSummary().then(function(rows){ abpsRows=rows||[]; gsAbpsErr=''; gsAbpsAt=Date.now(); gsAbpsBusy=false; renderHomeAbps(); if(curSection==='abps' && abpsVillage===null) renderAbpsSummary(); },
       function(e){ gsAbpsBusy=false; gsAbpsAt=Date.now(); if(e&&e.authLost) return; gsAbpsErr=(e&&e.code==='ABPS_SETUP')?'ABPS অংশ এখনো চালু হয়নি।':'ABPS তথ্য আনা যায়নি।'; renderHomeAbps(); });
   }
 }

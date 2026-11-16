@@ -1,5 +1,5 @@
 /* =====================================================================
-   Admin panel — "💸 Pipeline" tab (SQL v216).
+   Admin panel — "💸 Pipeline" tab (SQL v217).
    Where the money is stuck, per GP:
      ① MR fill due        PBA MRs ended but not filled (IAY Tracker)
      ② Wage List pending  works on the portal's Generate Wagelist page (K-Desk saw them)
@@ -23,7 +23,7 @@
   function status(msg, kind) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (msg ? ' show ' + (kind || 'info') : ''); if (msg) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function missing(e) { return e && (e.status === 404 || /admin_pipeline/.test(e.message || '')); }
   function errText(e) {
-    if (missing(e)) return 'Run supabase/2026-11-16_payment_pipeline_v216.sql in Supabase → SQL Editor first.';
+    if (missing(e)) return 'Run supabase/2026-11-16_payment_pipeline_v217.sql in Supabase → SQL Editor first.';
     var map = { NOT_AUTHORIZED: 'You are not allowed to do this.', NETWORK: 'Could not reach the server. Check the internet connection.' };
     return map[e && e.code] || (e && e.message) || String(e);
   }

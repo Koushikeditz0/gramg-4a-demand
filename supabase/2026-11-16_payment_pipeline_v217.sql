@@ -1,5 +1,5 @@
 -- =====================================================================
--- Gram Setu — Payment pipeline (v216, 2026-11-16)
+-- Gram Setu — Payment pipeline (v217, 2026-11-16)
 --
 -- One place in the Admin panel (💸 Pipeline tab) that shows where money
 -- is stuck: Demand → Allocation → MR fill → Wage List → Send for payment.
@@ -182,4 +182,4 @@ revoke all on function public.kdesk_pipeline_snap(text, text, jsonb), public.kde
 grant execute on function public.kdesk_pipeline_snap(text, text, jsonb), public.kdesk_pipeline_wls(jsonb),
   public.admin_pipeline(smallint) to authenticated;
 
-select 'OK: Payment pipeline (v216) installed' as result;
+select 'OK: Payment pipeline (v217) installed' as result;

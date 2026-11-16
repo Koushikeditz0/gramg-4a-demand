@@ -97,7 +97,8 @@
     send.items = send.items.map(function (x) {
       var w = byWl[String(x.wl).toUpperCase()] || {};
       var c = (d.wl_caste || {})[String(x.wl).toUpperCase()] || {};     // v219: amount from ⚖ WL Caste
-      var o = Object.assign({ code: w.code || '', date: w.date || c.date || '', n: w.n != null ? w.n : c.n }, x);
+      var r = ((d.mrRep || {}).wl_code || {})[String(x.wl).toUpperCase()] || {};   // v221: work code from the MR-wise report
+      var o = Object.assign({ code: w.code || r.code || '', name: r.name || '', date: w.date || c.date || '', n: w.n != null ? w.n : c.n }, x);
       if (o.amt == null && c.amt != null) { o.amt = Number(c.amt); o.amtFrom = 'wlc'; }
       return o;
     }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return want(x.pba); });

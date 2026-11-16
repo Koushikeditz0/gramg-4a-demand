@@ -91,7 +91,10 @@
     gen.items = gen.items.filter(function (x) { return !pba || isPba(x.code); });
     send.items = send.items.map(function (x) {
       var w = byWl[String(x.wl).toUpperCase()] || {};
-      return Object.assign({ code: w.code || '', date: w.date || '', n: w.n }, x);
+      var c = (d.wl_caste || {})[String(x.wl).toUpperCase()] || {};     // v219: amount from ⚖ WL Caste
+      var o = Object.assign({ code: w.code || '', date: w.date || c.date || '', n: w.n != null ? w.n : c.n }, x);
+      if (o.amt == null && c.amt != null) { o.amt = Number(c.amt); o.amtFrom = 'wlc'; }
+      return o;
     }).map(function (x) { x.pba = wlPba(x.wl, x.code); return x; }).filter(function (x) { return !pba || x.pba; });
     var weekAgo = Date.now() - 7 * 864e5;
     var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && (!pba || wlPba(w.wl, w.code)); });
@@ -187,8 +190,9 @@
     if (key === 'send') {
       if (!m.send.items.length) { box.appendChild(el('div', m.send.at ? 'No wage list is waiting to be sent.' : 'Open Send Wagelist For Payment on the portal with K-Desk once.', 'muted')); return box; }
       box.appendChild(table(['Wage list', 'FY', 'Work code', 'Amount'], m.send.items.map(function (x) {
-        return [shortWl(x.wl), x.scope || '', x.code ? el('span', shortCode(x.code), 'pp-code') : x.pba ? tag('PBA', 't1') : '—', x.amt != null ? money(x.amt) : '—'];
+        return [shortWl(x.wl), x.scope || '', x.code ? el('span', shortCode(x.code), 'pp-code') : x.pba ? tag('PBA', 't1') : '—', x.amt != null ? money(x.amt) + (x.amtFrom === 'wlc' ? ' ⚖' : '') : '—'];
       })));
+      if (m.send.items.some(function (x) { return x.amtFrom === 'wlc'; })) box.appendChild(el('div', '⚖ = amount taken from the WL Caste report of that wage list.', 'muted'));
       return box;
     }
     if (key === 'sent') {

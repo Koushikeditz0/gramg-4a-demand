@@ -288,6 +288,11 @@
     .hero #tdSub{opacity:.92;margin-top:4px;font-size:13px;}
     .hero-bridge{position:absolute;right:30px;bottom:-4px;width:380px;opacity:.32;}
     .tdflow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:-30px 16px 0;position:relative;}
+    .wkstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:0 0 12px;}
+    .wkt{font:inherit;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 4px 14px rgba(120,80,30,.08);text-align:left;color:#1f2937;font-weight:400;display:block;border:0;}
+    .wkt b{display:block;font-size:22px;line-height:1.2;color:#111827;} .wkt span{font-size:12px;color:#6b7280;} .wkt small{display:block;font-size:11px;color:#9ca3af;}
+    .wkt.warn b{color:#b45309;} .wkt.good b{color:#047857;} .wkt.link{cursor:pointer;} .wkt.link:hover{box-shadow:0 6px 18px rgba(120,80,30,.14);}
+    [data-theme=dark] .wkt{background:#1f2937;color:#e5e7eb;} [data-theme=dark] .wkt b{color:#f9fafb;}
     .tdf{background:#fff;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(120,80,30,.10);text-align:left;color:#1f2937;font-weight:400;display:block;}
     .tdf:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(120,80,30,.14);}
     .tdn{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;background:#3b82f6;}
@@ -473,7 +478,7 @@
       <div class="gsubs">
         <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
         <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
-        <button class="tab" data-tab="pmiss"><i>🚫</i><span>Portal removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
+        <button class="tab" data-tab="pmiss"><i>🔄</i><span>Portal new / removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
         <button class="sact" type="button" data-click="ekycBtn"><i>📊</i><span>eKYC / ABPS summary</span></button>
       </div>
     </div>
@@ -522,6 +527,7 @@
 </aside>
 <main class="main">
   <div class="subnav hidden" id="subnav"><div class="subtop"><div class="crumb" id="subCrumb"></div><div class="subr"><span class="muted" id="subWhen"></span><button class="btn-light btn-small" id="subRefresh" type="button">🔄 Refresh</button></div></div><div class="pills" id="subPills"></div></div>
+  <div class="wkstats hidden" id="wkStats"></div>
   <div class="abar hidden" id="aBar"><span id="aBarN"></span><span id="aBarBtns"></span><button type="button" class="abx" id="aBarX" title="Clear selection">✕</button></div>
   <div id="status" class="status" role="status" aria-live="polite"></div>
 
@@ -857,6 +863,23 @@
 
   <!-- ============ WORKERS DELETED ON THE PORTAL (v222) ============ -->
   <section id="tab-pmiss" class="hidden">
+    <!-- v226: new Job Cards / applicants that ABPS Sync found on the portal (js/admin-portalnew.js) -->
+    <div class="card" id="pnCard">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🆕 New on the portal (<span id="pnCount">0</span>)</h2>
+        <select id="pnView" style="max-width:170px;"><option value="new">Waiting</option><option value="ignored">Ignored</option></select></div>
+      <div class="muted">Every K-Desk <b>ABPS Sync</b> also keeps the portal workers that are <b>not in Gram Setu</b> yet — a new Job Card, or a new member added to an old Job Card after your Excel import. Nobody is added by itself: tick and press <b>Accept</b>, and they become normal workers that supervisors can pick (with ABPS / eKYC from the portal). Bank account and caste come later from 🏦 Account Sync / the caste register, as for everyone else. <b>Ignore</b> hides a row; later syncs do not bring it back.</div>
+      <div class="muted" id="pnSetup"></div>
+      <div class="row" style="margin-top:6px;">
+        <input type="text" id="pnFind" placeholder="Search Job Card / name / village" style="max-width:260px;">
+        <button class="btn-success btn-small" id="pnAccept" disabled>✓ Accept ticked</button>
+        <button class="btn-light btn-small" id="pnIgnore" disabled>Ignore ticked</button>
+        <button class="btn-primary btn-small" id="pnXlsx">⭳ Excel</button>
+      </div>
+      <div class="table-wrap stack" style="margin-top:8px;"><table>
+        <thead><tr><th><input type="checkbox" id="pnAll"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>ABPS</th><th>eKYC</th><th>First seen</th></tr></thead>
+        <tbody id="pnBody"></tbody></table></div>
+      <div class="muted" id="pnMore"></div>
+    </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🚫 Deleted on the portal</h2><button class="btn-light btn-small" id="pmRefresh">🔄 Refresh</button></div>
       <div class="muted">After a <b>complete</b> K-Desk <b>ABPS Sync</b> (every village read, not stopped), workers that the portal no longer lists — a whole Job Card deleted, or one applicant deleted — become <b>inactive</b> here. They are not erased: supervisors simply cannot see or pick them. If a later sync finds someone again, they come back by themselves. <b>Safety:</b> when fewer than 95% of the workers match, or more than 2% (at least 20) are missing, nothing changes and the sync is <b>Held</b> below for you to check. Needs K-Desk v1.23.0 or newer.</div>
@@ -1203,8 +1226,9 @@
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261118b"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261118a"></script>
-<script src="./js/admin-shell.js?v=20261118b"></script>
+<script src="./js/admin-dbver.js?v=20261118b"></script>
+<script src="./js/admin-portalnew.js?v=20261118a"></script>
+<script src="./js/admin-shell.js?v=20261118c"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>
 </html>

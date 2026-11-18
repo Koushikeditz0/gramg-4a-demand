@@ -49,6 +49,28 @@
     });
   });
   $('ppGp').addEventListener('change', load);
+
+  // Today page (admin-shell.js): the same step numbers for one GP, All works, without touching this tab
+  window.AdminPipeline = {
+    summary: function (g) {
+      var mrs = SB.rpc('admin_pipeline_mrs', { p_gp_id: g }).then(function (x) { return x || null; }, function () { return null; });
+      return SB.rpc('admin_pipeline', { p_gp_id: g }).then(function (d) {
+        return mrs.then(function (r) {
+          (d = d || {}).mrRep = r;
+          var m = model(d, 'all'), rep = m.rep, iay = m.iay;
+          return {
+            fill: rep ? m.cnt('fill_today') + m.cnt('fill_pending') : (iay.fill_due || 0), fillPbaOnly: !rep,
+            emb: rep ? m.cnt('emb') + m.cnt('verify') : null,
+            gen: m.gen.at ? m.gen.items.length : null,
+            send: m.send.at ? m.send.items.length : null,
+            sendAmt: sum(m.send.items, function (x) { return x.amt; }),
+            sent: m.sent.length,
+            at: { rep: rep && rep.at, gen: m.gen.at, send: m.send.at, iay: iay.report_at }
+          };
+        });
+      });
+    }
+  };
   $('ppRefresh').addEventListener('click', load);
   [].forEach.call($('ppMode').querySelectorAll('button'), function (b) {
     b.addEventListener('click', function () {
@@ -76,8 +98,9 @@
   }
 
   /* ---------------------- working out each step ---------------------- */
-  function model() {
-    var d = pp.data || {}, pba = pp.mode === 'pba', other = pp.mode === 'other';
+  function model(data, mode) {
+    mode = mode || pp.mode;
+    var d = data || pp.data || {}, pba = mode === 'pba', other = mode === 'other';
     function want(isP) { return pba ? !!isP : other ? !isP : true; }   // All / PBA / Other
     var wls = d.wls || [], byWl = {}, byCode = {}, pbaWl = {};
     (d.pba_wls || []).forEach(function (w) { pbaWl[String(w).toUpperCase()] = 1; });   // v218: PBA by WL number

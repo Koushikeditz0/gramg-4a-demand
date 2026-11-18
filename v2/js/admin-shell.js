@@ -241,7 +241,8 @@
       q(SB.rpc('admin_marks_list', { p_gp_id: g, p_filter: 'new' })),
       q(SB.rpc('admin_portal_missing', { p_gp_id: g })),
       q(SB.rpc('admin_data_status', { p_gp_id: g })),
-      q(SB.rpc('db_version'))
+      q(SB.rpc('db_version')),
+      q(SB.rpc('admin_portal_new_count', { p_gp_id: g }))
     ]).then(function (r) { if (seq === tdSeq) renderToday(r); });
   }
   $('tdRefresh').addEventListener('click', loadToday);
@@ -249,6 +250,7 @@
   function renderToday(r) {
     var users = r[0] || [], pp = r[1], login = Number(r[2]) || 0, photos = (r[3] && r[3].new_count) || 0;
     var marks = ((r[4] && r[4].counts) || {}).new || 0, held = ((r[5] && r[5].held) || []).length, ds = r[6] || {}, db = r[7] || {};
+    var pnew = Number(r[8]) || 0;
     var lists = [], noList = 0;
     users.forEach(function (u) { if (!(u.lists || []).length) noList++; (u.lists || []).forEach(function (l) { lists.push(l); }); });
     var sub = lists.filter(function (l) { return l.submit_state === 'submitted'; }).length;
@@ -278,6 +280,7 @@
       [login, '🙋', login + ' supervisor login request' + (login === 1 ? '' : 's'), 'Team & Access → Login requests', 'signup'],
       [photos, '📷', photos + ' account cop' + (photos === 1 ? 'y' : 'ies') + ' to check', 'Photos are deleted after 30 days', 'photos'],
       [marks, '🗑', marks + ' Expired / Migrant mark' + (marks === 1 ? '' : 's'), 'Accept or Return', 'marks'],
+      [pnew, '🆕', pnew + ' new worker' + (pnew === 1 ? '' : 's') + ' on the portal', 'Found by ABPS Sync, not in Gram Setu yet · Accept or Ignore', 'pmiss'],
       [held, '🚫', held + ' ABPS sync held', 'Workers not found on the portal · Apply or Ignore', 'pmiss'],
       [draft, '📝', draft + ' list' + (draft === 1 ? '' : 's') + ' still draft', sub + ' submitted' + (noList ? ' · ' + noList + ' supervisor(s) without a list' : ''), 'dash']
     ].filter(function (x) { return x[0] > 0; });
@@ -297,7 +300,7 @@
     var H = $('tdHealth'); H.innerHTML = '';
     function line(label, val, bad) { var d = el('div', null, 'tdh'); d.appendChild(el('span', label)); d.appendChild(el('b', val, bad ? 'warn' : 'ok')); H.appendChild(d); }
     function when(at, days) { return { v: at ? fmtDay(at) + (age(at) > days ? ' (old)' : '') : 'never', bad: age(at) > days }; }
-    var need = 225;
+    var need = 226;
     line('Database version', db.version ? 'v' + db.version + (db.version >= need ? ' ✓' : ' (old)') : 'unknown', !db.version || db.version < need);
     var a = when(ds.last_sync && ds.last_sync.at, 7); line('ABPS Sync (K-Desk)', a.v, a.bad);
     if (ds.last_import) { a = when(ds.last_import.at, 3650); line('Excel import', a.v, false); }

@@ -120,6 +120,7 @@
     var gps = state.gps.filter(function (g) { return !lim || g.id === lim; });
     [$('gpSelect'), $('linkGp'), $('dashGp'), $('nuGp'), $('gaGp'), $('phGp')].forEach(function (sel) {
       var keep = sel.value; sel.innerHTML = '';
+      if (!keep) { try { keep = localStorage.getItem('gramg2.gp') || ''; } catch (_e) { keep = ''; } }   // the one GP picker (admin-shell.js)
       gps.forEach(function (g) { var o = el('option', g.name + ' (' + g.jc_prefix + ')'); o.value = g.id; sel.appendChild(o); });
       if (keep && gps.some(function (g) { return String(g.id) === keep; })) sel.value = keep;
       sel.disabled = !!lim && sel.id !== 'linkGp';

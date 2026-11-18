@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#f97316">
   <title>Gram Setu Admin</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
@@ -229,20 +229,170 @@
       .ltable td[colspan]{grid-column:2/-1;grid-row:1;}
     }
   </style>
+  <!-- 2026-11-18 new look: warm Gram Setu colours, white sidebar with groups (js/admin-shell.js) -->
+  <style>
+    :root{--ink:#1f2937;--line:#f0e6da;--warm:#fbf7f2;--accent:#c2410c;--accent-bg:#fff1e6;--blue:#2563eb;}
+    html,body{background:var(--warm);color:#1f2937;font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Noto Sans Bengali",Arial,sans-serif;}
+    .card{border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px rgba(120,80,30,.05);padding:14px 16px;}
+    .stat{border-color:var(--line);border-radius:12px;}
+    th{background:#f6efe6;}
+    .table-wrap{border-color:var(--line);border-radius:12px;}
+    .gp-dup{display:none!important;}
+    .gp-chip{display:inline-block;background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:12.5px;border-radius:999px;padding:5px 12px;margin:6px 0 2px;}
+    details.help{margin:2px 0 8px;}
+    details.help > summary{cursor:pointer;font-size:12px;font-weight:700;color:#9a3412;list-style:none;display:inline-block;background:#fffaf5;border:1px dashed #f5d0b0;border-radius:999px;padding:4px 12px;}
+    details.help > summary::-webkit-details-marker{display:none;}
+    details.help[open] > summary{margin-bottom:6px;}
+    details.help > .muted{background:#fffaf5;border-radius:10px;padding:8px 10px;}
+
+    /* sidebar */
+    .side .sbrand{display:flex;align-items:center;gap:10px;padding:2px 6px 12px;}
+    .side .slogo{width:40px;height:40px;border-radius:12px;flex:0 0 40px;}
+    .side .header-title{font-size:16px;font-weight:800;color:#1f2937;line-height:1.2;}
+    .side .sbrand-who{font-size:11.5px;color:#9ca3af;margin-top:2px;}
+    .side .sbrand-who .who{font-weight:600;color:#6b7280;}
+    .side .gpbox{border:1px solid var(--line);background:#fffaf5;border-radius:12px;padding:6px 10px;margin-bottom:10px;}
+    .side .gpbox label{display:block;font-size:10.5px;color:#9ca3af;font-weight:600;}
+    .side .gpbox select{border:0;background:transparent;padding:2px 0;font-weight:700;font-size:14px;color:#1f2937;}
+    .side .tabs{display:flex;flex-direction:column;gap:2px;margin:0;}
+    .side .ghead,.side .tab{display:flex;align-items:center;gap:10px;width:100%;background:none;color:#4b5563;text-align:left;font-weight:600;font-size:14px;padding:10px 12px;border-radius:12px;}
+    .side .ghead i,.side .tab i{font-style:normal;font-size:16px;width:22px;text-align:center;}
+    .side .ghead:hover,.side .tab:hover{background:#fdf4ea;}
+    .side .ghead.on,.side .ghead.tab.active{background:var(--accent-bg);color:var(--accent);font-weight:800;}
+    .side .gbadge,.pill2 b{margin-left:auto;background:#f59e0b;color:#fff;border-radius:999px;font-size:10.5px;padding:1px 7px;font-weight:800;}
+    .side .gsubs{display:none;flex-direction:column;gap:1px;margin:2px 0 6px;}
+    .side .grp.open .gsubs{display:flex;}
+    .side .gsubs .tab,.side .gsubs .sact{font-size:12.5px;font-weight:500;padding:6px 10px 6px 18px;margin-left:16px;width:calc(100% - 16px);border-radius:10px;color:#6b7280;}
+    .side .gsubs .tab i,.side .gsubs .sact i{font-size:13px;width:18px;}
+    .side .gsubs .tab.active{background:#fffaf5;color:var(--accent);font-weight:700;box-shadow:inset 2px 0 0 var(--accent);border-radius:0 10px 10px 0;}
+    .side .gsubs .tab .badge{margin-left:4px;}
+    .side .sact{display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;text-decoration:none;font-family:inherit;}
+    .side .sact:hover{background:#fdf4ea;}
+    .side .viewbar{background:#f5f3ff;color:#5b21b6;margin:8px 0 0;flex-direction:column;align-items:stretch;}
+    .side .viewbar select{width:100%;}
+    .side-foot{display:flex;flex-direction:column;gap:8px;font-size:10.5px;color:#9ca3af;line-height:1.4;padding:10px 6px 0;margin-top:auto;}
+    .side-foot button{align-self:flex-start;}
+
+    /* sub-page pills on top of the page */
+    .subnav{margin:0 0 10px;}
+    .subnav .crumb{font-size:12px;color:#9ca3af;font-weight:600;margin-bottom:6px;}
+    .subnav .pills{display:flex;gap:6px;flex-wrap:wrap;}
+    .pill2{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);color:#4b5563;border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:700;text-decoration:none;cursor:pointer;}
+    .pill2.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .pill2.on b{background:rgba(255,255,255,.28);}
+    .pill2.act{background:transparent;border-style:dashed;color:#6b7280;font-weight:600;}
+
+    /* Today */
+    .hero{border-radius:22px;padding:22px 26px 46px;color:#fff;background:linear-gradient(110deg,#f59e0b 0%,#f97316 32%,#3b82f6 100%);position:relative;overflow:hidden;}
+    .hero h1{font-size:24px;margin:0;}
+    .hero #tdSub{opacity:.92;margin-top:4px;font-size:13px;}
+    .hero-bridge{position:absolute;right:30px;bottom:-4px;width:380px;opacity:.32;}
+    .tdflow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:-30px 16px 0;position:relative;}
+    .tdf{background:#fff;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(120,80,30,.10);text-align:left;color:#1f2937;font-weight:400;display:block;}
+    .tdf:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(120,80,30,.14);}
+    .tdn{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;background:#3b82f6;}
+    .tdf.good .tdn{background:#10b981;} .tdf.warn .tdn{background:#f59e0b;} .tdf.bad .tdn{background:#ef4444;}
+    .tdf b{display:block;font-size:26px;margin-top:8px;} .tdf b small{font-size:16px;color:#9ca3af;}
+    .tdf.warn b{color:#d97706;} .tdf.bad b{color:#dc2626;} .tdf.good b{color:#059669;}
+    .tdl{font-size:12px;font-weight:700;color:#4b5563;margin-top:2px;} .tds{font-size:11.5px;color:#9ca3af;}
+    .tdgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;margin-top:16px;align-items:start;}
+    .tdrow{display:flex;align-items:center;gap:12px;width:100%;background:none;text-align:left;padding:9px 2px;border-radius:12px;font-weight:400;color:#1f2937;}
+    .tdrow:hover{background:#fffaf5;}
+    .tde{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:17px;}
+    .tdt{flex:1;min-width:0;} .tdt b{display:block;font-size:13.5px;} .tdt small{font-size:11.5px;color:#9ca3af;}
+    .tdgo{background:var(--accent-bg);color:var(--accent);font-weight:700;border-radius:999px;padding:5px 12px;font-size:12px;}
+    .tdempty{padding:14px 2px;color:#059669;font-weight:700;}
+    .tdh{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:10px;background:#f9fafb;margin-bottom:6px;font-size:13px;}
+    .tdh b.ok{color:#059669;} .tdh b.warn{color:#d97706;}
+
+    @media (min-width:900px){
+      .app{grid-template-columns:260px 1fr;}
+      .side{background:#fff;color:#1f2937;border-right:1px solid var(--line);padding:16px 12px;gap:4px;}
+      .main{padding:20px 26px;}
+    }
+    @media (max-width:1200px) and (min-width:900px){ .tdflow{grid-template-columns:repeat(3,minmax(0,1fr));} }
+    @media (max-width:899px){
+      .side{background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+      .side .sbrand{padding:0;flex:1;min-width:0;} .side .slogo{width:32px;height:32px;flex-basis:32px;}
+      .side .gpbox{margin:0;padding:3px 10px;} .side .gpbox label{display:none;} .side .gpbox select{font-size:13px;}
+      .side .viewbar{width:100%;margin:0;}
+      .side-foot{display:none;}
+      .side .tabs{position:fixed;left:0;right:0;bottom:0;z-index:80;background:#fff;border-top:1px solid var(--line);margin:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom));gap:2px;flex-direction:row;box-shadow:0 -4px 14px rgba(120,80,30,.08);}
+      .side .grp{flex:1;min-width:0;}
+      .side .gsubs{display:none!important;}
+      .side .ghead{flex-direction:column;gap:1px;font-size:10px;padding:6px 2px;border-radius:10px;text-align:center;position:relative;color:#6b7280;}
+      .side .ghead > span{display:none;}
+      .side .ghead::after{content:attr(data-short);white-space:nowrap;}
+      .side .sbrand-who,#dbVer{display:none;}
+      .side .sbrand{flex:0 1 auto;} .side .gpbox{flex:1;min-width:0;}
+      .side .viewbar{flex-direction:row;align-items:center;padding:4px 8px;font-size:11.5px;}
+      .side .viewbar select{flex:1;width:auto;padding:4px 6px;font-size:12px;}
+      .side .viewbar #viewNote{display:none;}
+      .side .ghead i{font-size:19px;width:auto;}
+      .side .gbadge{position:absolute;top:0;right:6px;margin:0;font-size:9.5px;padding:0 5px;}
+      .side .ghead.on,.side .ghead.tab.active{background:var(--accent-bg);}
+      .subnav .pills{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+      .pill2{flex:0 0 auto;}
+      .hero{border-radius:16px;padding:16px 16px 40px;} .hero h1{font-size:20px;} .hero-bridge{width:220px;right:10px;}
+      .tdflow{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:-28px 6px 0;}
+      .tdf{padding:10px;border-radius:14px;} .tdf b{font-size:21px;margin-top:4px;} .tdn{width:22px;height:22px;font-size:11px;}
+      .tdgrid{grid-template-columns:1fr;}
+    }
+  </style>
 </head>
 <body>
 <div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
 <div class="app">
 <aside class="side">
-  <div class="header">
-    <div class="header-title">🌉 Gram Setu <span class="badge badge-admin">Admin</span></div>
-    <div class="header-sub">Worker selection, list preparation and demand management</div>
+  <div class="sbrand">
+    <img src="./icon-192.png" alt="" class="slogo">
+    <div class="sbrand-t">
+      <div class="header-title">Gram Setu</div>
+      <div class="sbrand-who"><span class="who" id="who">…</span> · <span class="role" id="roleLbl">Admin</span></div>
+    </div>
   </div>
 
-  <div class="bar">
-    <div><div class="who" id="who">…</div><div class="role" id="roleLbl">Admin</div></div>
-    <button class="btn-light btn-small" id="logoutBtn">Logout</button>
-  </div>
+  <!-- one Gram Panchayat picker for every page (js/admin-shell.js copies it into each page's own picker) -->
+  <div class="gpbox"><label for="gGp">Gram Panchayat</label><select id="gGp" aria-label="Gram Panchayat"></select></div>
+
+  <nav class="tabs" role="tablist">
+    <div class="grp" data-g="today"><button class="tab ghead active" data-short="Today" data-tab="today"><i>🏠</i><span>Today</span><b class="gbadge hidden"></b></button></div>
+    <div class="grp" data-g="lists"><button class="tab ghead" data-short="Lists" data-tab="dash"><i>📝</i><span>Demand lists</span><b class="gbadge hidden"></b></button></div>
+    <div class="grp" data-g="workers">
+      <button class="ghead" type="button" data-short="Workers"><i>👷</i><span>Workers &amp; Accounts</span><b class="gbadge hidden"></b></button>
+      <div class="gsubs">
+        <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
+        <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
+        <button class="tab" data-tab="pmiss"><i>🚫</i><span>Portal removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
+        <button class="sact" type="button" data-click="ekycBtn"><i>📊</i><span>eKYC / ABPS summary</span></button>
+      </div>
+    </div>
+    <div class="grp" data-g="money">
+      <button class="ghead" type="button" data-short="Payment"><i>💰</i><span>MR · Wage · Payment</span><b class="gbadge hidden"></b></button>
+      <div class="gsubs">
+        <button class="tab" data-tab="pipeline"><i>💸</i><span>Payment pipeline</span></button>
+        <button class="tab" data-tab="iay"><i>🏠</i><span>PBA works &amp; MB books</span></button>
+        <button class="tab" data-tab="wlcaste"><i>⚖</i><span>WL Caste breakup</span></button>
+        <a class="sact" href="./iay.html"><i>📒</i><span>IAY Tracker ↗</span></a>
+      </div>
+    </div>
+    <div class="grp" data-g="team">
+      <button class="ghead" type="button" data-short="Team"><i>👥</i><span>Team &amp; Access</span><b class="gbadge hidden"></b></button>
+      <div class="gsubs">
+        <button class="tab" data-tab="users"><i>👤</i><span>Users</span></button>
+        <button class="tab" data-tab="signup"><i>🙋</i><span>Login requests <b class="badge badge-admin hidden" id="suBadge"></b></span></button>
+      </div>
+    </div>
+    <div class="grp" data-g="setup">
+      <button class="ghead" type="button" data-short="Setup"><i>⚙</i><span>Setup &amp; Data</span><b class="gbadge hidden"></b></button>
+      <div class="gsubs">
+        <button class="tab" data-tab="masters" id="mastersTab"><i>🏗</i><span>Works &amp; Supervisors</span></button>
+        <button class="tab" data-tab="import"><i>📥</i><span>Data import &amp; Backup</span></button>
+        <button class="tab" data-tab="history"><i>🕘</i><span>Import history</span></button>
+        <button class="sact" type="button" data-click="kdActBtn"><i>🖥</i><span>K-Desk activity</span></button>
+      </div>
+    </div>
+  </nav>
 
   <!-- Super Admin only: see the panel exactly as a GP Admin of one GP sees it -->
   <div class="viewbar hidden" id="viewBar">
@@ -250,26 +400,27 @@
     <select id="viewSel"><option value="">👑 Super Admin (all GPs)</option></select>
     <span id="viewNote"></span>
   </div>
-
-
-  <div class="tabs" role="tablist">
-    <button class="tab active" data-tab="dash"><i>📊</i><span>Dashboard</span></button>
-    <button class="tab" data-tab="pipeline"><i>💸</i><span>Pipeline</span></button>
-    <button class="tab" data-tab="iay"><i>🏠</i><span>IAY</span></button>
-    <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
-    <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
-    <button class="tab" data-tab="pmiss"><i>🚫</i><span>Portal removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
-    <button class="tab" data-tab="wlcaste"><i>⚖</i><span>WL Caste</span></button>
-    <button class="tab" data-tab="import"><i>📥</i><span>Data Import</span></button>
-    <button class="tab" data-tab="history"><i>🕘</i><span>History</span></button>
-    <button class="tab" data-tab="users"><i>👥</i><span>Users</span></button>
-    <button class="tab" data-tab="signup"><i>🙋</i><span>Requests <b class="badge badge-admin hidden" id="suBadge"></b></span></button>
-    <button class="tab" data-tab="masters" id="mastersTab"><i>🏗</i><span>Works &amp; Supervisors</span></button>
+  <div class="side-foot">
+    <button class="btn-light btn-small" id="logoutBtn">Logout</button>
+    <div>Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
   </div>
-  <div class="side-foot">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
 </aside>
 <main class="main">
+  <div class="subnav hidden" id="subnav"><div class="crumb" id="subCrumb"></div><div class="pills" id="subPills"></div></div>
   <div id="status" class="status" role="status" aria-live="polite"></div>
+
+  <!-- ============ TODAY (js/admin-shell.js) ============ -->
+  <section id="tab-today">
+    <div class="hero">
+      <div class="hero-t"><h1 id="tdHello">Namaskar</h1><div id="tdSub">Loading…</div></div>
+      <svg class="hero-bridge" viewBox="0 0 420 90" aria-hidden="true"><path d="M0 80 Q210 -10 420 80" stroke="#fff" stroke-width="5" fill="none"/><path d="M0 84H420" stroke="#fff" stroke-width="5"/><g stroke="#fff" stroke-width="3"><line x1="80" y1="84" x2="80" y2="52"/><line x1="130" y1="84" x2="130" y2="36"/><line x1="180" y1="84" x2="180" y2="28"/><line x1="230" y1="84" x2="230" y2="28"/><line x1="280" y1="84" x2="280" y2="34"/><line x1="330" y1="84" x2="330" y2="48"/></g></svg>
+    </div>
+    <div class="tdflow" id="tdFlow"></div>
+    <div class="tdgrid">
+      <div class="card"><div class="row" style="justify-content:space-between;"><h2 style="margin:0;">Waiting for you</h2><button class="btn-light btn-small" id="tdRefresh">🔄 Refresh</button></div><div id="tdTodo"></div></div>
+      <div class="card"><h2>System health</h2><div id="tdHealth"></div></div>
+    </div>
+  </section>
 
   <!-- ============ SUPERVISOR ACCOUNT REQUESTS (v213) ============ -->
   <section id="tab-signup" class="hidden">
@@ -445,7 +596,7 @@
   </section>
 
   <!-- ============ DASHBOARD ============ -->
-  <section id="tab-dash">
+  <section id="tab-dash" class="hidden">
    <div class="dash-grid">
    <div class="dash-main">
     <div class="card">
@@ -927,15 +1078,16 @@
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261114a"></script>
+<script src="./js/admin.js?v=20261118a"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
 <script src="./js/admin-signup.js?v=20261114a"></script>
 <script src="./js/admin-aadhaar.js?v=20261116r"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
-<script src="./js/admin-pipeline.js?v=20261116g"></script>
+<script src="./js/admin-pipeline.js?v=20261118a"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
 <script src="./js/admin-dbver.js?v=20261116a"></script>
+<script src="./js/admin-shell.js?v=20261118a"></script>
 </body>
 </html>

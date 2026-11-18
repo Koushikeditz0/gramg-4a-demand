@@ -300,7 +300,7 @@
     var H = $('tdHealth'); H.innerHTML = '';
     function line(label, val, bad) { var d = el('div', null, 'tdh'); d.appendChild(el('span', label)); d.appendChild(el('b', val, bad ? 'warn' : 'ok')); H.appendChild(d); }
     function when(at, days) { return { v: at ? fmtDay(at) + (age(at) > days ? ' (old)' : '') : 'never', bad: age(at) > days }; }
-    var need = 226;
+    var need = 227;
     line('Database version', db.version ? 'v' + db.version + (db.version >= need ? ' ✓' : ' (old)') : 'unknown', !db.version || db.version < need);
     var a = when(ds.last_sync && ds.last_sync.at, 7); line('ABPS Sync (K-Desk)', a.v, a.bad);
     if (ds.last_import) { a = when(ds.last_import.at, 3650); line('Excel import', a.v, false); }

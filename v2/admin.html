@@ -339,6 +339,113 @@
       .tdgrid{grid-template-columns:1fr;}
     }
   </style>
+  <!-- 2026-11-18 round 2: search, worker drawer, profile menu, toast, action bar, status colours, dark mode -->
+  <style>
+    :root{--ok:#059669;--ok-bg:#dcfce7;--wait:#b45309;--wait-bg:#fef3c7;--bad:#b91c1c;--bad-bg:#fee2e2;--info:#475569;--info-bg:#f1f5f9;--card:#fff;--muted:#6b7280;}
+    /* four status colours everywhere: done = green, pending = amber, problem = red, info = grey */
+    .pill.on,.stag.good{background:var(--ok-bg);color:var(--ok);} .pill.off,.stag.bad{background:var(--bad-bg);color:var(--bad);}
+    .pill.neutral,.stag,.stag.info{background:var(--info-bg);color:var(--info);} .pill.warn,.stag.warn{background:var(--wait-bg);color:var(--wait);}
+    .stag{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;}
+    .stat.good .n{color:var(--ok);} .stat.warn .n{color:var(--wait);} .stat.bad .n{color:var(--bad);}
+    /* toast */
+    .status.show{position:fixed;top:14px;right:14px;left:auto;z-index:300;max-width:420px;margin:0;padding:11px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.18);font-size:13px;cursor:pointer;border-left:4px solid currentColor;}
+    @media (max-width:899px){ .status.show{left:10px;right:10px;max-width:none;top:auto;bottom:78px;} }
+    /* sidebar search + profile */
+    .srchbtn{display:flex;align-items:center;gap:8px;width:100%;background:#fffaf5;border:1px solid var(--line);color:#6b7280;border-radius:12px;padding:8px 10px;font-weight:600;font-size:13px;margin-bottom:10px;}
+    .srchbtn kbd{margin-left:auto;font-size:10px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#9ca3af;font-family:inherit;}
+    .side-foot{position:relative;}
+    .prof{display:flex;align-items:center;gap:9px;width:100%;background:none;border:1px solid transparent;border-radius:12px;padding:7px 8px;text-align:left;color:#1f2937;font-weight:400;}
+    .prof:hover{background:#fdf4ea;}
+    .pav{width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#2563eb);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;}
+    .pname{flex:1;min-width:0;display:flex;flex-direction:column;} .pname b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .pname small{font-size:11px;color:#9ca3af;}
+    .pcar{color:#9ca3af;font-size:11px;}
+    .profmenu{position:absolute;left:0;right:0;bottom:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(15,23,42,.18);padding:6px;z-index:120;display:flex;flex-direction:column;gap:2px;}
+    .profmenu.hidden{display:none;}
+    .profmenu .viewbar{margin:0 0 4px;}
+    .pm-it{display:block;width:100%;text-align:left;background:none;color:#1f2937;font-weight:600;font-size:13px;padding:9px 10px;border-radius:9px;}
+    button.pm-it:hover{background:#fdf4ea;} .pm-db{font-weight:400;color:#6b7280;font-size:12px;} .pm-out{color:#b91c1c;}
+    .pm-credit{font-size:10.5px;color:#9ca3af;padding:6px 10px 4px;border-top:1px solid var(--line);margin-top:4px;}
+    .sbrand-sub{font-size:11.5px;color:#9ca3af;margin-top:2px;}
+    /* page header */
+    .subtop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
+    .subtop .crumb{margin:0;} .subr{display:flex;align-items:center;gap:8px;}
+    /* action bar */
+    .abar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:90;background:#1f2937;color:#fff;border-radius:14px;padding:8px 10px 8px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 30px rgba(15,23,42,.35);font-size:13px;font-weight:700;max-width:calc(100vw - 20px);}
+    .abar.hidden{display:none;}
+    #aBarBtns{display:flex;gap:6px;flex-wrap:wrap;} #aBarN{white-space:nowrap;}
+    .ab-b{background:#374151;color:#fff;font-size:12.5px;padding:7px 11px;border-radius:9px;}
+    .ab-b:first-child{background:#16a34a;}
+    .abx{background:transparent;color:#9ca3af;padding:6px 8px;}
+    @media (min-width:900px){ .abar{left:calc(50% + 130px);} }
+    @media (max-width:899px){ .abar{bottom:76px;} }
+    /* search */
+    .srch-dim{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:250;display:flex;justify-content:center;align-items:flex-start;padding:70px 12px 12px;}
+    .srch-dim.hidden{display:none;}
+    .srch{width:100%;max-width:620px;background:var(--card);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 100px);}
+    .srch-in{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);}
+    .srch-in input{flex:1;border:0;outline:0;font-size:16px;background:transparent;color:inherit;padding:4px 0;}
+    .srch-in kbd{font-size:10.5px;background:#f1f5f9;border-radius:5px;padding:2px 6px;color:#64748b;font-family:inherit;}
+    .srch-res{overflow:auto;padding:4px 0 6px;}
+    .srch-h{font-size:10.5px;font-weight:800;color:#9ca3af;padding:10px 16px 4px;text-transform:uppercase;letter-spacing:.4px;}
+    .srch-it{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:none;border-radius:0;text-align:left;padding:8px 16px;font-weight:400;color:inherit;}
+    .srch-it.on{background:#fff1e6;}
+    .srch-it .l{min-width:0;} .srch-it .l b{display:block;font-size:13.5px;} .srch-it .l small{font-size:11.5px;color:#9ca3af;}
+    .srch-it .r{font-size:11.5px;color:#9ca3af;white-space:nowrap;}
+    .srch-msg{padding:14px 16px;color:#6b7280;font-size:13px;}
+    .srch-foot{font-size:11px;color:#9ca3af;padding:8px 16px;border-top:1px solid var(--line);}
+    /* worker drawer */
+    .wshade{position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:200;display:none;} .wshade.show{display:block;}
+    .wdrawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--card);z-index:210;box-shadow:-12px 0 40px rgba(15,23,42,.25);padding:16px 18px 24px;overflow:auto;transform:translateX(105%);transition:transform .18s ease;}
+    .wdrawer.show{transform:none;}
+    .whead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;} .whead h2{margin:0;font-size:18px;}
+    .wtags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;}
+    .wsec{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;}
+    .wsec h4{margin:0 0 6px;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;}
+    .wkv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:3px 0;} .wkv span{color:#6b7280;} .wkv b{text-align:right;word-break:break-word;}
+    .wkv b.ok{color:var(--ok);} .wkv b.warn{color:var(--wait);} .wkv b.bad{color:var(--bad);}
+    .wlist{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid #f3f4f6;} .wlist:first-of-type{border:0;}
+    .wlist b{display:block;font-size:13px;} .wlist small{font-size:11px;color:#9ca3af;} .wst{display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+    .wlink{display:block;width:100%;text-align:left;background:none;color:#2563eb;font-weight:600;font-size:12.5px;padding:4px 0;}
+    .wwarn{color:var(--wait)!important;} .wfoot{margin-top:12px;}
+    main td{cursor:default;}
+
+    /* ---------------- dark mode ---------------- */
+    html[data-theme=dark]{--warm:#0b1120;--line:#1e293b;--card:#111827;--accent-bg:#3a1f0f;--accent:#fdba74;--info-bg:#1f2937;--info:#cbd5e1;--ok-bg:#052e1f;--ok:#4ade80;--wait-bg:#3a2a0c;--wait:#fcd34d;--bad-bg:#3b1219;--bad:#fca5a5;color-scheme:dark;}
+    html[data-theme=dark] body{background:var(--warm);color:#e5e7eb;}
+    html[data-theme=dark] .side{background:#0f172a!important;border-color:var(--line)!important;}
+    html[data-theme=dark] .side .header-title,html[data-theme=dark] .prof,html[data-theme=dark] .pm-it{color:#f1f5f9;}
+    html[data-theme=dark] .side .ghead,html[data-theme=dark] .side .tab{color:#cbd5e1;}
+    html[data-theme=dark] .side .ghead:hover,html[data-theme=dark] .side .tab:hover,html[data-theme=dark] .prof:hover,html[data-theme=dark] button.pm-it:hover{background:#1e293b;}
+    html[data-theme=dark] .side .gsubs .tab.active{background:#1e293b;}
+    html[data-theme=dark] .gpbox,html[data-theme=dark] .srchbtn{background:#111827!important;border-color:var(--line)!important;}
+    html[data-theme=dark] .gpbox select{color:#f1f5f9!important;}
+    html[data-theme=dark] .card,html[data-theme=dark] .tdf,html[data-theme=dark] .ucard,html[data-theme=dark] .lwrap,html[data-theme=dark] .stat,html[data-theme=dark] .modal-box,html[data-theme=dark] .ask-box,html[data-theme=dark] .pill2,html[data-theme=dark] .lcard{background:var(--card)!important;border-color:var(--line)!important;color:#e5e7eb;box-shadow:none;}
+    html[data-theme=dark] .pill2.on{background:#c2410c!important;color:#fff;}
+    html[data-theme=dark] th,html[data-theme=dark] .ltable th{background:#1f2937!important;color:#cbd5e1;}
+    html[data-theme=dark] td,html[data-theme=dark] .ltable td{border-color:#1f2937;}
+    html[data-theme=dark] .table-wrap{border-color:var(--line);}
+    html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] textarea{background:#0f172a!important;color:#e5e7eb!important;border-color:#334155!important;}
+    html[data-theme=dark] .btn-light,html[data-theme=dark] .filters button{background:#1f2937;color:#e5e7eb;}
+    html[data-theme=dark] .filters button.active{background:#e5e7eb;color:#111827;}
+    html[data-theme=dark] .muted,html[data-theme=dark] .tds,html[data-theme=dark] .tdt small{color:#94a3b8;}
+    html[data-theme=dark] .tdl,html[data-theme=dark] .tdf{color:#e5e7eb;}
+    html[data-theme=dark] .tdh{background:#0f172a;}
+    html[data-theme=dark] .tdrow{color:#e5e7eb;} html[data-theme=dark] .tdrow:hover{background:#1f2937;}
+    html[data-theme=dark] details.help>summary,html[data-theme=dark] details.help>.muted{background:#1f2937;border-color:#334155;color:#fdba74;}
+    html[data-theme=dark] .srch-it.on{background:#1f2937;} html[data-theme=dark] .wlist{border-color:#1f2937;}
+    html[data-theme=dark] code,html[data-theme=dark] .dsum,html[data-theme=dark] .pp-detail,html[data-theme=dark] .pp-step.open{background:#0f172a!important;}
+    html[data-theme=dark] .pp-step:hover{background:#1f2937!important;} html[data-theme=dark] .pp-steps{border-color:var(--line)!important;}
+    html[data-theme=dark] .pp-num,html[data-theme=dark] .ltable .wk{color:#f1f5f9!important;}
+    @media (max-width:899px){
+      .side .side-foot{display:block!important;order:3;margin:0;padding:0;flex:0 0 auto;}
+      .side .srchbtn{order:2;width:auto;margin:0;padding:6px 9px;} .side .srchbtn span,.side .srchbtn kbd{display:none;}
+      .side .gpbox{order:1;}
+      .prof{padding:2px;} .prof .pname,.prof .pcar{display:none;}
+      .profmenu{position:fixed;left:auto;right:8px;top:54px;bottom:auto;width:280px;}
+      .pm-credit{display:block;}
+    }
+    html[data-theme=dark] .status.ok{background:#052e1f;color:#4ade80;} html[data-theme=dark] .status.err{background:#3b1219;color:#fca5a5;} html[data-theme=dark] .status.info{background:#1e1b4b;color:#c7d2fe;}
+  </style>
 </head>
 <body>
 <div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
@@ -348,12 +455,15 @@
     <img src="./icon-192.png" alt="" class="slogo">
     <div class="sbrand-t">
       <div class="header-title">Gram Setu</div>
-      <div class="sbrand-who"><span class="who" id="who">…</span> · <span class="role" id="roleLbl">Admin</span></div>
+      <div class="sbrand-sub">Admin panel</div>
+      <div class="sbrand-who hidden"><span class="who" id="who">…</span> · <span class="role" id="roleLbl">Admin</span></div>
     </div>
   </div>
 
   <!-- one Gram Panchayat picker for every page (js/admin-shell.js copies it into each page's own picker) -->
   <div class="gpbox"><label for="gGp">Gram Panchayat</label><select id="gGp" aria-label="Gram Panchayat"></select></div>
+
+  <button class="srchbtn" id="srchBtn" type="button">🔍 <span>Search</span><kbd>Ctrl K</kbd></button>
 
   <nav class="tabs" role="tablist">
     <div class="grp" data-g="today"><button class="tab ghead active" data-short="Today" data-tab="today"><i>🏠</i><span>Today</span><b class="gbadge hidden"></b></button></div>
@@ -394,19 +504,25 @@
     </div>
   </nav>
 
-  <!-- Super Admin only: see the panel exactly as a GP Admin of one GP sees it -->
-  <div class="viewbar hidden" id="viewBar">
-    <b>View:</b>
-    <select id="viewSel"><option value="">👑 Super Admin (all GPs)</option></select>
-    <span id="viewNote"></span>
-  </div>
   <div class="side-foot">
-    <button class="btn-light btn-small" id="logoutBtn">Logout</button>
-    <div>Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
+    <button class="prof" id="profBtn" type="button" aria-haspopup="true"><span class="pav" id="profAv">K</span><span class="pname"><b id="profName">…</b><small id="profRole"></small></span><span class="pcar">▾</span></button>
+    <div class="profmenu hidden" id="profMenu">
+      <!-- Super Admin only: see the panel exactly as a GP Admin of one GP sees it -->
+      <div class="viewbar hidden" id="viewBar">
+        <b>View:</b>
+        <select id="viewSel"><option value="">👑 Super Admin (all GPs)</option></select>
+        <span id="viewNote"></span>
+      </div>
+      <button class="pm-it" id="themeBtn" type="button">🌙 Dark mode</button>
+      <div class="pm-it pm-db" id="pmDb">🗄 Database: …</div>
+      <button class="pm-it pm-out" id="logoutBtn" type="button">⎋ Logout</button>
+      <div class="pm-credit">Developed &amp; Maintained by <b>Koushik Sarkar (VLE)</b></div>
+    </div>
   </div>
 </aside>
 <main class="main">
-  <div class="subnav hidden" id="subnav"><div class="crumb" id="subCrumb"></div><div class="pills" id="subPills"></div></div>
+  <div class="subnav hidden" id="subnav"><div class="subtop"><div class="crumb" id="subCrumb"></div><div class="subr"><span class="muted" id="subWhen"></span><button class="btn-light btn-small" id="subRefresh" type="button">🔄 Refresh</button></div></div><div class="pills" id="subPills"></div></div>
+  <div class="abar hidden" id="aBar"><span id="aBarN"></span><span id="aBarBtns"></span><button type="button" class="abx" id="aBarX" title="Clear selection">✕</button></div>
   <div id="status" class="status" role="status" aria-live="polite"></div>
 
   <!-- ============ TODAY (js/admin-shell.js) ============ -->
@@ -952,8 +1068,8 @@
       <img id="phvImg" alt="Account copy photo">
       <div class="row" style="justify-content:flex-end;margin-top:6px;">
         <button class="btn-light btn-small" id="phvDl">⬇ Download</button>
-        <button class="btn-danger btn-small" id="phvRet">✕ Return</button>
-        <button class="btn-success btn-small" id="phvDone">✔ Verify</button>
+        <button class="btn-danger btn-small" id="phvRet" title="Key R">✕ Return <small>(R)</small></button>
+        <button class="btn-success btn-small" id="phvDone" title="Key A">✔ Verify <small>(A)</small></button>
       </div>
     </div>
   </div>
@@ -1078,16 +1194,17 @@
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261118a"></script>
+<script src="./js/admin.js?v=20261118b"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
 <script src="./js/admin-signup.js?v=20261114a"></script>
 <script src="./js/admin-aadhaar.js?v=20261116r"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
-<script src="./js/admin-pipeline.js?v=20261118a"></script>
+<script src="./js/admin-pipeline.js?v=20261118b"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261116a"></script>
-<script src="./js/admin-shell.js?v=20261118a"></script>
+<script src="./js/admin-dbver.js?v=20261118a"></script>
+<script src="./js/admin-shell.js?v=20261118b"></script>
+<script src="./js/admin-search.js?v=20261118a"></script>
 </body>
 </html>

@@ -55,10 +55,14 @@
   function renderSubnav(g, tab) {
     var box = $('subnav'), pills = $('subPills');
     var many = g && g.tabs.length > 1;
-    box.classList.toggle('hidden', !many);
+    box.classList.toggle('hidden', !g || tab === 'today');
     pills.innerHTML = '';
-    if (!many) return;
+    if (!g) return;
     $('subCrumb').textContent = g.title;
+    $('subRefresh').classList.toggle('hidden', !REFRESH[tab]);
+    if (renderSubnav.last !== tab) { renderSubnav.last = tab; $('subWhen').textContent = ''; setTimeout(stamp, 0); }
+    if (typeof aCount === 'function') setTimeout(aCount, 0);
+    if (!many) return;
     g.tabs.forEach(function (b) {
       var p = el('button', null, 'pill2' + (b.dataset.tab === tab ? ' on' : '')); p.type = 'button';
       p.appendChild(el('span', (b.querySelector('i') || {}).textContent + ' ' + labelOf(b)));
@@ -148,6 +152,67 @@
     if (hasOpt(s, p) && s.value !== p) { s.value = p; s.dispatchEvent(new Event('change')); }
   }
 
+
+  /* ------------------------------ profile menu + dark mode ------------------------------ */
+  var THEME_KEY = 'gramg2.theme';
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+    $('themeBtn').textContent = t === 'dark' ? '☀ Light mode' : '🌙 Dark mode';
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'dark' ? '#0b1120' : '#f97316';
+  }
+  applyTheme(read(THEME_KEY));
+  $('themeBtn').addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    store(THEME_KEY, t); applyTheme(t);
+  });
+  $('profBtn').addEventListener('click', function (e) { e.stopPropagation(); $('profMenu').classList.toggle('hidden'); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('#profMenu,#profBtn')) $('profMenu').classList.add('hidden'); });
+  function syncProfile() {
+    var n = ($('who').textContent || '').trim();
+    $('profName').textContent = n; $('profRole').textContent = $('roleLbl').textContent;
+    $('profAv').textContent = (n && n !== '…' ? n : 'A').charAt(0).toUpperCase();
+    var b = $('dbVer'); $('pmDb').textContent = '🗄 Database: ' + (b ? b.textContent.replace('DB ', '') : '…') + (b && b.title ? '' : '');
+  }
+  if (window.MutationObserver) {
+    var po = new MutationObserver(syncProfile);
+    po.observe($('who'), { childList: true, characterData: true, subtree: true });
+    po.observe($('roleLbl'), { childList: true, characterData: true, subtree: true });
+    po.observe(document.querySelector('.side .header-title'), { childList: true, subtree: true, characterData: true });
+  }
+  syncProfile();
+  $('srchBtn').addEventListener('click', function () { if (window.AdminSearch) window.AdminSearch.open(); });
+
+  /* ------------------------------ page header: refresh + time ------------------------------ */
+  var REFRESH = { dash: 'dashRefresh', photos: 'phRefresh', marks: 'mkRefresh', pmiss: 'pmRefresh', pipeline: 'ppRefresh', wlcaste: 'wcRefresh', signup: 'suRefresh', iay: 'idRefresh' };
+  function stamp() { $('subWhen').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+  $('subRefresh').addEventListener('click', function () { var b = $(REFRESH[current]); if (b) { b.click(); stamp(); } });
+
+  /* ------------------------------ ticked rows → action bar ------------------------------ */
+  var ABAR = { marks: { body: 'mkBody', all: 'mkAll', btns: ['mkAccept', 'mkReturn', 'mkXlsx', 'mkSent', 'mkDeleted'] },
+               pmiss: { body: 'pmBody', all: 'pmAll', btns: ['pmRestore'] } };
+  function aCount() {
+    var c = ABAR[current], bar = $('aBar');
+    var n = c && $(c.body) ? $(c.body).querySelectorAll('input[type=checkbox]:checked').length : 0;
+    bar.classList.toggle('hidden', !n);
+    if (!n) return;
+    $('aBarN').textContent = n + ' selected';
+    var B = $('aBarBtns'); B.innerHTML = '';
+    c.btns.forEach(function (id) {
+      var o = $(id); if (!o || o.offsetParent === null && o.closest('.hidden')) return;
+      var b = el('button', o.textContent.replace(/\s*\(?ticked\)?/i, ''), 'ab-b'); b.type = 'button'; b.disabled = o.disabled;
+      b.addEventListener('click', function () { o.click(); setTimeout(aCount, 600); setTimeout(aCount, 2500); });
+      B.appendChild(b);
+    });
+  }
+  document.addEventListener('change', function (e) { if (e.target && e.target.type === 'checkbox' && e.target.closest('#tab-marks,#tab-pmiss')) setTimeout(aCount, 0); });
+  if (window.MutationObserver) ['mkBody', 'pmBody'].forEach(function (id) { if ($(id)) new MutationObserver(function () { setTimeout(aCount, 0); }).observe($(id), { childList: true }); });
+  $('aBarX').addEventListener('click', function () {
+    var c = ABAR[current]; if (!c) return;
+    var all = $(c.all); if (all && all.checked) { all.checked = false; all.dispatchEvent(new Event('change', { bubbles: true })); }
+    [].forEach.call($(c.body).querySelectorAll('input[type=checkbox]:checked'), function (x) { x.checked = false; x.dispatchEvent(new Event('change', { bubbles: true })); });
+    aCount();
+  });
+
   /* ------------------------------ folded help text ------------------------------ */
   // long grey explanations at the top of a card fold into "ⓘ How it works"
   [].forEach.call(document.querySelectorAll('main section .card > .muted:not([id])'), function (m) {
@@ -232,7 +297,7 @@
     var H = $('tdHealth'); H.innerHTML = '';
     function line(label, val, bad) { var d = el('div', null, 'tdh'); d.appendChild(el('span', label)); d.appendChild(el('b', val, bad ? 'warn' : 'ok')); H.appendChild(d); }
     function when(at, days) { return { v: at ? fmtDay(at) + (age(at) > days ? ' (old)' : '') : 'never', bad: age(at) > days }; }
-    var need = 224;
+    var need = 225;
     line('Database version', db.version ? 'v' + db.version + (db.version >= need ? ' ✓' : ' (old)') : 'unknown', !db.version || db.version < need);
     var a = when(ds.last_sync && ds.last_sync.at, 7); line('ABPS Sync (K-Desk)', a.v, a.bad);
     if (ds.last_import) { a = when(ds.last_import.at, 3650); line('Excel import', a.v, false); }

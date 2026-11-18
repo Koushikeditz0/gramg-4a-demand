@@ -65,7 +65,7 @@
             send: m.send.at ? m.send.items.length : null,
             sendAmt: sum(m.send.items, function (x) { return x.amt; }),
             sent: m.sent.length,
-            at: { rep: rep && rep.at, gen: m.gen.at, send: m.send.at, iay: iay.report_at }
+            at: { rep: rep && typeof rep.at === 'string' ? rep.at : null, gen: m.gen.at, send: m.send.at, iay: iay.report_at }
           };
         });
       });

@@ -1,0 +1,13 @@
+-- =====================================================================
+-- G RAM-G 4A — 1-day MRs are not a phase (v208, 2026-11-18)
+-- private.iay_import_core (applied as migration iay_skip_one_day_mrs_v208, full body there) now
+--   * skips MRs whose start date = end date (Pi sync, Tampermonkey, Excel alike), and
+--   * numbers the phases (seq) itself: row_number() per work by start date, then MR No —
+--     MB page for phase N = first page + N − 1 stays right.
+-- One-time clean-up run with it:
+--   delete from public.iay_mrs where start_date = end_date;          -- 115 rows on 18/11/2026
+--   update public.iay_mrs r set seq = z.rn from (select work_code, mr_no,
+--     row_number() over (partition by work_code order by start_date, mr_no)::smallint rn from public.iay_mrs) z
+--    where r.work_code = z.work_code and r.mr_no = z.mr_no and r.seq is distinct from z.rn;
+-- Tampermonkey v1.9 does the same on the portal side.
+-- =====================================================================

@@ -19,10 +19,14 @@
   function gpView() { return me.role === 'gp_admin' ? me.gp : view.gp; }
 
   // ---------- small UI helpers ----------
+  // message = small pop-up (toast) at the top right; OK / info close by themselves, errors stay until tapped
+  var statusTimer = null;
   function status(msg, kind) {
     var el = $('status'); el.textContent = msg || ''; el.className = 'status' + (msg ? ' show ' + (kind || 'info') : '');
-    if (msg) window.scrollTo({ top: 0, behavior: 'smooth' });
+    clearTimeout(statusTimer);
+    if (msg && kind !== 'err') statusTimer = setTimeout(function () { el.className = 'status'; }, 6000);
   }
+  $('status').addEventListener('click', function () { this.className = 'status'; });
   function loading(text) { $('loadingText').textContent = text || 'Loading...'; $('loading').classList.toggle('show', !!text); }
   // own Yes/No box: browser confirm() can be blocked silently on phones
   function ask(msg, yes, kind) {
@@ -284,6 +288,7 @@
       .then(function () { loading(''); });
   }
   function photoFinish(r, rpc, args, okMsg) {
+    var wasOpen = ph.cur === r;   // checked in the big view → the next new photo opens by itself
     loading('Saving...');
     return SB.rpc(rpc, args)
       .then(function (res) { return SB.photos.remove((res && res.paths) || []).then(function () { return res; }); })
@@ -294,7 +299,11 @@
               if (e.status === 404) { status('Run v181_account_requests.sql in the Supabase SQL Editor first (Verify / Return).', 'err'); return; }
               status(errText(e), 'err');
             })
-      .then(function () { loading(''); return loadPhotos(false); });
+      .then(function () { loading(''); return loadPhotos(false); })
+      .then(function () {
+        var next = wasOpen && ph.filter === 'new' && !ph.cur ? ph.rows.filter(function (x) { return x.id !== r.id; })[0] : null;
+        if (next) openPhoto(next);
+      });
   }
   function photoVerify(r) {
     var hasAcc = /^\d{6,20}$/.test(r.sent_account_no || '') && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(r.sent_ifsc || '');
@@ -321,6 +330,18 @@
   $('phvDl').addEventListener('click', function () { if (ph.cur) downloadPhoto(ph.cur); });
   $('phvDone').addEventListener('click', function () { if (ph.cur) photoVerify(ph.cur); });
   $('phvRet').addEventListener('click', function () { if (ph.cur) photoReturn(ph.cur); });
+  // keyboard in the big photo view: A = Verify, R = Return, Esc = close; Enter = Yes in the question box
+  document.addEventListener('keydown', function (e) {
+    if ($('askBox').classList.contains('show')) {
+      if (e.key === 'Enter' && $('askInput').classList.contains('hidden')) { e.preventDefault(); $('askYes').click(); }
+      return;
+    }
+    if (!$('phvModal').classList.contains('show') || /INPUT|TEXTAREA|SELECT/.test((e.target || {}).tagName || '')) return;
+    var k = (e.key || '').toLowerCase();
+    if (k === 'a') { e.preventDefault(); $('phvDone').click(); }
+    else if (k === 'r') { e.preventDefault(); $('phvRet').click(); }
+    else if (k === 'escape') closePhoto();
+  });
   $('phRefresh').addEventListener('click', function () { loadPhotos(true); });
   $('phGp').addEventListener('change', function () { loadPhotos(true); });
   document.querySelectorAll('#phFilters button').forEach(function (b) {

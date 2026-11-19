@@ -77,7 +77,10 @@
     .mbar div{height:100%;}
     .money{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px;font-size:12px;}
     .money div{background:#f8fafc;border-radius:8px;padding:4px 6px;} .money b{display:block;font-size:13px;}
+    tr.allrow td{font-weight:700;background:#fff7ed;}
     .regT{font-size:12px;} .regT td:not(:first-child),.regT th{white-space:nowrap;} .regT td{padding:7px 3px;}
+    .ltab{font-size:12px;width:auto;min-width:100%;} .ltab td,.ltab th{white-space:nowrap;text-align:left;padding:6px 8px;} .ltab td.nm{white-space:normal;min-width:190px;max-width:300px;}
+    .ltab td .mono{font-size:10.5px;}
     .tag.over{background:#fee2e2;color:#991b1b;} .tag.done{background:#dcfce7;color:#166534;}
     @media (max-width:640px){.money{grid-template-columns:repeat(2,1fr);}}
     @media (min-width:760px){.nav{left:50%;transform:translateX(-50%);max-width:980px;border-radius:16px 16px 0 0;}}
@@ -87,9 +90,9 @@
 <div class="loading" id="loading"></div>
 <div class="hero"><div class="wrap">
   <div class="top">
-    <small>গ্রাম সেতু · 📊 Report</small>
+    <small>Gram Setu · 📊 Report</small>
     <div style="display:flex;gap:6px;">
-      <button class="hbtn hidden" id="asViewer" type="button" title="Viewer যা দেখেন শুধু তা দেখাও">👁 Viewer হিসেবে দেখো</button>
+      <button class="hbtn hidden" id="asViewer" type="button" title="Show only what a Viewer sees">👁 View as Viewer</button>
       <a class="hbtn hidden" id="toAdmin" href="./admin.html">← Admin</a>
       <button class="hbtn" id="logout" type="button">Logout</button>
     </div>
@@ -106,11 +109,11 @@
   <!-- Home -->
   <section id="p-home">
     <div class="grid" id="tiles"></div>
-    <div class="card hidden" id="cmpCard"><h3>GP তুলনা <span class="mut">GP-তে চাপলে সেই GP খুলবে</span></h3><div class="tw"><table id="cmp"></table></div></div>
+    <div class="card hidden" id="cmpCard"><h3>GP comparison <span class="mut">Tap a GP to open it</span></h3><div class="tw"><table id="cmp"></table></div></div>
     <div class="card" id="ekCard"></div>
     <div class="card hidden" id="admCard"></div>
     <div class="card" id="newNotes"></div>
-    <div class="lock">🔒 Account, IFSC, ছবি, Aadhaar আর Demand list এই page-এ দেখা যায় না।</div>
+    <div class="lock">🔒 Account, IFSC, photos, Aadhaar and Demand lists are never shown on this page.</div>
   </section>
 
   <!-- Pipeline -->
@@ -119,7 +122,8 @@
       <h3>💸 MR pipeline <span class="mut" id="pipeAt"></span></h3>
       <div class="seg" id="stageSeg"></div>
       <div class="seg" id="kindSeg"></div>
-      <div class="tools"><input type="search" id="pipeQ" placeholder="MR no, work code বা নাম খুঁজুন"><button class="btn sm" id="pipeCsv" type="button">⭳ Excel (CSV)</button></div>
+      <div class="seg" id="pipeView"></div>
+      <div class="tools"><input type="search" id="pipeQ" placeholder="Search MR no, work code or name"><button class="btn sm" id="pipeCsv" type="button">⭳ Excel (CSV)</button></div>
       <div id="pipeList"></div>
     </div>
   </section>
@@ -129,7 +133,7 @@
     <div class="card">
       <h3>🏗 Work-wise MR <span class="mut" id="worksAt"></span></h3>
       <div class="seg" id="wkSeg"></div>
-      <div class="tools"><input type="search" id="worksQ" placeholder="Work code বা নাম খুঁজুন"><button class="btn sm" id="worksCsv" type="button">⭳ Excel (CSV)</button></div>
+      <div class="tools"><input type="search" id="worksQ" placeholder="Search work code or name"><button class="btn sm" id="worksCsv" type="button">⭳ Excel (CSV)</button></div>
       <div id="worksList"></div>
     </div>
   </section>
@@ -138,12 +142,12 @@
   <section id="p-reg" class="hidden">
     <div class="card">
       <h3>📒 Work Register <span class="mut" id="regAt"></span></h3>
-      <div class="mut" style="margin-bottom:8px;">Portal-এর R6.12 থেকে, রাতে একবার update হয়। বাকি = Sanction − শুরু থেকে Booked। MR-এর অবস্থাও প্রতিটা work-এ আছে।</div>
+      <div class="mut" style="margin-bottom:8px;">From the portal R6.12, updated once every night. Left = Sanction − Booked since start. MR progress is shown on each work.</div>
       <div class="seg" id="regKindSeg"></div>
       <div class="seg" id="regStSeg"></div>
       <div class="tools">
         <select id="regFy" class="btn sm" aria-label="Work start FY"></select>
-        <input type="search" id="regQ" placeholder="Work code, নাম বা category খুঁজুন">
+        <input type="search" id="regQ" placeholder="Search work code, name or category">
         <button class="btn sm" id="regCsv" type="button">⭳ Excel (CSV)</button>
       </div>
       <div class="grid" id="regTiles" style="margin-bottom:6px;"></div>
@@ -153,11 +157,12 @@
       <div class="mut" id="regWage" style="margin-bottom:8px;"></div>
     </div>
     <div class="card" id="regGroupCard">
-      <h3 id="regGroupTitle">Category-wise <span class="mut">চাপলে work-এর তালিকা</span></h3>
+      <h3 id="regGroupTitle">Category-wise <span class="mut">Tap to see its works</span></h3>
       <div class="tw"><table id="regGroups" class="regT"></table></div>
     </div>
     <div class="card hidden" id="regWorkCard">
-      <h3><span id="regWorkTitle"></span> <button class="btn sm" id="regBack" type="button">← সব category</button></h3>
+      <h3><span id="regWorkTitle"></span> <button class="btn sm" id="regBack" type="button">← All categories</button></h3>
+      <div class="seg" id="regView"></div>
       <div class="seg" id="regSortSeg"></div>
       <div id="regWorks"></div>
     </div>
@@ -166,8 +171,8 @@
   <!-- Caste -->
   <section id="p-caste" class="hidden">
     <div class="card">
-      <h3>⚖ WL caste-wise টাকা <span class="mut" id="casteAt"></span></h3>
-      <div class="mut" style="margin-bottom:8px;">K-Desk-এর ⚖ WL Caste breakup থেকে আসে। মাস = Wage List-এর তারিখ।</div>
+      <h3>⚖ WL caste-wise amount <span class="mut" id="casteAt"></span></h3>
+      <div class="mut" style="margin-bottom:8px;">Comes from the K-Desk ⚖ WL Caste breakup. Month = Wage List date.</div>
       <div class="tools"><button class="btn sm" id="casteCsv" type="button">⭳ Excel (CSV)</button></div>
       <div class="tw"><table id="caste"></table></div>
     </div>
@@ -180,8 +185,8 @@
       <div class="tw"><table id="ekVill"></table></div>
     </div>
     <div class="card">
-      <h3>⏳ যাঁদের এখনো হয়নি <span class="mut" id="nrCount"></span></h3>
-      <div class="tools"><input type="search" id="nrQ" placeholder="নাম বা Job Card খুঁজুন"><button class="btn sm" id="nrCsv" type="button">⭳ Excel (CSV)</button></div>
+      <h3>⏳ Not ready yet <span class="mut" id="nrCount"></span></h3>
+      <div class="tools"><input type="search" id="nrQ" placeholder="Search name or Job Card"><button class="btn sm" id="nrCsv" type="button">⭳ Excel (CSV)</button></div>
       <div id="nrList"></div>
     </div>
   </section>
@@ -189,8 +194,8 @@
   <!-- Notes -->
   <section id="p-notes" class="hidden">
     <div class="card">
-      <h3>📝 Notes <button class="btn sm pri" id="gpNote" type="button">＋ GP-র note</button></h3>
-      <div class="mut">এই GP-র সব note (নতুন আগে)। নিজের note বা Admin মুছতে পারেন।</div>
+      <h3>📝 Notes <button class="btn sm pri" id="gpNote" type="button">＋ GP note</button></h3>
+      <div class="mut">All notes of this GP (newest first). You can delete your own notes; Admins can delete any.</div>
       <div id="allNotes"></div>
     </div>
   </section>
@@ -211,17 +216,17 @@
   </div>
   <div id="shNotes"></div>
   <div style="margin-top:10px;">
-    <textarea id="shBody" maxlength="500" placeholder="Note লিখুন… (যেমন: Mate অসুস্থ, শনিবার fill হবে)"></textarea>
+    <textarea id="shBody" maxlength="500" placeholder="Write a note… (e.g. Mate is ill, will fill on Saturday)"></textarea>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
-      <label style="font-size:13px;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="shPrivate"> 🔒 শুধু আমি দেখব</label>
+      <label style="font-size:13px;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="shPrivate"> 🔒 Only I can see this</label>
       <button class="btn pri" id="shSave" type="button">➤ Save</button>
     </div>
-    <div class="mut" style="margin-top:6px;">টিক না দিলে এই GP-র report যাঁরা দেখেন সবাই note দেখবেন।</div>
+    <div class="mut" style="margin-top:6px;">If unticked, everyone who can see this GP's report will see the note.</div>
   </div>
 </div></div>
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261119b"></script>
-<script src="./js/report.js?v=20261119e"></script>
+<script src="./js/report.js?v=20261119g"></script>
 </body>
 </html>

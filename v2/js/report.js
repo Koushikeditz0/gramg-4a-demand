@@ -334,7 +334,7 @@
   });
 
   // ---------------- Work Register (R6.12 via the Raspberry Pi → R2) ----------------
-  var REG_GROUPS = [['cat', 'Category'], ['mcat', 'Master category'], ['wtype', 'Work type'], ['agency', 'Agency']];
+  var REG_GROUPS = [['cat', 'Category']];                // only Category grouping (Koushik: one group is enough)
   function gpPrefix() { var gs = S.ctx.gps; for (var i = 0; i < gs.length; i++) if (gs[i].id === S.gp) return gs[i].jc_prefix; return ''; }
   function loadReg() {
     if (S.reg && S.reg.gp === S.gp) { renderReg(); return; }
@@ -357,7 +357,7 @@
           pendingOf(w);
         });
         S.reg = { gp: S.gp, at: d.at, upd: d.upd, fy: d.fy, rows: rows, split: rows.some(function (w) { return w.booked_all_usk != null; }) };
-        S.rgGroup = S.rgGroup || 'cat'; S.rgSt = 'all'; S.rgKind = S.rgKind || 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
+        S.rgGroup = 'cat'; S.rgSt = 'all'; S.rgKind = S.rgKind || 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
         renderReg();
       })
       .catch(function (e) {
@@ -377,7 +377,7 @@
     w.pu = stKey(w.status) === 'done' ? 0 : Math.max(0, (w.s_usk || 0) - spent);
     w.pmd = rate ? w.pu / rate : 0;
   }
-  function stKey(s) { s = String(s || '').toLowerCase(); return /complet/.test(s) ? 'done' : /ongoing|progress|started/.test(s) ? 'on' : 'other'; }
+  function stKey(s) { s = String(s || '').toLowerCase(); return /complet/.test(s) ? 'done' : /ongoing|progress|started/.test(s) ? 'on' : /approv|propos|sanction/.test(s) ? 'appr' : 'other'; }
   function regFiltered(skipSel) {
     var q = $('regQ').value.trim().toLowerCase();
     return S.reg.rows.filter(function (w) {
@@ -412,17 +412,16 @@
     var R = S.reg;
     $('regAt').textContent = R.at ? 'Data: ' + when(R.at) : '';
     if (R.none) {
-      ['regTiles', 'regKindSeg', 'regGroupSeg', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
+      ['regTiles', 'regKindSeg', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
       $('regTiles').appendChild(el('div', 'এই GP-র Work Register এখনো আসেনি। Raspberry Pi রাতে R6.12 পড়ে পাঠালে এখানে দেখা যাবে।', 'mut'));
       $('regGroupCard').classList.add('hidden'); $('regWorkCard').classList.add('hidden'); return;
     }
-    seg($('regGroupSeg'), REG_GROUPS, S.rgGroup, null, function (k) { S.rgGroup = k; S.rgSel = null; renderReg(); });
     var kc = { all: 0, pba: 0, other: 0 };
     S.reg.rows.forEach(function (w) { if (S.rgFy && w.fy !== S.rgFy) return; kc.all++; kc[isPba(w) ? 'pba' : 'other']++; });
     seg($('regKindSeg'), [['all', 'সব work'], ['pba', '🏠 PBA'], ['other', 'অন্য (Others)']], S.rgKind, kc, function (k) { S.rgKind = k; S.rgSel = null; S.limit = 300; renderReg(); });
-    var base = S.reg.rows.filter(function (w) { return (!S.rgFy || w.fy === S.rgFy) && (S.rgKind === 'all' || (S.rgKind === 'pba') === isPba(w)); }), sc = { all: base.length, on: 0, done: 0, other: 0 };
+    var base = S.reg.rows.filter(function (w) { return (!S.rgFy || w.fy === S.rgFy) && (S.rgKind === 'all' || (S.rgKind === 'pba') === isPba(w)); }), sc = { all: base.length, appr: 0, on: 0, done: 0, other: 0 };
     base.forEach(function (w) { sc[stKey(w.status)]++; });
-    seg($('regStSeg'), [['all', 'সব status'], ['on', 'চলছে'], ['done', 'শেষ'], ['other', 'অন্য']], S.rgSt, sc, function (k) { S.rgSt = k; S.limit = 300; renderReg(); });
+    seg($('regStSeg'), [['all', 'সব'], ['appr', 'Approved'], ['on', 'Ongoing'], ['done', 'Complete']].concat(sc.other ? [['other', 'অন্য']] : []), S.rgSt, sc, function (k) { S.rgSt = k; S.limit = 300; renderReg(); });
     var fySel = $('regFy');
     if (!fySel.dataset.gp || fySel.dataset.gp !== String(S.gp)) {
       fySel.innerHTML = ''; fySel.dataset.gp = String(S.gp);
@@ -439,7 +438,6 @@
     tl.appendChild(tile('t3', '✅', rsC(t.pa), 'Paid (শুরু থেকে)', (um(t.pu, t.pm) || pct(t.pa, t.s) + '% of Sanction') + (sp ? ' · ' + pct(t.pa, t.s) + '%' : '')));
     tl.appendChild(tile('t5', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment বাকি', 'Booked মোট ' + rsC(t.ba) + (sp ? ' (U ' + rsC(t.bu) + ' · M ' + rsC(t.bm) + ')' : '')));
     tl.appendChild(tile('t1', '🧮', rsC(t.left), 'Sanction-এর বাকি', (sp ? 'Unskilled ' + rsC(Math.max(0, t.su - t.bu)) + ' · Material ' + rsC(Math.max(0, t.sm - t.bm)) : '') + (t.over ? (sp ? ' · ' : '') + '⚠ ' + n(t.over) + ' work ছাড়িয়েছে' : '')));
-    tl.appendChild(tile('t6', '👷', n(Math.round(t.pmd)), 'Pending mandays', 'Pending unskilled ' + rsC(t.pend) + ' ÷ ₹' + n(wageRate()) + (R.split ? '' : ' (আনুমানিক)') + ' · চলমান work'));
     bars($('regBar'), t.pa, t.ba, t.left);
     $('regBarKey').innerHTML = '';
     [['c-paid', 'Paid'], ['c-book', 'Booked, বাকি payment'], ['c-left', 'Sanction-এর বাকি']].forEach(function (x) {
@@ -516,8 +514,10 @@
        ['Paid (শুরু থেকে)', w.paid_all, 'এই FY ' + rs(w.paid_fy)], ['বাকি', w.left, w.mandays ? 'মোট ' + n(w.mandays) + ' mandays' : '']].forEach(function (x) {
         var d = el('div'); d.appendChild(el('span', x[0], 'mut')); d.appendChild(el('b', rs(x[1]))); if (x[2]) d.appendChild(el('span', x[2], 'mut')); m.appendChild(d);
       });
+      var pm = el('div'); pm.appendChild(el('span', '👷 Pending mandays', 'mut'));                 // work-wise, last cell
+      pm.appendChild(el('b', w.pu > 0 ? n(Math.round(w.pmd)) : '—'));
+      pm.appendChild(el('span', w.pu > 0 ? 'Unskilled ' + rs(w.pu) + ' ÷ ₹' + n(wageRate()) + (w.est ? ' (আনুমানিক)' : '') : (stKey(w.status) === 'done' ? 'Complete' : 'বাকি নেই'), 'mut')); m.appendChild(pm);
       it.appendChild(m);
-      if (w.pu > 0) it.appendChild(el('div', '👷 Pending unskilled ' + rs(w.pu) + ' ≈ ' + n(Math.round(w.pmd)) + ' mandays' + (w.est ? ' (আনুমানিক)' : ''), 'mut'));
       var mb = el('div', null, 'mbar'); bars(mb, w.paid_all || 0, w.booked_all || 0, w.left); it.appendChild(mb);
       box.appendChild(it);
     });

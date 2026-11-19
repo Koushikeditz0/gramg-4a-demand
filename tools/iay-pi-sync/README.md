@@ -79,3 +79,26 @@ cd tools/iay-pi-sync && docker compose up -d --build
 
 ## Payment pipeline (Gram Setu SQL v220)
 প্রতিবার চলার সময় Pi এখন IAY ছাড়াও **সব work-এর MR-wise data** (MR filled / Zero, e-MB, AE verification, Wagelist) একই sync key দিয়ে Gram Setu-তে পাঠায় (`mr_report_sync`)। Admin → 💸 Pipeline-এ MR fill → e-MB → AE verification → Wage List ধাপ এখান থেকেই দেখা যায়। নতুন কিছু বসাতে হবে না: Gram Setu-তে v220 SQL চালানো থাকলেই হবে, না থাকলে log-এ শুধু একটা ⚠ লাইন আসে, IAY sync আগের মতোই চলে। নতুন code নিতে Pi-তে `git pull` করে `docker compose up -d --build` দিন।
+
+## 📒 Work Register (রাতে একবার)
+
+Gram Setu Report page-এর 📒 Register tab-এর জন্য Pi দিনে একবার R6.12 **সব category, সব work type** দিয়ে পড়ে (login ছাড়া), প্রতিটা GP-র data gzip করে Cloudflare Worker `gramg-photo`-কে পাঠায়। Worker সেটা R2 bucket-এ `register/<GP prefix>.json.gz` নামে রাখে। Supabase-এ কিছু লেখা হয় না, K-Desk লাগে না।
+
+`.env`-এ যোগ করো:
+
+| নাম | কাজ |
+|---|---|
+| `REGISTER_URL` | Worker-এর ঠিকানা, যেমন `https://gramg-photo.koushikeditz0.workers.dev` (খালি = বন্ধ) |
+| `REGISTER_KEY` | একটা লম্বা গোপন লেখা; Worker-এর secret `REGISTER_KEY`-এ হুবহু একই লেখা দিতে হবে |
+| `REGISTER_AT` | কখন চলবে (ভারতীয় সময়), default `21:00`; ওই সময়ের পরের প্রথম hourly run-এর শেষে চলে |
+| `REGISTER_DISTRICT`, `REGISTER_BLOCK` | ঐচ্ছিক। না দিলে hourly run-এর block-ই ব্যবহার হয় |
+
+Test (কিছু পাঠায় না, `data/register-<prefix>.json` file বানায়):
+
+```bash
+docker compose run --rm iay-pi-sync node iay-sync.js --register-now --dry-run
+```
+
+এখনই একবার পাঠানো: `docker compose run --rm iay-pi-sync node iay-sync.js --register-now`
+
+চলতি FY-র Booked/Paid আসে `R612_URL`-এর `fin_year=`-এর FY থেকে। **প্রতি এপ্রিলে** নতুন FY-র R6.12 link `.env`-এর `R612_URL`-এ বসাতে হবে।

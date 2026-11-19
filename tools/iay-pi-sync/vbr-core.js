@@ -213,8 +213,48 @@ const VBR = (() => {
     const upd = (doc.querySelector('[id$="Shedule_updated_date"]') || {}).textContent || '';
     return { by, upd: clean(upd).replace(/^.*?:\s*/, '') };
   }
+  // ================= Work Register: R6.12 with every category (money columns) =================
+  // Sanction Amount has sub-columns (Unskilled / Material / Total). Booked/paid columns may too:
+  // the "Total" sub-column is used when there is one, otherwise the sub-columns are added up.
+  function parseRegister(doc) {
+    const t = [...doc.querySelectorAll('table')].find(x => x.rows.length > 2 && /Work Code/.test(x.rows[0].textContent) && /Sanction/i.test(x.rows[0].textContent));
+    if (!t) return null;
+    const cols = [], sub = [...t.rows[1].cells].map(c => clean(c.textContent)); let si = 0;
+    for (const c of t.rows[0].cells) { const n = +(c.getAttribute('colspan') || 1), h = clean(c.textContent); if (n === 1) cols.push(h); else for (let k = 0; k < n; k++) cols.push(h + ' [' + (sub[si++] || k) + ']'); }
+    const low = cols.map(h => h.toLowerCase());
+    const ix = s => low.findIndex(h => h.startsWith(s));
+    const all = s => low.map((h, i) => h.startsWith(s) ? i : -1).filter(i => i >= 0);
+    const I = { gp: ix('panchayat name'), st: ix('work status'), code: ix('work code'), wn: ix('work name'), fy: ix('work start fin'),
+      mcat: ix('master work category'), cat: ix('work category name'), wt: ix('work type as'), type: low.findIndex(h => h === 'work type'), ag: ix('agency'),
+      tm: ix('total mandays'), cm: ix('mandays generated'), un: ix('no. of units'), start: ix('work started'), done: ix('work physically') };
+    const S = all('sanction amount');
+    const subOf = i => (low[i].match(/\[([^\]]*)\]$/) || [])[1] || '';
+    const sU = S.find(i => /unskill|wage|labour/.test(subOf(i))), sM = S.find(i => /material/.test(subOf(i)));
+    let sT = S.find(i => /total/.test(subOf(i)));
+    if (sT == null && S.length && sU == null && sM == null) sT = S[S.length - 1];          // one plain column
+    const money = s => { const c = all(s); const tot = c.find(i => /total/.test(subOf(i))); return tot != null ? [tot] : c; };
+    const M = { bf: money('amount booked in current'), pf: money('amount paid in current'), ba: money('amount booked since'), pa: money('amount paid since') };
+    if (I.code < 0 || I.gp < 0 || (!S.length)) return null;
+    const by = {};
+    for (const r of t.rows) {
+      const c = [...r.cells]; if (c.length !== cols.length) continue;
+      const code = clean(c[I.code].textContent); if (!code.includes('/')) continue;
+      const v = i => i >= 0 && i != null ? clean(c[i].textContent) : '', f = i => i >= 0 && i != null ? num(c[i].textContent) : 0;
+      const sum = list => Math.round(list.reduce((a, i) => a + f(i), 0) * 100) / 100;
+      const su = f(sU), sm = f(sM), stt = sT != null ? f(sT) : su + sm;
+      const g = v(I.gp).toUpperCase();
+      (by[g] ||= []).push([code, v(I.wn), v(I.st), v(I.fy), v(I.mcat), v(I.cat), v(I.wt), v(I.type), v(I.ag), su, sm, stt,
+        sum(M.bf), sum(M.pf), sum(M.ba), sum(M.pa), f(I.tm), f(I.cm), f(I.un), v(I.start), v(I.done)]);
+    }
+    const upd = (doc.querySelector('[id$="Shedule_updated_date"]') || {}).textContent || '';
+    return { by, cols, upd: clean(upd).replace(/^.*?:\s*/, '') };
+  }
+  parseRegister.FIELDS = ['code', 'name', 'status', 'fy', 'mcat', 'cat', 'wtype', 'type', 'agency', 's_usk', 's_mat', 's_tot',
+    'booked_fy', 'paid_fy', 'booked_all', 'paid_all', 'mandays', 'mandays_fy', 'units', 'start', 'done'];
   // Replays the page's own dropdown postbacks: District → Block → GP → Category(IF) → Work type → Submit
-  async function readR612(formUrl, { dist, blk, gp }) {
+  // opts.register = Work Register: every category + every work type, parsed by parseRegister
+  // opts.gpList   = only return the GP names of the block (no report)
+  async function readR612(formUrl, { dist, blk, gp }, opts = {}) {
     let d = await getDoc(formUrl);
     const sel = (doc, id) => doc.querySelector('select[id$="' + id + '"]');
     const pick = (s, text, re) => { const o = [...s.options]; return (o.find(x => clean(x.text).toUpperCase() === String(text || '').toUpperCase()) || (re && o.find(x => re.test(x.value + ' ' + x.text))) || {}).value; };
@@ -226,13 +266,26 @@ const VBR = (() => {
       if (!r.ok) throw new Error('R6.12 HTTP ' + r.status);
       return new DOMParser().parseFromString(await r.text(), 'text/html');
     }
-    for (const [id, text, re] of [['ddl_dist', dist], ['ddl_blk', blk], ['ddl_pan', gp], ['Ddlworkcategory', 'Individual Assets', /^IF\b/]]) {
+    const steps = [['ddl_dist', dist], ['ddl_blk', blk]];
+    if (!opts.gpList) steps.push(['ddl_pan', gp], opts.register ? ['Ddlworkcategory', 'ALL', /^\s*ALL\b/i] : ['Ddlworkcategory', 'Individual Assets', /^IF\b/]);
+    for (const [id, text, re] of steps) {
       const s = sel(d, id); if (!s) throw new Error('R6.12 page changed (' + id + ' not found)');
       const v = pick(s, text, re); if (!v) throw new Error('R6.12: "' + text + '" not found in ' + id);
       if ((s.querySelector('option[selected]') || {}).value === v) continue;
       d = await post(d, { [s.name]: v }, s.name);
     }
+    if (opts.gpList) {
+      const s = sel(d, 'ddl_pan'); if (!s) throw new Error('R6.12 page changed (ddl_pan not found)');
+      return [...s.options].map(o => clean(o.text)).filter(t => t && !/^(all|select|--)/i.test(t));
+    }
     const ps = sel(d, 'ddlprostatus'), ch = {};
+    if (opts.register) {
+      for (const id of ['ddlprostatus', 'ddlFin_year', 'Ddlwork_status', 'ddlexpnana', 'ddlexpnest', 'filter']) { const s = sel(d, id); if (s && [...s.options].some(o => o.value === 'ALL')) ch[s.name] = 'ALL'; }
+      const btn = d.querySelector('input[type=submit][id$="Button1"]');
+      d = await post(d, ch, '', btn ? { [btn.name]: btn.value } : {});
+      const res = parseRegister(d); if (!res) throw new Error('R6.12 returned no table');
+      return res;
+    }
     const v = [...ps.options].map(o => o.value).find(x => /State Scheme House for Individual-West Bengal/i.test(x)) || [...ps.options].map(o => o.value).find(x => /State Scheme House/i.test(x));
     if (!v) throw new Error('R6.12: "State Scheme House" work type not found');
     ch[ps.name] = v;
@@ -257,7 +310,7 @@ const VBR = (() => {
     return { gp: L('Lbpanch').toUpperCase(), block: L('Lblblock').toUpperCase(), fy: L('Lblfinyear'), works };
   }
   async function readEmp(url) { return parseEmp(await getDoc(url)); }
-  return { run, readBlock, readR612, parseR612, readEmp, parseEmp };
+  return { run, readBlock, readR612, parseR612, parseRegister, readEmp, parseEmp };
 })();
 
 module.exports = VBR;

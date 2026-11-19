@@ -70,6 +70,16 @@
     .loading{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;z-index:99;display:none;}
     .hidden{display:none!important;}
     .more{display:block;margin:6px auto 12px;}
+    .sbar{display:flex;height:12px;border-radius:7px;overflow:hidden;background:#e2e8f0;}
+    .sbar div{height:100%;} .c-paid{background:#16a34a;} .c-book{background:#f59e0b;} .c-left{background:#cbd5e1;}
+    .dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin:0 3px 0 8px;vertical-align:middle;}
+    .mbar{display:flex;height:6px;border-radius:4px;overflow:hidden;background:#e2e8f0;margin-top:3px;min-width:70px;}
+    .mbar div{height:100%;}
+    .money{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:12px;}
+    .money div{background:#f8fafc;border-radius:8px;padding:4px 6px;} .money b{display:block;font-size:13px;}
+    .regT{font-size:12px;} .regT td:not(:first-child),.regT th{white-space:nowrap;} .regT td{padding:7px 3px;}
+    .tag.over{background:#fee2e2;color:#991b1b;} .tag.done{background:#dcfce7;color:#166534;}
+    @media (max-width:420px){.money{grid-template-columns:repeat(2,1fr);}}
     @media (min-width:760px){.nav{left:50%;transform:translateX(-50%);max-width:980px;border-radius:16px 16px 0 0;}}
   </style>
 </head>
@@ -124,6 +134,34 @@
     </div>
   </section>
 
+  <!-- Work Register -->
+  <section id="p-reg" class="hidden">
+    <div class="card">
+      <h3>📒 Work Register <span class="mut" id="regAt"></span></h3>
+      <div class="mut" style="margin-bottom:8px;">Portal-এর R6.12 থেকে, রাতে একবার update হয়। বাকি = Sanction − শুরু থেকে Booked।</div>
+      <div class="seg" id="regGroupSeg"></div>
+      <div class="seg" id="regStSeg"></div>
+      <div class="tools">
+        <select id="regFy" class="btn sm" aria-label="Work start FY"></select>
+        <input type="search" id="regQ" placeholder="Work code, নাম বা category খুঁজুন">
+        <button class="btn sm" id="regCsv" type="button">⭳ Excel (CSV)</button>
+      </div>
+      <div class="grid" id="regTiles" style="margin-bottom:6px;"></div>
+      <div class="sbar" id="regBar"></div>
+      <div class="mut" id="regBarKey" style="margin:4px 0 10px;"></div>
+      <div class="mut" id="regFyLine" style="margin-bottom:8px;"></div>
+    </div>
+    <div class="card" id="regGroupCard">
+      <h3 id="regGroupTitle">Category-wise <span class="mut">চাপলে work-এর তালিকা</span></h3>
+      <div class="tw"><table id="regGroups" class="regT"></table></div>
+    </div>
+    <div class="card hidden" id="regWorkCard">
+      <h3><span id="regWorkTitle"></span> <button class="btn sm" id="regBack" type="button">← সব category</button></h3>
+      <div class="seg" id="regSortSeg"></div>
+      <div id="regWorks"></div>
+    </div>
+  </section>
+
   <!-- Caste -->
   <section id="p-caste" class="hidden">
     <div class="card">
@@ -161,6 +199,7 @@
   <button type="button" data-p="home" class="on"><i>🏠</i>Home</button>
   <button type="button" data-p="pipe"><i>💸</i>Pipeline</button>
   <button type="button" data-p="works"><i>🏗</i>Works</button>
+  <button type="button" data-p="reg"><i>📒</i>Register</button>
   <button type="button" data-p="caste"><i>⚖</i>Caste</button>
   <button type="button" data-p="ekyc"><i>✅</i>eKYC</button>
   <button type="button" data-p="notes"><i>📝</i>Notes</button>
@@ -183,7 +222,7 @@
 </div></div>
 
 <script src="./js/config.js?v=20261106b"></script>
-<script src="./js/sb-client.js?v=20261106a"></script>
-<script src="./js/report.js?v=20261119a"></script>
+<script src="./js/sb-client.js?v=20261119b"></script>
+<script src="./js/report.js?v=20261119b"></script>
 </body>
 </html>

@@ -251,8 +251,14 @@
     }).then(function () { writeStore(null); });
   }
 
+  // Work Register (R6.12 data the Raspberry Pi keeps in R2), read through the same Worker
+  function register(prefix) {
+    if (!workerUrl()) return Promise.reject(ApiError('NO_WORKER', 'PHOTO_WORKER_URL missing'));
+    return worker('GET', '/register?prefix=' + encodeURIComponent(prefix)).then(function (r) { return r.json(); });
+  }
+
   var api = {
-    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction, storage: storage, photos: photos,
+    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction, storage: storage, photos: photos, register: register,
     hasSession: function () { return !!session; },
     userId: function () { return session && session.user_id; },
     onAuthLost: null

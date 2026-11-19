@@ -22,7 +22,7 @@
   function daysLate(to, today) { if (!to || !today) return 0; return Math.round((new Date(today) - new Date(to)) / 864e5); }
 
   var S = { ctx: null, home: [], gp: null, page: 'home', viewerMode: read('gramg2.rViewer') === '1',
-            mrs: null, mrStage: 'all', mrKind: 'all', works: null, wkKind: 'all', caste: null, ek: null, limit: 300 };
+            mrs: null, mrStage: 'all', mrKind: 'all', works: null, reg: null, wkKind: 'all', caste: null, ek: null, limit: 300 };
   var STAGES = [
     ['all', 'সব বাকি'], ['fill_pending', 'Fill বাকি'], ['fill_today', 'আজ শেষ'], ['emb', 'e-MB বাকি'],
     ['verify', 'Verify বাকি'], ['wl_pending', 'WL বাকি'], ['running', 'চলছে']];
@@ -98,7 +98,7 @@
     status('');
     S.page = p;
     [].forEach.call(document.querySelectorAll('#nav button'), function (b) { b.classList.toggle('on', b.dataset.p === p); });
-    ['home', 'pipe', 'works', 'caste', 'ekyc', 'notes'].forEach(function (x) { $('p-' + x).classList.toggle('hidden', x !== p); });
+    ['home', 'pipe', 'works', 'reg', 'caste', 'ekyc', 'notes'].forEach(function (x) { $('p-' + x).classList.toggle('hidden', x !== p); });
     window.scrollTo(0, 0);
     render();
   }
@@ -115,6 +115,7 @@
     if (S.page === 'home') renderHome();
     else if (S.page === 'pipe') loadMrs();
     else if (S.page === 'works') loadWorks();
+    else if (S.page === 'reg') loadReg();
     else if (S.page === 'caste') loadCaste();
     else if (S.page === 'ekyc') loadEkyc();
     else if (S.page === 'notes') loadAllNotes();
@@ -330,6 +331,163 @@
     if (!S.works) return;
     csv('Works_' + gpName(), ['Work Code', 'Work Name', 'PBA', 'MRs', 'Running', 'Waiting', 'WL done', 'Last MR to', 'WL pending amount'],
       worksFiltered().map(function (w) { return [w.code, w.name, w.pba ? 'Yes' : '', w.mrs, w.running, w.waiting, w.wl, dmy(w.last_to), w.amt || '']; }));
+  });
+
+  // ---------------- Work Register (R6.12 via the Raspberry Pi → R2) ----------------
+  var REG_GROUPS = [['cat', 'Category'], ['mcat', 'Master category'], ['wtype', 'Work type'], ['agency', 'Agency']];
+  function gpPrefix() { var gs = S.ctx.gps; for (var i = 0; i < gs.length; i++) if (gs[i].id === S.gp) return gs[i].jc_prefix; return ''; }
+  function loadReg() {
+    if (S.reg && S.reg.gp === S.gp) { renderReg(); return; }
+    var pre = gpPrefix();
+    if (!pre) { status('এই GP-র Job Card prefix জানা নেই।'); return; }
+    loading('Work Register আনছে...');
+    SB.register(pre)
+      .then(function (d) {
+        var f = d.fields || [];
+        var rows = (d.rows || []).map(function (r) { var o = {}; f.forEach(function (k, i) { o[k] = r[i]; }); return o; });
+        rows.forEach(function (w) {
+          w.left = Math.max(0, (w.s_tot || 0) - Math.max(w.booked_all || 0, w.paid_all || 0));
+          w.over = (w.s_tot || 0) > 0 && Math.max(w.booked_all || 0, w.paid_all || 0) > w.s_tot + 1;
+          w.unpaid = Math.max(0, (w.booked_all || 0) - (w.paid_all || 0));
+        });
+        S.reg = { gp: S.gp, at: d.at, upd: d.upd, fy: d.fy, rows: rows };
+        S.rgGroup = S.rgGroup || 'cat'; S.rgSt = 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
+        renderReg();
+      })
+      .catch(function (e) {
+        if (e.authLost) return;
+        if (e.code === 'NO_DATA') { S.reg = { gp: S.gp, rows: [], none: true }; renderReg(); return; }
+        status(e.code === 'NOT_AUTHORIZED' ? errText(e) : 'Work Register আনা যায়নি: ' + (e.message || e.code));
+      })
+      .then(function () { loading(''); });
+  }
+  function stKey(s) { s = String(s || '').toLowerCase(); return /complet/.test(s) ? 'done' : /ongoing|progress|started/.test(s) ? 'on' : 'other'; }
+  function regFiltered(skipSel) {
+    var q = $('regQ').value.trim().toLowerCase();
+    return S.reg.rows.filter(function (w) {
+      if (S.rgSt !== 'all' && stKey(w.status) !== S.rgSt) return false;
+      if (S.rgFy && w.fy !== S.rgFy) return false;
+      if (!skipSel && S.rgSel != null && (w[S.rgGroup] || '—') !== S.rgSel) return false;
+      if (q && (w.code + ' ' + w.name + ' ' + w.cat + ' ' + w.wtype + ' ' + w.mcat).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+  }
+  function regSum(list) {
+    var t = { n: list.length, s: 0, su: 0, sm: 0, ba: 0, pa: 0, bf: 0, pf: 0, left: 0, over: 0 };
+    list.forEach(function (w) {
+      t.s += w.s_tot || 0; t.su += w.s_usk || 0; t.sm += w.s_mat || 0; t.ba += w.booked_all || 0; t.pa += w.paid_all || 0;
+      t.bf += w.booked_fy || 0; t.pf += w.paid_fy || 0; t.left += w.left; if (w.over) t.over++;
+    });
+    return t;
+  }
+  function rsC(x) { x = Number(x || 0); if (!x) return '—'; return x >= 1e7 ? '₹' + (x / 1e7).toFixed(2) + ' Cr' : rs(x); }
+  function rsK(x) { x = Number(x || 0); if (!x) return '—'; return x >= 1e7 ? (x / 1e7).toFixed(2) + 'Cr' : x >= 1e5 ? (x / 1e5).toFixed(1) + 'L' : n(Math.round(x)); }
+  function bars(box, paid, booked, left, cls) {
+    box.innerHTML = ''; var tot = paid + Math.max(0, booked - paid) + left; if (!tot) return;
+    [['c-paid', paid], ['c-book', Math.max(0, booked - paid)], ['c-left', left]].forEach(function (x) {
+      var d = el('div', null, x[0]); d.style.width = (x[1] * 100 / tot) + '%'; box.appendChild(d);
+    });
+  }
+  function renderReg() {
+    var R = S.reg;
+    $('regAt').textContent = R.at ? 'Data: ' + when(R.at) : '';
+    if (R.none) {
+      ['regTiles', 'regGroupSeg', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
+      $('regTiles').appendChild(el('div', 'এই GP-র Work Register এখনো আসেনি। Raspberry Pi রাতে R6.12 পড়ে পাঠালে এখানে দেখা যাবে।', 'mut'));
+      $('regGroupCard').classList.add('hidden'); $('regWorkCard').classList.add('hidden'); return;
+    }
+    seg($('regGroupSeg'), REG_GROUPS, S.rgGroup, null, function (k) { S.rgGroup = k; S.rgSel = null; renderReg(); });
+    var base = S.reg.rows.filter(function (w) { return !S.rgFy || w.fy === S.rgFy; }), sc = { all: base.length, on: 0, done: 0, other: 0 };
+    base.forEach(function (w) { sc[stKey(w.status)]++; });
+    seg($('regStSeg'), [['all', 'সব status'], ['on', 'চলছে'], ['done', 'শেষ'], ['other', 'অন্য']], S.rgSt, sc, function (k) { S.rgSt = k; S.limit = 300; renderReg(); });
+    var fySel = $('regFy');
+    if (!fySel.dataset.gp || fySel.dataset.gp !== String(S.gp)) {
+      fySel.innerHTML = ''; fySel.dataset.gp = String(S.gp);
+      var fys = {}; R.rows.forEach(function (w) { if (w.fy) fys[w.fy] = 1; });
+      var o0 = el('option', 'শুরুর FY: সব'); o0.value = ''; fySel.appendChild(o0);
+      Object.keys(fys).sort().reverse().forEach(function (f) { var o = el('option', 'শুরু ' + f); o.value = f; fySel.appendChild(o); });
+    }
+    fySel.value = S.rgFy;
+
+    var all = regFiltered(true), t = regSum(all);
+    var tl = $('regTiles'); tl.innerHTML = '';
+    tl.appendChild(tile('t2', '📄', rsC(t.s), 'Sanction (' + n(t.n) + ' work)', 'Unskilled ' + rsC(t.su) + ' · Material ' + rsC(t.sm)));
+    tl.appendChild(tile('t3', '✅', rsC(t.pa), 'Paid (শুরু থেকে)', pct(t.pa, t.s) + '% of Sanction'));
+    tl.appendChild(tile('t5', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment বাকি', 'Booked মোট ' + rsC(t.ba)));
+    tl.appendChild(tile('t1', '🧮', rsC(t.left), 'Sanction-এর বাকি', t.over ? '⚠ ' + n(t.over) + ' work Sanction ছাড়িয়েছে' : ''));
+    bars($('regBar'), t.pa, t.ba, t.left);
+    $('regBarKey').innerHTML = '';
+    [['c-paid', 'Paid'], ['c-book', 'Booked, বাকি payment'], ['c-left', 'Sanction-এর বাকি']].forEach(function (x) {
+      $('regBarKey').appendChild(el('span', '', 'dot ' + x[0])); $('regBarKey').appendChild(document.createTextNode(x[1]));
+    });
+    $('regFyLine').textContent = 'চলতি FY' + (R.fy ? ' (' + R.fy + ')' : '') + ': Booked ' + rsC(t.bf) + ' · Paid ' + rsC(t.pf) + (R.upd ? ' · Portal update: ' + R.upd : '');
+
+    if (S.rgSel == null) {
+      $('regGroupCard').classList.remove('hidden'); $('regWorkCard').classList.add('hidden');
+      var lab = (REG_GROUPS.filter(function (g) { return g[0] === S.rgGroup; })[0] || [])[1];
+      $('regGroupTitle').firstChild.textContent = lab + '-wise ';
+      var g = {}; all.forEach(function (w) { var k = w[S.rgGroup] || '—'; (g[k] = g[k] || []).push(w); });
+      var keys = Object.keys(g).map(function (k) { return [k, regSum(g[k])]; }).sort(function (a, b) { return b[1].s - a[1].s; });
+      var tb = $('regGroups'); tb.innerHTML = '';
+      var hr = el('tr'); [lab, 'Work', 'Sanction ₹', 'Booked ₹', 'Paid ₹', 'বাকি ₹'].forEach(function (h) { hr.appendChild(el('th', h)); }); tb.appendChild(hr);
+      keys.forEach(function (k) {
+        var x = k[1], tr = el('tr', null, 'click'), td = el('td');
+        td.appendChild(el('div', k[0])); var mb = el('div', null, 'mbar'); bars(mb, x.pa, x.ba, x.left); td.appendChild(mb);
+        if (x.over) { var ov = el('span', '⚠ ' + x.over, 'tag over'); ov.title = x.over + ' work Sanction ছাড়িয়েছে'; td.appendChild(ov); }
+        tr.appendChild(td);
+        [n(x.n), rsK(x.s), rsK(x.ba), rsK(x.pa), rsK(x.left)].forEach(function (v) { tr.appendChild(el('td', v)); });
+        tr.addEventListener('click', function () { S.rgSel = k[0]; S.limit = 300; renderReg(); window.scrollTo(0, $('regWorkCard').offsetTop - 10); });
+        tb.appendChild(tr);
+      });
+      if (!keys.length) { var tr0 = el('tr'); tr0.appendChild(el('td', 'কিছু পাওয়া যায়নি।', 'mut')); tb.appendChild(tr0); }
+      return;
+    }
+    $('regGroupCard').classList.add('hidden'); $('regWorkCard').classList.remove('hidden');
+    $('regWorkTitle').textContent = S.rgSel;
+    seg($('regSortSeg'), [['sanction', 'Sanction বেশি আগে'], ['left', 'বাকি বেশি আগে'], ['over', 'ছাড়িয়েছে আগে'], ['fy', 'নতুন আগে']], S.rgSort, null, function (k) { S.rgSort = k; renderReg(); });
+    var list = regFiltered(false).slice().sort(function (a, b) {
+      if (S.rgSort === 'left') return b.left - a.left;
+      if (S.rgSort === 'over') return (b.over - a.over) || (b.s_tot - a.s_tot);
+      if (S.rgSort === 'fy') return String(b.fy).localeCompare(String(a.fy)) || (b.s_tot - a.s_tot);
+      return (b.s_tot || 0) - (a.s_tot || 0);
+    });
+    var box = $('regWorks'); box.innerHTML = '';
+    if (!list.length) { box.appendChild(el('div', 'কোনো work নেই।', 'mut')); return; }
+    list.slice(0, S.limit).forEach(function (w) {
+      var it = el('div', null, 'item'); if (w.over) it.style.borderLeftColor = 'var(--red)';
+      it.appendChild(el('b', w.name || w.code)); it.appendChild(el('div', w.code, 'mono'));
+      var tags = el('div', null, 'r'), l = el('span');
+      if (w.status) l.appendChild(el('span', w.status, 'tag' + (stKey(w.status) === 'done' ? ' done' : '')));
+      if (w.fy) l.appendChild(el('span', 'শুরু ' + w.fy, 'tag'));
+      if (w.over) l.appendChild(el('span', 'Sanction ছাড়িয়েছে', 'tag over'));
+      tags.appendChild(l);
+      var r = el('span'); if (w.wtype && S.rgGroup !== 'wtype') r.appendChild(el('span', w.wtype, 'mut'));
+      r.appendChild(noteBtn('work', w.code, 0, w.name || w.code, w.code)); tags.appendChild(r); it.appendChild(tags);
+      var m = el('div', null, 'money');
+      [['Sanction', w.s_tot, 'U ' + rs(w.s_usk) + ' · M ' + rs(w.s_mat)], ['Booked (শুরু থেকে)', w.booked_all, 'এই FY ' + rs(w.booked_fy)],
+       ['Paid (শুরু থেকে)', w.paid_all, 'এই FY ' + rs(w.paid_fy)], ['বাকি', w.left, w.mandays ? n(w.mandays) + ' mandays' : '']].forEach(function (x) {
+        var d = el('div'); d.appendChild(el('span', x[0], 'mut')); d.appendChild(el('b', rs(x[1]))); if (x[2]) d.appendChild(el('span', x[2], 'mut')); m.appendChild(d);
+      });
+      it.appendChild(m);
+      var mb = el('div', null, 'mbar'); bars(mb, w.paid_all || 0, w.booked_all || 0, w.left); it.appendChild(mb);
+      box.appendChild(it);
+    });
+    if (list.length > S.limit) {
+      var more = el('button', 'আরও দেখুন (' + n(list.length - S.limit) + ')', 'btn more'); more.type = 'button';
+      more.addEventListener('click', function () { S.limit += 300; renderReg(); }); box.appendChild(more);
+    }
+  }
+  $('regBack').addEventListener('click', function () { S.rgSel = null; renderReg(); });
+  $('regFy').addEventListener('change', function () { if (S.reg) { S.rgFy = this.value; S.limit = 300; renderReg(); } });
+  $('regQ').addEventListener('input', function () { if (S.reg && !S.reg.none) { S.limit = 300; renderReg(); } });
+  $('regCsv').addEventListener('click', function () {
+    if (!S.reg || S.reg.none) return;
+    csv('Work_Register_' + gpName() + (S.rgSel ? '_' + S.rgSel : ''),
+      ['Work Code', 'Work Name', 'Status', 'Start FY', 'Master Category', 'Category', 'Work Type (new)', 'Work Type', 'Agency',
+       'Sanction Unskilled', 'Sanction Material', 'Sanction Total', 'Booked this FY', 'Paid this FY', 'Booked since inception', 'Paid since inception',
+       'Sanction left', 'Over sanction', 'Total Mandays', 'Mandays this FY', 'Units', 'Started', 'Completed'],
+      regFiltered(false).map(function (w) { return [w.code, w.name, w.status, w.fy, w.mcat, w.cat, w.wtype, w.type, w.agency, w.s_usk, w.s_mat, w.s_tot,
+        w.booked_fy, w.paid_fy, w.booked_all, w.paid_all, w.left, w.over ? 'Yes' : '', w.mandays, w.mandays_fy, w.units, w.start, w.done]; }));
   });
 
   // ---------------- caste ----------------

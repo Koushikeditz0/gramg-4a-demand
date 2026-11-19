@@ -34,7 +34,13 @@ const CFG = {
   digestAt: env('DIGEST_TIME', '09:00'),
   digestGp: env('DIGEST_GP').toUpperCase(),                // e.g. PETLA = message only for this GP; empty = whole block                  // India time, HH:MM
   publicUrl: env('PUBLIC_URL'),                           // the public report link (opens when the message is tapped)
-  digestNow: process.argv.includes('--digest-now')
+  digestNow: process.argv.includes('--digest-now'),
+  // Work Register (R6.12, every category) → Cloudflare Worker → R2. Empty REGISTER_URL = off.
+  regUrl: env('REGISTER_URL').replace(/\/+$/, ''),       // e.g. https://gramg-photo.koushikeditz0.workers.dev
+  regKey: env('REGISTER_KEY'),                            // same text as the Worker secret REGISTER_KEY
+  regAt: env('REGISTER_AT', '21:00'),                     // once a day, the first run after this time (IST)
+  regDist: env('REGISTER_DISTRICT'), regBlock: env('REGISTER_BLOCK'),
+  regNow: process.argv.includes('--register-now')
 };
 const TRK_URL = 'https://wbzybizfpdalpukfzefk.supabase.co/rest/v1/rpc/iay_sync_gp';
 const TRK_PUB = 'sb_publishable_fCY9paYMNTyepXdI7YRhkw_2u85P7bn';   // public key (same as the website)
@@ -188,6 +194,53 @@ async function digestTick() {
   try { await sendDigest(); } catch (e) { log('❌ Morning summary failed: ' + e.message); }
 }
 
+// ---------------- Work Register (once a day) ----------------
+const zlib = require('zlib');
+const REG_FILE = () => path.join(CFG.dataDir, 'register.json');
+const reg = (() => { try { return JSON.parse(fs.readFileSync(REG_FILE(), 'utf8')); } catch (e) { return {}; } })();   // { day, dist, blk, last }
+const saveReg = () => { try { fs.mkdirSync(CFG.dataDir, { recursive: true }); fs.writeFileSync(REG_FILE(), JSON.stringify(reg, null, 2)); } catch (e) {} };
+const fyOfUrl = u => { const m = String(u).match(/fin_year=(\d{4})-(\d{4})/); return m ? m[1] + '-' + m[2].slice(2) : ''; };
+async function registerRun() {
+  const dist = CFG.regDist || reg.dist, blk = CFG.regBlock || reg.blk;
+  if (!dist || !blk) throw new Error('District/Block not known yet — wait for one normal run, or set REGISTER_DISTRICT and REGISTER_BLOCK in .env');
+  const gps = CFG.gps.length ? CFG.gps : await VBR.readR612(CFG.r612, { dist, blk }, { gpList: true });
+  log(`📒 Work Register: reading R6.12 (all categories) for ${gps.length} GP…`);
+  const out = { ok: [], failed: [] };
+  for (const gp of gps) {
+    try {
+      const r = await VBR.readR612(CFG.r612, { dist, blk, gp }, { register: true });
+      const rows = r.by[gp.toUpperCase()] || Object.values(r.by)[0] || [];
+      const pc = {}; for (const x of rows) { const p = gpPrefix(x[0]); if (p) pc[p] = (pc[p] || 0) + 1; }
+      const prefix = Object.keys(pc).sort((a, b) => pc[b] - pc[a])[0] || '';
+      const mine = rows.filter(x => gpPrefix(x[0]) === prefix);
+      if (!prefix || !mine.length) { log(`  – ${gp}: no works in R6.12`); continue; }
+      const body = { v: 1, gp, prefix, fy: fyOfUrl(CFG.r612), upd: r.upd, at: new Date().toISOString(), fields: VBR.parseRegister.FIELDS, cols: r.cols, rows: mine };
+      const gz = zlib.gzipSync(Buffer.from(JSON.stringify(body)));
+      if (CFG.dry || !CFG.regUrl) {
+        fs.mkdirSync(CFG.dataDir, { recursive: true }); fs.writeFileSync(path.join(CFG.dataDir, `register-${prefix}.json`), JSON.stringify(body, null, 1));
+        log(`  (dry run) ${gp}: ${mine.length} works → data/register-${prefix}.json`);
+      } else {
+        const res = await nodeFetch(`${CFG.regUrl}/register?prefix=${encodeURIComponent(prefix)}`, { method: 'PUT', headers: { 'Content-Type': 'application/gzip', 'X-Register-Key': CFG.regKey }, body: gz });
+        if (!res.ok) throw new Error('Worker ' + res.status + ' ' + (await res.text()).slice(0, 120));
+        log(`  📒 ${gp}: ${mine.length} works sent (${Math.round(gz.length / 1024)} KB)`);
+      }
+      out.ok.push(gp);
+    } catch (e) {
+      log(`  ⚠ ${gp}: Work Register not sent (${e.message})`); out.failed.push({ gp, error: e.message });
+      if (/ 401 | 403 /.test(' ' + e.message + ' ')) break;                 // wrong key: no point trying the other GPs
+    }
+    await new Promise(r => setTimeout(r, 3000));          // be gentle with the portal
+  }
+  reg.last = { at: new Date().toISOString(), ...out }; saveReg();
+  log(`📒 Work Register done — ${out.ok.length} GP, ${out.failed.length} failed.`);
+}
+async function registerTick() {
+  if (!CFG.regUrl || !CFG.regKey) return;
+  const n = istNow(); if (n.hm < CFG.regAt || reg.day === n.date) return;
+  reg.day = n.date; saveReg();                           // once a day, even if it fails
+  try { await registerRun(); } catch (e) { log('❌ Work Register failed: ' + e.message); }
+}
+
 // ---------------- one full run ----------------
 const status = { lastStart: null, lastEnd: null, ok: [], failed: [], error: null };
 function saveStatus() { try { fs.mkdirSync(CFG.dataDir, { recursive: true }); fs.writeFileSync(path.join(CFG.dataDir, 'status.json'), JSON.stringify(status, null, 2)); } catch (e) {} }
@@ -199,6 +252,7 @@ async function runOnce() {
   res.rows.forEach(liveStage);
   const blk = (String(res.block).match(/Block\s*:\s*(.+)$/i) || [])[1] || '';
   const dist = (String(res.block).match(/District\s*:\s*(.+?)\s+Block/i) || [])[1] || 'COOCHBEHAR';
+  if (blk.trim() && (reg.dist !== dist.trim() || reg.blk !== blk.trim())) { reg.dist = dist.trim(); reg.blk = blk.trim(); saveReg(); }
   const gps = CFG.gps.length ? CFG.gps : res.order;
   for (const gp of gps) {
     // all works, MR-wise → Gram Setu Pipeline (does not stop the IAY step if it fails)
@@ -235,15 +289,22 @@ function inHours() {
   return a <= b ? (h >= a && h <= b) : (h >= a || h <= b);   // e.g. 6-0 = 06:00 till 00:59 (past midnight)
 }
 async function loop() {
-  if (!CFG.key && !CFG.dry) { log('❌ SYNC_KEY is missing. Put the key from IAY Tracker → “Tampermonkey live sync” in .env'); process.exit(1); }
-  if (!/^iay_[0-9a-f]{48}$/.test(CFG.key) && !CFG.dry) { log('❌ SYNC_KEY does not look right (it starts with iay_).'); process.exit(1); }
+  if (!CFG.key && !CFG.dry && !CFG.regNow) { log('❌ SYNC_KEY is missing. Put the key from IAY Tracker → “Tampermonkey live sync” in .env'); process.exit(1); }
+  if (!/^iay_[0-9a-f]{48}$/.test(CFG.key) && !CFG.dry && !CFG.regNow) { log('❌ SYNC_KEY does not look right (it starts with iay_).'); process.exit(1); }
+  if (CFG.regNow) {
+    if (!CFG.regUrl && !CFG.dry) { log('❌ REGISTER_URL is empty in .env (add --dry-run to only save the file)'); process.exit(1); }
+    if (CFG.regUrl && !CFG.regKey && !CFG.dry) { log('❌ REGISTER_KEY is empty in .env'); process.exit(1); }
+    try { await registerRun(); } catch (e) { log('❌ ' + e.message); process.exit(1); } return;
+  }
   if (CFG.digestNow) { if (!CFG.ntfyUrl) { log('❌ NTFY_URL is empty in .env'); process.exit(1); } try { await sendDigest(); } catch (e) { log('❌ ' + e.message); process.exit(1); } return; }
   if (CFG.ntfyUrl && !CFG.once) { setInterval(digestTick, 60000); log(`🔔 Morning summary at ${CFG.digestAt} → ${CFG.ntfyUrl}/${CFG.ntfyTopic}`); }
+  if (CFG.regUrl) log(`📒 Work Register once a day after ${CFG.regAt}${CFG.regKey ? '' : ' — ⚠ REGISTER_KEY missing, so it is OFF'}`);
   log(`IAY Pi Sync started — every ${CFG.every} min, hours ${CFG.hours} IST, ${CFG.gps.length ? CFG.gps.join(', ') : 'whole block'}${CFG.dry ? ' (dry run)' : ''}`);
   for (;;) {
     if (CFG.once || inHours()) {
       try { await runOnce(); } catch (e) { status.error = e.message; log('❌ Run failed: ' + e.message); if (/Sync key/.test(e.message)) { saveStatus(); process.exit(1); } }
       saveStatus();
+      if (!CFG.once) await registerTick();
     } else log('… outside active hours, waiting');
     if (CFG.once) break;
     await new Promise(r => setTimeout(r, CFG.every * 60000));

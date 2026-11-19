@@ -341,16 +341,22 @@
     var pre = gpPrefix();
     if (!pre) { status('এই GP-র Job Card prefix জানা নেই।'); return; }
     loading('Work Register আনছে...');
-    SB.register(pre)
-      .then(function (d) {
+    var mrJob = (S.works && S.works.gp === S.gp) ? Promise.resolve(S.works.rows)
+      : SB.rpc('report_works', { p_gp: S.gp }, { retry: true, timeout: 60000 }).then(function (d) { S.works = { gp: S.gp, rows: d || [] }; return S.works.rows; }).catch(function () { return []; });
+    Promise.all([SB.register(pre), mrJob])
+      .then(function (pair) {
+        var d = pair[0], mrRows = pair[1] || [], mrBy = {};
+        mrRows.forEach(function (m) { mrBy[m.code] = m; });
+        S.regMr = mrBy;
         var f = d.fields || [];
         var rows = (d.rows || []).map(function (r) { var o = {}; f.forEach(function (k, i) { o[k] = r[i]; }); return o; });
         rows.forEach(function (w) {
           w.left = Math.max(0, (w.s_tot || 0) - Math.max(w.booked_all || 0, w.paid_all || 0));
           w.over = (w.s_tot || 0) > 0 && Math.max(w.booked_all || 0, w.paid_all || 0) > w.s_tot + 1;
           w.unpaid = Math.max(0, (w.booked_all || 0) - (w.paid_all || 0));
+          pendingOf(w);
         });
-        S.reg = { gp: S.gp, at: d.at, upd: d.upd, fy: d.fy, rows: rows };
+        S.reg = { gp: S.gp, at: d.at, upd: d.upd, fy: d.fy, rows: rows, split: rows.some(function (w) { return w.booked_all_usk != null; }) };
         S.rgGroup = S.rgGroup || 'cat'; S.rgSt = 'all'; S.rgKind = S.rgKind || 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
         renderReg();
       })
@@ -362,6 +368,15 @@
       .then(function () { loading(''); });
   }
   function isPba(w) { return /\/IAY\//i.test(w.code || ''); }       // PBA (IAY) house works carry /IAY/ in the work code
+  function wageRate() { return Number((S.ctx && S.ctx.wage_rate) || 300) || 300; }
+  // Pending unskilled = Sanction (Unskilled) − unskilled already booked. If the portal has no Unskilled/Material
+  // split for booked, the unskilled spent is estimated as Total Mandays × wage rate. Completed works have no "pending".
+  function pendingOf(w) {
+    var rate = wageRate(), spent = w.booked_all_usk != null ? w.booked_all_usk : (w.mandays || 0) * rate;
+    w.est = w.booked_all_usk == null;
+    w.pu = stKey(w.status) === 'done' ? 0 : Math.max(0, (w.s_usk || 0) - spent);
+    w.pmd = rate ? w.pu / rate : 0;
+  }
   function stKey(s) { s = String(s || '').toLowerCase(); return /complet/.test(s) ? 'done' : /ongoing|progress|started/.test(s) ? 'on' : 'other'; }
   function regFiltered(skipSel) {
     var q = $('regQ').value.trim().toLowerCase();
@@ -376,10 +391,12 @@
     });
   }
   function regSum(list) {
-    var t = { n: list.length, s: 0, su: 0, sm: 0, ba: 0, pa: 0, bf: 0, pf: 0, left: 0, over: 0 };
+    var t = { n: list.length, s: 0, su: 0, sm: 0, ba: 0, pa: 0, bf: 0, pf: 0, left: 0, over: 0, bu: 0, bm: 0, pu: 0, pm: 0, pend: 0, pmd: 0 };
     list.forEach(function (w) {
       t.s += w.s_tot || 0; t.su += w.s_usk || 0; t.sm += w.s_mat || 0; t.ba += w.booked_all || 0; t.pa += w.paid_all || 0;
       t.bf += w.booked_fy || 0; t.pf += w.paid_fy || 0; t.left += w.left; if (w.over) t.over++;
+      t.bu += w.booked_all_usk || 0; t.bm += w.booked_all_mat || 0; t.pu += w.paid_all_usk || 0; t.pm += w.paid_all_mat || 0;
+      t.pend += w.pu || 0; t.pmd += w.pmd || 0;
     });
     return t;
   }
@@ -418,14 +435,29 @@
     var all = regFiltered(true), t = regSum(all);
     var tl = $('regTiles'); tl.innerHTML = '';
     tl.appendChild(tile('t2', '📄', rsC(t.s), 'Sanction (' + n(t.n) + ' work)', 'Unskilled ' + rsC(t.su) + ' · Material ' + rsC(t.sm)));
-    tl.appendChild(tile('t3', '✅', rsC(t.pa), 'Paid (শুরু থেকে)', pct(t.pa, t.s) + '% of Sanction'));
-    tl.appendChild(tile('t5', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment বাকি', 'Booked মোট ' + rsC(t.ba)));
-    tl.appendChild(tile('t1', '🧮', rsC(t.left), 'Sanction-এর বাকি', t.over ? '⚠ ' + n(t.over) + ' work Sanction ছাড়িয়েছে' : ''));
+    var sp = R.split, um = function (u, m) { return sp ? 'Unskilled ' + rsC(u) + ' · Material ' + rsC(m) : ''; };
+    tl.appendChild(tile('t3', '✅', rsC(t.pa), 'Paid (শুরু থেকে)', (um(t.pu, t.pm) || pct(t.pa, t.s) + '% of Sanction') + (sp ? ' · ' + pct(t.pa, t.s) + '%' : '')));
+    tl.appendChild(tile('t5', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment বাকি', 'Booked মোট ' + rsC(t.ba) + (sp ? ' (U ' + rsC(t.bu) + ' · M ' + rsC(t.bm) + ')' : '')));
+    tl.appendChild(tile('t1', '🧮', rsC(t.left), 'Sanction-এর বাকি', (sp ? 'Unskilled ' + rsC(Math.max(0, t.su - t.bu)) + ' · Material ' + rsC(Math.max(0, t.sm - t.bm)) : '') + (t.over ? (sp ? ' · ' : '') + '⚠ ' + n(t.over) + ' work ছাড়িয়েছে' : '')));
+    tl.appendChild(tile('t6', '👷', n(Math.round(t.pmd)), 'Pending mandays', 'Pending unskilled ' + rsC(t.pend) + ' ÷ ₹' + n(wageRate()) + (R.split ? '' : ' (আনুমানিক)') + ' · চলমান work'));
     bars($('regBar'), t.pa, t.ba, t.left);
     $('regBarKey').innerHTML = '';
     [['c-paid', 'Paid'], ['c-book', 'Booked, বাকি payment'], ['c-left', 'Sanction-এর বাকি']].forEach(function (x) {
       $('regBarKey').appendChild(el('span', '', 'dot ' + x[0])); $('regBarKey').appendChild(document.createTextNode(x[1]));
     });
+    var wl = $('regWage'); wl.innerHTML = '';
+    wl.appendChild(document.createTextNode('👷 মজুরি হার: ₹' + n(wageRate()) + '/দিন (Pending mandays-এর হিসাবে)'));
+    if (S.ctx.is_super && !S.viewerMode) {
+      var eb = el('button', 'বদলান', 'btn sm'); eb.type = 'button'; eb.style.marginLeft = '8px';
+      eb.addEventListener('click', function () {
+        var v = window.prompt('নতুন মজুরি হার (₹ প্রতি দিন):', String(wageRate())); if (v == null) return;
+        var num = Number(String(v).replace(/[^\d.]/g, '')); if (!(num >= 1 && num <= 5000)) { status('১ থেকে ৫০০০-এর মধ্যে একটা সংখ্যা দিন।'); return; }
+        SB.rpc('admin_set_wage_rate', { p_rate: num }).then(function (r) {
+          S.ctx.wage_rate = r.wage_rate; S.reg.rows.forEach(pendingOf); renderReg(); status('✅ মজুরি হার ₹' + n(r.wage_rate) + ' রাখা হয়েছে।', 'ok');
+        }).catch(function (e) { if (!e.authLost) status(/Could not find the function/i.test(e.message || '') ? 'Database update (SQL v229) এখনো চালানো হয়নি।' : errText(e)); });
+      });
+      wl.appendChild(eb);
+    }
     $('regFyLine').textContent = 'চলতি FY' + (R.fy ? ' (' + R.fy + ')' : '') + ': Booked ' + rsC(t.bf) + ' · Paid ' + rsC(t.pf) + (R.upd ? ' · Portal update: ' + R.upd : '');
 
     if (S.rgSel == null) {
@@ -450,9 +482,10 @@
     }
     $('regGroupCard').classList.add('hidden'); $('regWorkCard').classList.remove('hidden');
     $('regWorkTitle').textContent = S.rgSel;
-    seg($('regSortSeg'), [['sanction', 'Sanction বেশি আগে'], ['left', 'বাকি বেশি আগে'], ['over', 'ছাড়িয়েছে আগে'], ['fy', 'নতুন আগে']], S.rgSort, null, function (k) { S.rgSort = k; renderReg(); });
+    seg($('regSortSeg'), [['sanction', 'Sanction বেশি আগে'], ['left', 'বাকি বেশি আগে'], ['mandays', 'Pending mandays বেশি আগে'], ['over', 'ছাড়িয়েছে আগে'], ['fy', 'নতুন আগে']], S.rgSort, null, function (k) { S.rgSort = k; renderReg(); });
     var list = regFiltered(false).slice().sort(function (a, b) {
       if (S.rgSort === 'left') return b.left - a.left;
+      if (S.rgSort === 'mandays') return (b.pmd || 0) - (a.pmd || 0);
       if (S.rgSort === 'over') return (b.over - a.over) || (b.s_tot - a.s_tot);
       if (S.rgSort === 'fy') return String(b.fy).localeCompare(String(a.fy)) || (b.s_tot - a.s_tot);
       return (b.s_tot || 0) - (a.s_tot || 0);
@@ -468,14 +501,23 @@
       if (isPba(w)) l.appendChild(el('span', 'PBA', 'tag pba'));
       if (w.over) l.appendChild(el('span', 'Sanction ছাড়িয়েছে', 'tag over'));
       tags.appendChild(l);
-      var r = el('span'); if (w.wtype && S.rgGroup !== 'wtype') r.appendChild(el('span', w.wtype, 'mut'));
-      r.appendChild(noteBtn('work', w.code, 0, w.name || w.code, w.code)); tags.appendChild(r); it.appendChild(tags);
+      var mr = (S.regMr || {})[w.code], r = el('span'); if (w.wtype && S.rgGroup !== 'wtype') r.appendChild(el('span', w.wtype, 'mut'));
+      r.appendChild(noteBtn('work', w.code, mr ? mr.notes : 0, w.name || w.code, w.code)); tags.appendChild(r); it.appendChild(tags);
+      if (mr) {                                   // MR progress (from the MR pipeline report)
+        var ml = el('div', null, 'r'), mt = el('span');
+        mt.appendChild(el('span', 'MR ' + n(mr.mrs), 'tag'));
+        if (mr.running) mt.appendChild(el('span', 'চলছে ' + n(mr.running), 'tag'));
+        if (mr.waiting) mt.appendChild(el('span', 'MR বাকি ' + n(mr.waiting), 'tag late'));
+        if (mr.wl) mt.appendChild(el('span', 'WL হয়েছে ' + n(mr.wl), 'tag'));
+        ml.appendChild(mt); if (mr.last_to) ml.appendChild(el('span', 'শেষ MR: ' + dmy(mr.last_to), 'mut')); it.appendChild(ml);
+      }
       var m = el('div', null, 'money');
       [['Sanction', w.s_tot, 'U ' + rs(w.s_usk) + ' · M ' + rs(w.s_mat)], ['Booked (শুরু থেকে)', w.booked_all, 'এই FY ' + rs(w.booked_fy)],
-       ['Paid (শুরু থেকে)', w.paid_all, 'এই FY ' + rs(w.paid_fy)], ['বাকি', w.left, w.mandays ? n(w.mandays) + ' mandays' : '']].forEach(function (x) {
+       ['Paid (শুরু থেকে)', w.paid_all, 'এই FY ' + rs(w.paid_fy)], ['বাকি', w.left, w.mandays ? 'মোট ' + n(w.mandays) + ' mandays' : '']].forEach(function (x) {
         var d = el('div'); d.appendChild(el('span', x[0], 'mut')); d.appendChild(el('b', rs(x[1]))); if (x[2]) d.appendChild(el('span', x[2], 'mut')); m.appendChild(d);
       });
       it.appendChild(m);
+      if (w.pu > 0) it.appendChild(el('div', '👷 Pending unskilled ' + rs(w.pu) + ' ≈ ' + n(Math.round(w.pmd)) + ' mandays' + (w.est ? ' (আনুমানিক)' : ''), 'mut'));
       var mb = el('div', null, 'mbar'); bars(mb, w.paid_all || 0, w.booked_all || 0, w.left); it.appendChild(mb);
       box.appendChild(it);
     });
@@ -492,9 +534,10 @@
     csv('Work_Register_' + gpName() + (S.rgKind !== 'all' ? '_' + S.rgKind : '') + (S.rgSel ? '_' + S.rgSel : ''),
       ['Work Code', 'Work Name', 'Status', 'Start FY', 'Master Category', 'Category', 'Work Type (new)', 'Work Type', 'Agency',
        'Sanction Unskilled', 'Sanction Material', 'Sanction Total', 'Booked this FY', 'Paid this FY', 'Booked since inception', 'Paid since inception',
-       'Sanction left', 'Over sanction', 'PBA', 'Total Mandays', 'Mandays this FY', 'Units', 'Started', 'Completed'],
+       'Sanction left', 'Over sanction', 'PBA', 'Pending unskilled', 'Pending mandays', 'MR', 'MR running', 'MR waiting', 'WL done', 'Total Mandays', 'Mandays this FY', 'Units', 'Started', 'Completed'],
       regFiltered(false).map(function (w) { return [w.code, w.name, w.status, w.fy, w.mcat, w.cat, w.wtype, w.type, w.agency, w.s_usk, w.s_mat, w.s_tot,
-        w.booked_fy, w.paid_fy, w.booked_all, w.paid_all, w.left, w.over ? 'Yes' : '', isPba(w) ? 'Yes' : '', w.mandays, w.mandays_fy, w.units, w.start, w.done]; }));
+        w.booked_fy, w.paid_fy, w.booked_all, w.paid_all, w.left, w.over ? 'Yes' : '', isPba(w) ? 'Yes' : '', Math.round(w.pu || 0), Math.round(w.pmd || 0),
+        ((S.regMr || {})[w.code] || {}).mrs || '', ((S.regMr || {})[w.code] || {}).running || '', ((S.regMr || {})[w.code] || {}).waiting || '', ((S.regMr || {})[w.code] || {}).wl || '', w.mandays, w.mandays_fy, w.units, w.start, w.done]; }));
   });
 
   // ---------------- caste ----------------
@@ -599,7 +642,7 @@
       var del = el('button', 'মুছুন', 'del'); del.type = 'button';
       del.addEventListener('click', function () {
         if (!window.confirm('এই note মুছবেন?')) return;
-        SB.rpc('report_note_delete', { p_id: x.id }).then(function () { d.remove(); S.mrs = S.works = null; status('Note মোছা হয়েছে।', 'ok'); })
+        SB.rpc('report_note_delete', { p_id: x.id }).then(function () { d.remove(); S.mrs = S.works = S.reg = null; status('Note মোছা হয়েছে।', 'ok'); })
           .catch(function (e) { if (!e.authLost) status(errText(e)); });
       });
       h.appendChild(del);
@@ -636,7 +679,7 @@
   });
   function bump(kind, ref) {      // show the new count without reloading the whole list
     if (kind === 'mr' && S.mrs) { S.mrs.rows.forEach(function (r) { if (String(r.mr) === ref) r.notes = (r.notes || 0) + 1; }); if (S.page === 'pipe') renderMrs(); }
-    if (kind === 'work' && S.works) { S.works.rows.forEach(function (w) { if (w.code === ref) w.notes = (w.notes || 0) + 1; }); if (S.page === 'works') renderWorks(); }
+    if (kind === 'work' && S.works) { S.works.rows.forEach(function (w) { if (w.code === ref) w.notes = (w.notes || 0) + 1; }); if (S.page === 'works') renderWorks(); if (S.page === 'reg' && S.reg && !S.reg.none) renderReg(); }
   }
   function loadAllNotes() {
     var box = $('allNotes'); box.innerHTML = '';

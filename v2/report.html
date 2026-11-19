@@ -138,7 +138,7 @@
   <section id="p-reg" class="hidden">
     <div class="card">
       <h3>📒 Work Register <span class="mut" id="regAt"></span></h3>
-      <div class="mut" style="margin-bottom:8px;">Portal-এর R6.12 থেকে, রাতে একবার update হয়। বাকি = Sanction − শুরু থেকে Booked।</div>
+      <div class="mut" style="margin-bottom:8px;">Portal-এর R6.12 থেকে, রাতে একবার update হয়। বাকি = Sanction − শুরু থেকে Booked। MR-এর অবস্থাও প্রতিটা work-এ আছে।</div>
       <div class="seg" id="regKindSeg"></div>
       <div class="seg" id="regGroupSeg"></div>
       <div class="seg" id="regStSeg"></div>
@@ -150,7 +150,8 @@
       <div class="grid" id="regTiles" style="margin-bottom:6px;"></div>
       <div class="sbar" id="regBar"></div>
       <div class="mut" id="regBarKey" style="margin:4px 0 10px;"></div>
-      <div class="mut" id="regFyLine" style="margin-bottom:8px;"></div>
+      <div class="mut" id="regFyLine" style="margin-bottom:6px;"></div>
+      <div class="mut" id="regWage" style="margin-bottom:8px;"></div>
     </div>
     <div class="card" id="regGroupCard">
       <h3 id="regGroupTitle">Category-wise <span class="mut">চাপলে work-এর তালিকা</span></h3>
@@ -199,9 +200,7 @@
 <nav class="nav" id="nav">
   <button type="button" data-p="home" class="on"><i>🏠</i>Home</button>
   <button type="button" data-p="pipe"><i>💸</i>Pipeline</button>
-  <button type="button" data-p="works"><i>🏗</i>Works</button>
   <button type="button" data-p="reg"><i>📒</i>Register</button>
-  <button type="button" data-p="caste"><i>⚖</i>Caste</button>
   <button type="button" data-p="ekyc"><i>✅</i>eKYC</button>
   <button type="button" data-p="notes"><i>📝</i>Notes</button>
 </nav>
@@ -224,6 +223,6 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261119b"></script>
-<script src="./js/report.js?v=20261119c"></script>
+<script src="./js/report.js?v=20261119d"></script>
 </body>
 </html>

@@ -234,6 +234,10 @@ const VBR = (() => {
     if (sT == null && S.length && sU == null && sM == null) sT = S[S.length - 1];          // one plain column
     const money = s => { const c = all(s); const tot = c.find(i => /total/.test(subOf(i))); return tot != null ? [tot] : c; };
     const M = { bf: money('amount booked in current'), pf: money('amount paid in current'), ba: money('amount booked since'), pa: money('amount paid since') };
+    // optional Unskilled / Material split of booked & paid since inception (only if the portal has such sub-columns)
+    const part = (s, re) => all(s).find(i => re.test(subOf(i)));
+    const X = { bau: part('amount booked since', /unskill|wage|labour/), bam: part('amount booked since', /material/),
+                pau: part('amount paid since', /unskill|wage|labour/), pam: part('amount paid since', /material/) };
     if (I.code < 0 || I.gp < 0 || (!S.length)) return null;
     const by = {};
     for (const r of t.rows) {
@@ -244,13 +248,15 @@ const VBR = (() => {
       const su = f(sU), sm = f(sM), stt = sT != null ? f(sT) : su + sm;
       const g = v(I.gp).toUpperCase();
       (by[g] ||= []).push([code, v(I.wn), v(I.st), v(I.fy), v(I.mcat), v(I.cat), v(I.wt), v(I.type), v(I.ag), su, sm, stt,
-        sum(M.bf), sum(M.pf), sum(M.ba), sum(M.pa), f(I.tm), f(I.cm), f(I.un), v(I.start), v(I.done)]);
+        sum(M.bf), sum(M.pf), sum(M.ba), sum(M.pa), f(I.tm), f(I.cm), f(I.un), v(I.start), v(I.done),
+        X.bau != null ? f(X.bau) : null, X.bam != null ? f(X.bam) : null, X.pau != null ? f(X.pau) : null, X.pam != null ? f(X.pam) : null]);
     }
     const upd = (doc.querySelector('[id$="Shedule_updated_date"]') || {}).textContent || '';
     return { by, cols, upd: clean(upd).replace(/^.*?:\s*/, '') };
   }
   parseRegister.FIELDS = ['code', 'name', 'status', 'fy', 'mcat', 'cat', 'wtype', 'type', 'agency', 's_usk', 's_mat', 's_tot',
-    'booked_fy', 'paid_fy', 'booked_all', 'paid_all', 'mandays', 'mandays_fy', 'units', 'start', 'done'];
+    'booked_fy', 'paid_fy', 'booked_all', 'paid_all', 'mandays', 'mandays_fy', 'units', 'start', 'done',
+    'booked_all_usk', 'booked_all_mat', 'paid_all_usk', 'paid_all_mat'];
   // Replays the page's own dropdown postbacks: District → Block → GP → Category(IF) → Work type → Submit
   // opts.register = Work Register: every category + every work type, parsed by parseRegister
   // opts.gpList   = only return the GP names of the block (no report)

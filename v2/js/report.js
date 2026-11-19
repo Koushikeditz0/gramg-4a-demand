@@ -459,12 +459,11 @@
 
     var all = regFiltered(true), t = regSum(all);
     var tl = $('regTiles'); tl.innerHTML = '';
-    tl.appendChild(tile('t2', '📄', rsC(t.s), 'Sanction (' + n(t.n) + ' work)', 'Unskilled ' + rsC(t.su) + ' · Material ' + rsC(t.sm)));
+    tl.appendChild(tile('t2', '📄', rsC(t.s), 'Sanction (' + n(t.n) + ' work)', 'Unskilled ' + rsC(t.su) + ' · Material ' + rsC(t.sm) + (t.over ? ' · ⚠ ' + n(t.over) + ' works over sanction' : '')));
     var sp = R.split, um = function (u, m) { return sp ? 'Unskilled ' + rsC(u) + ' · Material ' + rsC(m) : ''; };
     tl.appendChild(tile('t5', '📝', rsC(t.ba), 'Booked (since start)', um(t.bu, t.bm) || pct(t.ba, t.s) + '% of Sanction'));
     tl.appendChild(tile('t3', '✅', rsC(t.pa), 'Paid (since start)', (um(t.pu, t.pm) || pct(t.pa, t.s) + '% of Sanction') + (sp ? ' · ' + pct(t.pa, t.s) + '%' : '')));
     tl.appendChild(tile('t4', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment pending', 'Booked − Paid'));
-    tl.appendChild(tile('t1', '🧮', rsC(t.left), 'Sanction left', (sp ? 'Unskilled ' + rsC(Math.max(0, t.su - t.bu)) + ' · Material ' + rsC(Math.max(0, t.sm - t.bm)) : '') + (t.over ? (sp ? ' · ' : '') + '⚠ ' + n(t.over) + ' works over sanction' : '')));
     bars($('regBar'), t.pa, t.ba, t.left);
     $('regBarKey').innerHTML = '';
     [['c-paid', 'Paid'], ['c-book', 'Booked, payment pending'], ['c-left', 'Sanction left']].forEach(function (x) {

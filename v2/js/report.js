@@ -351,7 +351,7 @@
           w.unpaid = Math.max(0, (w.booked_all || 0) - (w.paid_all || 0));
         });
         S.reg = { gp: S.gp, at: d.at, upd: d.upd, fy: d.fy, rows: rows };
-        S.rgGroup = S.rgGroup || 'cat'; S.rgSt = 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
+        S.rgGroup = S.rgGroup || 'cat'; S.rgSt = 'all'; S.rgKind = S.rgKind || 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
         renderReg();
       })
       .catch(function (e) {
@@ -361,10 +361,13 @@
       })
       .then(function () { loading(''); });
   }
+  function isPba(w) { return /\/IAY\//i.test(w.code || ''); }       // PBA (IAY) house works carry /IAY/ in the work code
   function stKey(s) { s = String(s || '').toLowerCase(); return /complet/.test(s) ? 'done' : /ongoing|progress|started/.test(s) ? 'on' : 'other'; }
   function regFiltered(skipSel) {
     var q = $('regQ').value.trim().toLowerCase();
     return S.reg.rows.filter(function (w) {
+      if (S.rgKind === 'pba' && !isPba(w)) return false;
+      if (S.rgKind === 'other' && isPba(w)) return false;
       if (S.rgSt !== 'all' && stKey(w.status) !== S.rgSt) return false;
       if (S.rgFy && w.fy !== S.rgFy) return false;
       if (!skipSel && S.rgSel != null && (w[S.rgGroup] || '—') !== S.rgSel) return false;
@@ -392,12 +395,15 @@
     var R = S.reg;
     $('regAt').textContent = R.at ? 'Data: ' + when(R.at) : '';
     if (R.none) {
-      ['regTiles', 'regGroupSeg', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
+      ['regTiles', 'regKindSeg', 'regGroupSeg', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
       $('regTiles').appendChild(el('div', 'এই GP-র Work Register এখনো আসেনি। Raspberry Pi রাতে R6.12 পড়ে পাঠালে এখানে দেখা যাবে।', 'mut'));
       $('regGroupCard').classList.add('hidden'); $('regWorkCard').classList.add('hidden'); return;
     }
     seg($('regGroupSeg'), REG_GROUPS, S.rgGroup, null, function (k) { S.rgGroup = k; S.rgSel = null; renderReg(); });
-    var base = S.reg.rows.filter(function (w) { return !S.rgFy || w.fy === S.rgFy; }), sc = { all: base.length, on: 0, done: 0, other: 0 };
+    var kc = { all: 0, pba: 0, other: 0 };
+    S.reg.rows.forEach(function (w) { if (S.rgFy && w.fy !== S.rgFy) return; kc.all++; kc[isPba(w) ? 'pba' : 'other']++; });
+    seg($('regKindSeg'), [['all', 'সব work'], ['pba', '🏠 PBA'], ['other', 'অন্য (Others)']], S.rgKind, kc, function (k) { S.rgKind = k; S.rgSel = null; S.limit = 300; renderReg(); });
+    var base = S.reg.rows.filter(function (w) { return (!S.rgFy || w.fy === S.rgFy) && (S.rgKind === 'all' || (S.rgKind === 'pba') === isPba(w)); }), sc = { all: base.length, on: 0, done: 0, other: 0 };
     base.forEach(function (w) { sc[stKey(w.status)]++; });
     seg($('regStSeg'), [['all', 'সব status'], ['on', 'চলছে'], ['done', 'শেষ'], ['other', 'অন্য']], S.rgSt, sc, function (k) { S.rgSt = k; S.limit = 300; renderReg(); });
     var fySel = $('regFy');
@@ -459,6 +465,7 @@
       var tags = el('div', null, 'r'), l = el('span');
       if (w.status) l.appendChild(el('span', w.status, 'tag' + (stKey(w.status) === 'done' ? ' done' : '')));
       if (w.fy) l.appendChild(el('span', 'শুরু ' + w.fy, 'tag'));
+      if (isPba(w)) l.appendChild(el('span', 'PBA', 'tag pba'));
       if (w.over) l.appendChild(el('span', 'Sanction ছাড়িয়েছে', 'tag over'));
       tags.appendChild(l);
       var r = el('span'); if (w.wtype && S.rgGroup !== 'wtype') r.appendChild(el('span', w.wtype, 'mut'));
@@ -482,12 +489,12 @@
   $('regQ').addEventListener('input', function () { if (S.reg && !S.reg.none) { S.limit = 300; renderReg(); } });
   $('regCsv').addEventListener('click', function () {
     if (!S.reg || S.reg.none) return;
-    csv('Work_Register_' + gpName() + (S.rgSel ? '_' + S.rgSel : ''),
+    csv('Work_Register_' + gpName() + (S.rgKind !== 'all' ? '_' + S.rgKind : '') + (S.rgSel ? '_' + S.rgSel : ''),
       ['Work Code', 'Work Name', 'Status', 'Start FY', 'Master Category', 'Category', 'Work Type (new)', 'Work Type', 'Agency',
        'Sanction Unskilled', 'Sanction Material', 'Sanction Total', 'Booked this FY', 'Paid this FY', 'Booked since inception', 'Paid since inception',
-       'Sanction left', 'Over sanction', 'Total Mandays', 'Mandays this FY', 'Units', 'Started', 'Completed'],
+       'Sanction left', 'Over sanction', 'PBA', 'Total Mandays', 'Mandays this FY', 'Units', 'Started', 'Completed'],
       regFiltered(false).map(function (w) { return [w.code, w.name, w.status, w.fy, w.mcat, w.cat, w.wtype, w.type, w.agency, w.s_usk, w.s_mat, w.s_tot,
-        w.booked_fy, w.paid_fy, w.booked_all, w.paid_all, w.left, w.over ? 'Yes' : '', w.mandays, w.mandays_fy, w.units, w.start, w.done]; }));
+        w.booked_fy, w.paid_fy, w.booked_all, w.paid_all, w.left, w.over ? 'Yes' : '', isPba(w) ? 'Yes' : '', w.mandays, w.mandays_fy, w.units, w.start, w.done]; }));
   });
 
   // ---------------- caste ----------------

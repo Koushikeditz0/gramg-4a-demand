@@ -230,8 +230,10 @@ const VBR = (() => {
     const S = all('sanction amount');
     const subOf = i => (low[i].match(/\[([^\]]*)\]$/) || [])[1] || '';
     const sU = S.find(i => /unskill|wage|labour/.test(subOf(i))), sM = S.find(i => /material/.test(subOf(i)));
+    // Portal layout: "Sanction Amount" group (Wages | Material) + a separate plain "Sanction Amount" column = the total
+    // (the total can be a bit more than Wages + Material), so prefer the plain column over adding the two.
     let sT = S.find(i => /total/.test(subOf(i)));
-    if (sT == null && S.length && sU == null && sM == null) sT = S[S.length - 1];          // one plain column
+    if (sT == null) sT = S.find(i => !subOf(i));
     const money = s => { const c = all(s); const tot = c.find(i => /total/.test(subOf(i))); return tot != null ? [tot] : c; };
     const M = { bf: money('amount booked in current'), pf: money('amount paid in current'), ba: money('amount booked since'), pa: money('amount paid since') };
     // optional Unskilled / Material split of booked & paid since inception (only if the portal has such sub-columns)
@@ -286,11 +288,28 @@ const VBR = (() => {
     }
     const ps = sel(d, 'ddlprostatus'), ch = {};
     if (opts.register) {
-      for (const id of ['ddlprostatus', 'ddlFin_year', 'Ddlwork_status', 'ddlexpnana', 'ddlexpnest', 'filter']) { const s = sel(d, id); if (s && [...s.options].some(o => o.value === 'ALL')) ch[s.name] = 'ALL'; }
-      const btn = d.querySelector('input[type=submit][id$="Button1"]');
-      d = await post(d, ch, '', btn ? { [btn.name]: btn.value } : {});
-      const res = parseRegister(d); if (!res) throw new Error('R6.12 returned no table');
-      return res;
+      // Every filter = ALL. If Work Status or Work Start Fin Yr has no "ALL" option, read each of its options and merge
+      // (otherwise the page keeps its default, e.g. "Ongoing", and completed works would be missing).
+      const many = [];
+      for (const id of ['ddlprostatus', 'ddlFin_year', 'Ddlwork_status', 'ddlexpnana', 'ddlexpnest', 'filter']) {
+        const s = sel(d, id); if (!s) continue;
+        if ([...s.options].some(o => o.value === 'ALL')) { ch[s.name] = 'ALL'; continue; }
+        if (id === 'Ddlwork_status' || id === 'ddlFin_year') {
+          const vals = [...s.options].map(o => o.value).filter(v => v && !/^(select|0|-1|--)/i.test(clean(v)));
+          if (vals.length > 1) many.push([s.name, vals]);
+        }
+      }
+      let combos = [{}]; for (const [name, vals] of many) combos = combos.flatMap(c => vals.map(v => ({ ...c, [name]: v })));
+      if (combos.length > 40) throw new Error('R6.12: too many Work Status / Fin Yr options to read (' + combos.length + ')');
+      const btn = d.querySelector('input[type=submit][id$="Button1"]'), merged = { by: {}, cols: null, upd: '' }, seen = new Set();
+      for (const c of combos) {
+        const page = await post(d, { ...ch, ...c }, '', btn ? { [btn.name]: btn.value } : {});
+        const res = parseRegister(page); if (!res) continue;
+        merged.cols = merged.cols || res.cols; merged.upd = merged.upd || res.upd;
+        for (const g in res.by) for (const row of res.by[g]) { const k = g + '|' + row[0]; if (seen.has(k)) continue; seen.add(k); (merged.by[g] ||= []).push(row); }
+      }
+      if (!merged.cols) throw new Error('R6.12 returned no table');
+      return merged;
     }
     const v = [...ps.options].map(o => o.value).find(x => /State Scheme House for Individual-West Bengal/i.test(x)) || [...ps.options].map(o => o.value).find(x => /State Scheme House/i.test(x));
     if (!v) throw new Error('R6.12: "State Scheme House" work type not found');

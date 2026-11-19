@@ -654,9 +654,13 @@
   }
 
   // ---------- users ----------
-  var ROLE_LABEL = { super_admin: 'Super Admin', gp_admin: '🛡 GP Admin', gp_user: 'Supervisor', kdesk: '🖥 K-Desk login' };
+  var ROLE_LABEL = { super_admin: 'Super Admin', gp_admin: '🛡 GP Admin', gp_user: 'Supervisor', kdesk: '🖥 K-Desk login', viewer: '📊 Report viewer' };
+  var viewers = {};   // user_id → { designation, block } (v228)
   function loadUsers() {
-    return SB.rpc('admin_list_users').then(function (users) {
+    return SB.rpc('admin_list_viewers').catch(function () { return []; }).then(function (vs) {
+      viewers = {}; (vs || []).forEach(function (v) { viewers[v.user_id] = v; });
+      return SB.rpc('admin_list_users');
+    }).then(function (users) {
       state.users = users || []; gaPrefill();
       var tb = $('users'); tb.innerHTML = '';
       var lim = gpView();
@@ -664,13 +668,16 @@
       users.forEach(function (u) {
         var tr = document.createElement('tr');
         tr.appendChild(el('td', u.username)); tr.appendChild(el('td', u.full_name));
-        tr.appendChild(el('td', u.role === 'super_admin' ? 'Super Admin' : (u.gp_name || '') + (u.role === 'kdesk' || u.role === 'gp_admin' ? ' · ' + ROLE_LABEL[u.role] : '')));
+        var vw = u.role === 'viewer' ? (viewers[u.user_id] || {}) : null;
+        tr.appendChild(el('td', u.role === 'super_admin' ? 'Super Admin'
+          : vw ? (vw.block ? 'All GPs (block)' : (u.gp_name || '')) + ' · ' + ROLE_LABEL.viewer + (vw.designation ? ' (' + vw.designation + ')' : '')
+          : (u.gp_name || '') + (u.role === 'kdesk' || u.role === 'gp_admin' ? ' · ' + ROLE_LABEL[u.role] : '')));
         var st = el('td'); st.appendChild(el('span', u.active ? 'Active' : 'Disabled', 'pill ' + (u.active ? 'on' : 'off'))); tr.appendChild(st);
         tr.appendChild(el('td', String(u.active_devices)));
         tr.appendChild(el('td', fmtDate(u.last_seen)));
         var act = el('td');
         // a GP Admin manages only their GP's supervisors and K-Desk login (the database checks this too)
-        var canManage = u.role === 'gp_user' || u.role === 'kdesk' || (u.role === 'gp_admin' && !lim);
+        var canManage = u.role === 'gp_user' || u.role === 'kdesk' || u.role === 'viewer' || (u.role === 'gp_admin' && !lim);
         if (canManage) {
           var t = el('button', u.active ? 'Disable' : 'Enable', (u.active ? 'btn-danger' : 'btn-success') + ' btn-small');
           t.addEventListener('click', async function () {
@@ -684,7 +691,7 @@
           pb.addEventListener('click', function () { openPinModal(u); });
           act.appendChild(pb);
           // K-Desk Suite login: may only read this GP's submitted lists and lock them (database: kdesk_*).
-          var kb = u.role === 'gp_admin' ? null : el('button', u.role === 'kdesk' ? '↩ Make Supervisor' : '🖥 Make K-Desk login', 'btn-light btn-small'); if (kb) kb.style.marginLeft = '4px';
+          var kb = u.role === 'gp_admin' || u.role === 'viewer' ? null : el('button', u.role === 'kdesk' ? '↩ Make Supervisor' : '🖥 Make K-Desk login', 'btn-light btn-small'); if (kb) kb.style.marginLeft = '4px';
           if (kb) kb.addEventListener('click', async function () {
             var to = u.role === 'kdesk' ? 'gp_user' : 'kdesk';
             var q = to === 'kdesk'
@@ -696,6 +703,12 @@
               .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
           });
           if (kb) act.appendChild(kb);
+          // 📊 Report viewer: designation + this GP / whole block (block = Super Admin only)
+          if (u.role === 'viewer') {
+            var vb = el('button', '📊 Access', 'btn-light btn-small'); vb.style.marginLeft = '4px';
+            vb.addEventListener('click', function () { editViewer(u); });
+            act.appendChild(vb);
+          }
           // Super Admin only: Supervisor <-> GP Admin
           if (!lim && (u.role === 'gp_user' || u.role === 'gp_admin')) {
             var gb = el('button', u.role === 'gp_admin' ? '↩ Make Supervisor' : '🛡 Make GP Admin', 'btn-light btn-small'); gb.style.marginLeft = '4px';
@@ -1301,16 +1314,41 @@
     var gp = Number($('nuGp').value), role = $('nuRole').value;
     var bad = !name ? 'BAD_NAME' : !/^[a-z0-9_.-]{3,32}$/.test(un) ? 'BAD_USERNAME' : weakPin(pin) || (!gp ? 'BAD_GP' : null);
     if (bad) { status(errText({ code: bad }), 'err'); return; }
-    var what = role === 'kdesk' ? 'K-Desk login' : 'supervisor';
+    var what = role === 'kdesk' ? 'K-Desk login' : role === 'viewer' ? 'Report viewer' : 'supervisor';
+    var desig = $('nuDesig').value.trim(), block = role === 'viewer' && !gpView() && $('nuBlock').checked;
     loading('Creating the ' + what + '...');
     SB.callFunction('admin-users', { action: 'create_user', username: un, full_name: name, pin: pin, gp_id: gp, role: role })
       .then(function (r) {
+        if (role !== 'viewer') return r;
+        return SB.rpc('admin_set_viewer', { p_user_id: r.user_id, p_designation: desig || null, p_block: block }).then(function () { return r; });
+      })
+      .then(function (r) {
         status('✅ ' + r.username + ' (' + what + ') created. Login: username "' + r.username + '", PIN "' + pin + '". Give the PIN to them yourself.', 'ok');
-        $('nuName').value = ''; $('nuUsername').value = ''; $('nuPin').value = '';
+        $('nuName').value = ''; $('nuUsername').value = ''; $('nuPin').value = ''; $('nuDesig').value = ''; $('nuBlock').checked = false;
         return Promise.all([loadUsers(), loadDashboard()]);
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   });
+
+  // ---------- 📊 Report viewer (v228) ----------
+  function nuRoleView() {
+    var v = $('nuRole').value === 'viewer';
+    $('nuViewer').classList.toggle('hidden', !v);
+    $('nuBlockBox').classList.toggle('hidden', !v || !!gpView());
+  }
+  $('nuRole').addEventListener('change', nuRoleView); nuRoleView();
+  async function editViewer(u) {
+    var cur = viewers[u.user_id] || {};
+    var d = window.prompt('Designation of ' + (u.full_name || u.username) + ' (e.g. GRS, STP, NS, JE, BDO):', cur.designation || '');
+    if (d === null) return;
+    var block = false;
+    if (!gpView()) block = await ask('Let ' + u.username + ' see EVERY GP (block level, e.g. BDO)?\n\nNo = only ' + (u.gp_name || 'their GP') + '.', 'All GPs (block)');
+    loading('Saving...');
+    SB.rpc('admin_set_viewer', { p_user_id: u.user_id, p_designation: d.trim() || null, p_block: block })
+      .then(function () { status(u.username + ': ' + (block ? 'sees every GP' : 'sees only ' + (u.gp_name || 'their GP')) + '.', 'ok'); return loadUsers(); })
+      .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  }
 
   // ---------- new GP Admin + K-Desk login (Super Admin; Edge Function) ----------
   onlyDigits($('gaPin')); onlyDigits($('gaKdPin'));

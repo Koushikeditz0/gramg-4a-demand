@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f97316">
+  <title>Report — Gram Setu</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <style>
+    :root{--bg:#f7f5f2;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#eef0f3;--or:#ea580c;--bl:#2563eb;--red:#dc2626;--grn:#16a34a;--amb:#b45309;}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans Bengali','Nirmala UI','Segoe UI',system-ui,Arial,sans-serif;}
+    body{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
+    .wrap{max-width:980px;margin:0 auto;}
+    .hero{background:linear-gradient(135deg,#f59e0b 0%,#f97316 35%,#2563eb 100%);color:#fff;padding:16px 16px 44px;}
+    .hero .top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .hero small{opacity:.92;font-size:12px;}
+    .hero h1{margin:6px 0 2px;font-size:21px;line-height:1.25;}
+    .ro{display:inline-block;background:#fff;color:#c2410c;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:6px;}
+    .chip{display:inline-block;background:rgba(255,255,255,.22);border-radius:20px;padding:3px 10px;font-size:12px;margin:8px 6px 0 0;}
+    .hbtn{background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:10px;padding:7px 10px;font:600 12px inherit;cursor:pointer;text-decoration:none;white-space:nowrap;}
+    .hbtn.on{background:#fff;color:#c2410c;}
+    .gpsel{margin-top:10px;border:0;border-radius:12px;padding:9px 12px;font:600 14px inherit;color:var(--ink);background:#fff;max-width:100%;min-width:200px;}
+    .body{padding:0 12px;margin-top:-30px;position:relative;}
+    .card{background:var(--card);border-radius:18px;padding:13px 14px;box-shadow:0 4px 14px rgba(15,23,42,.07);margin-bottom:11px;}
+    .card h3{margin:0 0 8px;font-size:15px;color:#334155;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:11px;}
+    .tile{border-radius:16px;padding:12px;background:#fff;box-shadow:0 4px 14px rgba(15,23,42,.07);cursor:pointer;border:0;text-align:left;font:inherit;color:inherit;}
+    .tile b{font-size:24px;display:block;line-height:1.2;} .tile span{font-size:12.5px;color:#475569;} .tile i{font-style:normal;font-size:18px;}
+    .tile em{display:block;font-style:normal;font-size:11.5px;color:var(--mut);margin-top:2px;}
+    .t1{background:#fff7ed}.t2{background:#eff6ff}.t3{background:#f0fdf4}.t4{background:#fdf2f8}.t5{background:#fefce8}.t6{background:#f5f3ff}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    th,td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top;}
+    th:first-child,td:first-child{text-align:left;} th{color:var(--mut);font-weight:600;font-size:12px;position:sticky;top:0;background:#fff;}
+    tr.click{cursor:pointer;} tr.click:hover td{background:#fff7ed;}
+    .tw{overflow:auto;max-height:65vh;}
+    .bad{color:var(--red);font-weight:700;} .ok{color:var(--grn);font-weight:700;} .mut{color:var(--mut);font-size:12px;}
+    .mono{font-family:Consolas,monospace;font-size:11.5px;color:#475569;word-break:break-all;}
+    .seg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px;}
+    .seg button{border:1px solid #e2e8f0;background:#fff;border-radius:20px;padding:6px 11px;font:600 12.5px inherit;color:#475569;cursor:pointer;}
+    .seg button.on{background:var(--or);border-color:var(--or);color:#fff;}
+    .seg button b{font-weight:800;margin-left:3px;}
+    .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+    .tools input[type=search]{flex:1;min-width:160px;border:1px solid #cbd5e1;border-radius:12px;padding:9px 11px;font:inherit;}
+    .btn{border:0;border-radius:12px;padding:9px 12px;font:700 13px inherit;cursor:pointer;background:#e2e8f0;color:var(--ink);}
+    .btn.pri{background:var(--or);color:#fff;} .btn.sm{padding:6px 9px;font-size:12px;border-radius:10px;}
+    .item{border-left:4px solid var(--or);background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
+    .item.pba{border-left-color:#7c3aed;} .item .r{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:#475569;margin-top:3px;flex-wrap:wrap;}
+    .item b{font-size:14px;}
+    .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:8px;padding:1px 7px;background:#f1f5f9;color:#334155;margin-right:4px;}
+    .tag.pba{background:#ede9fe;color:#6d28d9;} .tag.late{background:#fee2e2;color:#991b1b;} .tag.today{background:#ffedd5;color:#9a3412;}
+    .nbtn{border:0;background:#fffbeb;color:#92400e;border-radius:10px;padding:4px 9px;font:600 12px inherit;cursor:pointer;}
+    .nbtn.has{background:#fde68a;}
+    .note{background:#fffbeb;border-radius:12px;padding:8px 10px;font-size:13px;margin-top:8px;white-space:pre-wrap;word-break:break-word;}
+    .note small{color:#92400e;display:flex;justify-content:space-between;gap:6px;font-size:11px;margin-bottom:2px;}
+    .note .del{border:0;background:none;color:var(--red);cursor:pointer;font-size:12px;}
+    .bar{height:7px;border-radius:5px;background:#e2e8f0;overflow:hidden;margin-top:4px;} .bar div{height:100%;background:linear-gradient(90deg,#f97316,#2563eb);}
+    .nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;justify-content:space-around;padding:7px 0 calc(9px + env(safe-area-inset-bottom));border-top:1px solid #e5e7eb;z-index:50;}
+    .nav button{flex:1;border:0;background:none;font:600 11px inherit;color:var(--mut);cursor:pointer;padding:2px;}
+    .nav button i{display:block;font-style:normal;font-size:19px;} .nav button.on{color:var(--or);}
+    .sheet{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;z-index:90;align-items:flex-end;justify-content:center;}
+    .sheet.show{display:flex;}
+    .sheet .in{background:#fff;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom));}
+    .sheet h4{margin:0 0 4px;font-size:15px;} textarea{width:100%;min-height:80px;border:1px solid #cbd5e1;border-radius:12px;padding:9px;font:inherit;resize:vertical;}
+    .lock{font-size:12px;color:var(--mut);text-align:center;margin:8px 0 14px;}
+    .status{display:none;border-radius:12px;padding:9px 11px;font-size:13px;margin-bottom:10px;}
+    .status.err{display:block;background:#fee2e2;color:#991b1b;} .status.ok{display:block;background:#dcfce7;color:#166534;}
+    .loading{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px;z-index:99;display:none;}
+    .hidden{display:none!important;}
+    .more{display:block;margin:6px auto 12px;}
+    @media (min-width:760px){.nav{left:50%;transform:translateX(-50%);max-width:980px;border-radius:16px 16px 0 0;}}
+  </style>
+</head>
+<body>
+<div class="loading" id="loading"></div>
+<div class="hero"><div class="wrap">
+  <div class="top">
+    <small>গ্রাম সেতু · 📊 Report</small>
+    <div style="display:flex;gap:6px;">
+      <button class="hbtn hidden" id="asViewer" type="button" title="Viewer যা দেখেন শুধু তা দেখাও">👁 Viewer হিসেবে দেখো</button>
+      <a class="hbtn hidden" id="toAdmin" href="./admin.html">← Admin</a>
+      <button class="hbtn" id="logout" type="button">Logout</button>
+    </div>
+  </div>
+  <h1 id="title">Report</h1>
+  <small id="who"></small>
+  <div id="chips"></div>
+  <select class="gpsel hidden" id="gpSel" aria-label="GP"></select>
+</div></div>
+
+<div class="body"><div class="wrap">
+  <div class="status" id="status"></div>
+
+  <!-- Home -->
+  <section id="p-home">
+    <div class="grid" id="tiles"></div>
+    <div class="card hidden" id="cmpCard"><h3>GP তুলনা <span class="mut">GP-তে চাপলে সেই GP খুলবে</span></h3><div class="tw"><table id="cmp"></table></div></div>
+    <div class="card" id="ekCard"></div>
+    <div class="card hidden" id="admCard"></div>
+    <div class="card" id="newNotes"></div>
+    <div class="lock">🔒 Account, IFSC, ছবি, Aadhaar আর Demand list এই page-এ দেখা যায় না।</div>
+  </section>
+
+  <!-- Pipeline -->
+  <section id="p-pipe" class="hidden">
+    <div class="card">
+      <h3>💸 MR pipeline <span class="mut" id="pipeAt"></span></h3>
+      <div class="seg" id="stageSeg"></div>
+      <div class="seg" id="kindSeg"></div>
+      <div class="tools"><input type="search" id="pipeQ" placeholder="MR no, work code বা নাম খুঁজুন"><button class="btn sm" id="pipeCsv" type="button">⭳ Excel (CSV)</button></div>
+      <div id="pipeList"></div>
+    </div>
+  </section>
+
+  <!-- Works -->
+  <section id="p-works" class="hidden">
+    <div class="card">
+      <h3>🏗 Work-wise MR <span class="mut" id="worksAt"></span></h3>
+      <div class="seg" id="wkSeg"></div>
+      <div class="tools"><input type="search" id="worksQ" placeholder="Work code বা নাম খুঁজুন"><button class="btn sm" id="worksCsv" type="button">⭳ Excel (CSV)</button></div>
+      <div id="worksList"></div>
+    </div>
+  </section>
+
+  <!-- Caste -->
+  <section id="p-caste" class="hidden">
+    <div class="card">
+      <h3>⚖ WL caste-wise টাকা <span class="mut" id="casteAt"></span></h3>
+      <div class="mut" style="margin-bottom:8px;">K-Desk-এর ⚖ WL Caste breakup থেকে আসে। মাস = Wage List-এর তারিখ।</div>
+      <div class="tools"><button class="btn sm" id="casteCsv" type="button">⭳ Excel (CSV)</button></div>
+      <div class="tw"><table id="caste"></table></div>
+    </div>
+  </section>
+
+  <!-- eKYC -->
+  <section id="p-ekyc" class="hidden">
+    <div class="card">
+      <h3>✅ eKYC / ABPS village-wise <span class="mut" id="ekAt"></span></h3>
+      <div class="tw"><table id="ekVill"></table></div>
+    </div>
+    <div class="card">
+      <h3>⏳ যাঁদের এখনো হয়নি <span class="mut" id="nrCount"></span></h3>
+      <div class="tools"><input type="search" id="nrQ" placeholder="নাম বা Job Card খুঁজুন"><button class="btn sm" id="nrCsv" type="button">⭳ Excel (CSV)</button></div>
+      <div id="nrList"></div>
+    </div>
+  </section>
+
+  <!-- Notes -->
+  <section id="p-notes" class="hidden">
+    <div class="card">
+      <h3>📝 Notes <button class="btn sm pri" id="gpNote" type="button">＋ GP-র note</button></h3>
+      <div class="mut">এই GP-র সব note (নতুন আগে)। নিজের note বা Admin মুছতে পারেন।</div>
+      <div id="allNotes"></div>
+    </div>
+  </section>
+</div></div>
+
+<nav class="nav" id="nav">
+  <button type="button" data-p="home" class="on"><i>🏠</i>Home</button>
+  <button type="button" data-p="pipe"><i>💸</i>Pipeline</button>
+  <button type="button" data-p="works"><i>🏗</i>Works</button>
+  <button type="button" data-p="caste"><i>⚖</i>Caste</button>
+  <button type="button" data-p="ekyc"><i>✅</i>eKYC</button>
+  <button type="button" data-p="notes"><i>📝</i>Notes</button>
+</nav>
+
+<div class="sheet" id="sheet"><div class="in">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+    <div><h4 id="shTitle"></h4><div class="mut" id="shSub"></div></div>
+    <button class="btn sm" id="shClose" type="button">✕</button>
+  </div>
+  <div id="shNotes"></div>
+  <div style="margin-top:10px;">
+    <textarea id="shBody" maxlength="500" placeholder="Note লিখুন… (যেমন: Mate অসুস্থ, শনিবার fill হবে)"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <label style="font-size:13px;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="shPrivate"> 🔒 শুধু আমি দেখব</label>
+      <button class="btn pri" id="shSave" type="button">➤ Save</button>
+    </div>
+    <div class="mut" style="margin-top:6px;">টিক না দিলে এই GP-র report যাঁরা দেখেন সবাই note দেখবেন।</div>
+  </div>
+</div></div>
+
+<script src="./js/config.js?v=20261106b"></script>
+<script src="./js/sb-client.js?v=20261106a"></script>
+<script src="./js/report.js?v=20261119a"></script>
+</body>
+</html>

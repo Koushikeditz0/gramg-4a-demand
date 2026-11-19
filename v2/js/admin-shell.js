@@ -23,7 +23,7 @@
 
   function go(tab) { var b = tabBtn(tab); if (b) b.click(); }
   groups.forEach(function (g) {
-    if (g.head && !g.head.classList.contains('tab')) {
+    if (g.head && !g.head.classList.contains('tab') && g.tabs.length) {   // a link-only group (📊 Reports) just navigates
       g.head.addEventListener('click', function () {
         var want = lastSub[g.key];
         go(g.tabs.some(function (b) { return b.dataset.tab === want; }) ? want : g.tabs[0].dataset.tab);

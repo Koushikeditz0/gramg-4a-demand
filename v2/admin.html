@@ -491,6 +491,7 @@
         <a class="sact" href="./iay.html"><i>📒</i><span>IAY Tracker ↗</span></a>
       </div>
     </div>
+    <div class="grp" data-g="reports"><a class="ghead" href="./report.html" data-short="Reports" style="text-decoration:none;"><i>📊</i><span>Reports</span><b class="gbadge hidden"></b></a></div>
     <div class="grp" data-g="team">
       <button class="ghead" type="button" data-short="Team"><i>👥</i><span>Team &amp; Access</span><b class="gbadge hidden"></b></button>
       <div class="gsubs">
@@ -1025,13 +1026,19 @@
     <div class="card">
       <h2>➕ New user</h2>
       <div class="grid3">
-        <div><label class="f" for="nuRole">Type</label><select id="nuRole"><option value="gp_user">Supervisor (phone app)</option><option value="kdesk">🖥 K-Desk login (extension)</option></select></div>
+        <div><label class="f" for="nuRole">Type</label><select id="nuRole"><option value="gp_user">Supervisor (phone app)</option><option value="kdesk">🖥 K-Desk login (extension)</option><option value="viewer">📊 Report viewer (GRS / STP / NS / BDO)</option></select></div>
         <div><label class="f" for="nuName">Full name</label><input type="text" id="nuName" maxlength="100" placeholder="e.g. Ramesh Barman"></div>
         <div><label class="f" for="nuUsername">Username</label><input type="text" id="nuUsername" maxlength="32" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="e.g. ramesh"></div>
         <div><label class="f" for="nuGp">GP</label><select id="nuGp"></select></div>
         <div><label class="f" for="nuPin">PIN (6–12 digits)</label>
           <div class="row" style="flex-wrap:nowrap;"><input type="text" id="nuPin" inputmode="numeric" maxlength="12" autocomplete="off" class="mono">
           <button class="btn-light btn-small" id="nuPinGen" type="button" title="Make a new PIN">🎲</button></div></div>
+      </div>
+      <div class="grid3 hidden" id="nuViewer" style="margin-top:6px;">
+        <div><label class="f" for="nuDesig">Designation</label><input type="text" id="nuDesig" maxlength="40" list="nuDesigList" placeholder="e.g. GRS">
+          <datalist id="nuDesigList"><option value="GRS"><option value="STP"><option value="NS"><option value="JE"><option value="Panchayat Secretary"><option value="Executive Assistant"><option value="BDO"><option value="Block PO"></datalist></div>
+        <div id="nuBlockBox"><label class="f">What can they see?</label><label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" id="nuBlock"> Every GP (block level, e.g. BDO)</label></div>
+        <div class="muted" style="align-self:end;">📊 Opens only the Report page (MR pipeline, works, WL caste, eKYC/ABPS + notes). Never sees accounts, photos or demand lists.</div>
       </div>
       <div class="muted" style="margin-top:6px;">Username: lowercase English letters, digits, <code>_ . -</code> (3–32 characters). Easy PINs (111111, 123456) are not allowed. Give the PIN to the supervisor yourself.</div>
       <div style="margin-top:10px;"><button class="btn-primary" id="nuBtn">➕ Create user</button></div>
@@ -1217,7 +1224,7 @@
 <script src="./js/sb-client.js?v=20261106a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261118b"></script>
+<script src="./js/admin.js?v=20261119a"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
@@ -1226,9 +1233,9 @@
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261118b"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261118c"></script>
+<script src="./js/admin-dbver.js?v=20261119a"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
-<script src="./js/admin-shell.js?v=20261118d"></script>
+<script src="./js/admin-shell.js?v=20261119a"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>
 </html>

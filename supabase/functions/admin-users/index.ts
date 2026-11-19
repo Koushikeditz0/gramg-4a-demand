@@ -180,7 +180,7 @@ function pinProblem(pin: string): string | null {
 
 // Roles the caller may create / reset.
 function rolesFor(callerRole: string): string[] {
-  return callerRole === 'super_admin' ? ['gp_user', 'kdesk', 'gp_admin'] : ['gp_user', 'kdesk'];
+  return callerRole === 'super_admin' ? ['gp_user', 'kdesk', 'viewer', 'gp_admin'] : ['gp_user', 'kdesk', 'viewer'];   // viewer = Report page only (v228)
 }
 
 async function handler(req: Request): Promise<Response> {

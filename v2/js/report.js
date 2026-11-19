@@ -99,6 +99,7 @@
     S.page = p;
     [].forEach.call(document.querySelectorAll('#nav button'), function (b) { b.classList.toggle('on', b.dataset.p === p); });
     ['home', 'pipe', 'works', 'reg', 'caste', 'ekyc', 'notes'].forEach(function (x) { $('p-' + x).classList.toggle('hidden', x !== p); });
+    $('regKindSeg').classList.toggle('hidden', p !== 'reg');
     window.scrollTo(0, 0);
     render();
   }
@@ -424,6 +425,7 @@
     });
     return t;
   }
+  function um1(x) { return x == null ? '—' : rs(x); }
   function rsC(x) { x = Number(x || 0); if (!x) return '—'; return x >= 1e7 ? '₹' + (x / 1e7).toFixed(2) + ' Cr' : rs(x); }
   function rsK(x) { x = Number(x || 0); if (!x) return '—'; return x >= 1e7 ? (x / 1e7).toFixed(2) + 'Cr' : x >= 1e5 ? (x / 1e5).toFixed(1) + 'L' : n(Math.round(x)); }
   function bars(box, paid, booked, left, cls) {
@@ -442,7 +444,7 @@
     }
     var kc = { all: 0, pba: 0, other: 0 };
     S.reg.rows.forEach(function (w) { if (S.rgFy && w.fy !== S.rgFy) return; kc.all++; kc[isPba(w) ? 'pba' : 'other']++; });
-    seg($('regKindSeg'), [['all', 'All works'], ['pba', '🏠 PBA'], ['other', 'Others']], S.rgKind, kc, function (k) { S.rgKind = k; S.rgSel = null; S.limit = 300; renderReg(); });
+    seg($('regKindSeg'), [['all', 'With PBA'], ['other', 'Without PBA'], ['pba', 'PBA only']], S.rgKind, kc, function (k) { S.rgKind = k; S.rgSel = null; S.limit = 300; renderReg(); });
     var base = S.reg.rows.filter(function (w) { return (!S.rgFy || w.fy === S.rgFy) && (S.rgKind === 'all' || (S.rgKind === 'pba') === isPba(w)); }), sc = { all: base.length, appr: 0, on: 0, done: 0, other: 0 };
     base.forEach(function (w) { sc[stKey(w.status)]++; });
     seg($('regStSeg'), [['all', 'All'], ['appr', 'Approved'], ['on', 'Ongoing'], ['done', 'Complete']].concat(sc.other ? [['other', 'Other']] : []), S.rgSt, sc, function (k) { S.rgSt = k; S.limit = 300; renderReg(); });
@@ -459,8 +461,9 @@
     var tl = $('regTiles'); tl.innerHTML = '';
     tl.appendChild(tile('t2', '📄', rsC(t.s), 'Sanction (' + n(t.n) + ' work)', 'Unskilled ' + rsC(t.su) + ' · Material ' + rsC(t.sm)));
     var sp = R.split, um = function (u, m) { return sp ? 'Unskilled ' + rsC(u) + ' · Material ' + rsC(m) : ''; };
+    tl.appendChild(tile('t5', '📝', rsC(t.ba), 'Booked (since start)', um(t.bu, t.bm) || pct(t.ba, t.s) + '% of Sanction'));
     tl.appendChild(tile('t3', '✅', rsC(t.pa), 'Paid (since start)', (um(t.pu, t.pm) || pct(t.pa, t.s) + '% of Sanction') + (sp ? ' · ' + pct(t.pa, t.s) + '%' : '')));
-    tl.appendChild(tile('t5', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment pending', 'Booked total ' + rsC(t.ba) + (sp ? ' (U ' + rsC(t.bu) + ' · M ' + rsC(t.bm) + ')' : '')));
+    tl.appendChild(tile('t4', '⏳', rsC(Math.max(0, t.ba - t.pa)), 'Booked, payment pending', 'Booked − Paid'));
     tl.appendChild(tile('t1', '🧮', rsC(t.left), 'Sanction left', (sp ? 'Unskilled ' + rsC(Math.max(0, t.su - t.bu)) + ' · Material ' + rsC(Math.max(0, t.sm - t.bm)) : '') + (t.over ? (sp ? ' · ' : '') + '⚠ ' + n(t.over) + ' works over sanction' : '')));
     bars($('regBar'), t.pa, t.ba, t.left);
     $('regBarKey').innerHTML = '';
@@ -517,9 +520,9 @@
     viewSeg('regView', renderReg);
     if (!list.length) { box.appendChild(el('div', 'No works.', 'mut')); return; }
     if (S.view === 'list') {
-      box.appendChild(listTable(['Work', 'Status', 'Start', 'Sanction', 'Booked', 'Paid', 'Left', 'Pending mandays', 'MR', ''], list.slice(0, S.limit).map(function (w) {
+      box.appendChild(listTable(['Work', 'Status', 'Start', 'Sanction', 'Booked', 'Booked U', 'Booked M', 'Paid', 'Paid U', 'Paid M', 'Left', 'Pending mandays', 'MR', ''], list.slice(0, S.limit).map(function (w) {
         var mr = (S.regMr || {})[w.code];
-        return [nameCell(w.name, w.code), w.status + (isPba(w) ? ' · PBA' : '') + (w.over ? ' · ⚠ over' : ''), w.fy, rs(w.s_tot), rs(w.booked_all), rs(w.paid_all), rs(w.left),
+        return [nameCell(w.name, w.code), w.status + (isPba(w) ? ' · PBA' : '') + (w.over ? ' · ⚠ over' : ''), w.fy, rs(w.s_tot), rs(w.booked_all), um1(w.booked_all_usk), um1(w.booked_all_mat), rs(w.paid_all), um1(w.paid_all_usk), um1(w.paid_all_mat), rs(w.left),
                 w.pu > 0 ? n(Math.round(w.pmd)) + (w.est ? ' ~' : '') : '—', mr ? mr.mrs + (mr.waiting ? ' (' + mr.waiting + ' pending)' : '') : '', noteBtn('work', w.code, mr ? mr.notes : 0, w.name || w.code, w.code)];
       })));
     }
@@ -543,8 +546,8 @@
         ml.appendChild(mt); if (mr.last_to) ml.appendChild(el('span', 'Last MR: ' + dmy(mr.last_to), 'mut')); it.appendChild(ml);
       }
       var m = el('div', null, 'money');
-      [['Sanction', w.s_tot, 'U ' + rs(w.s_usk) + ' · M ' + rs(w.s_mat)], ['Booked (since start)', w.booked_all, 'This FY ' + rs(w.booked_fy)],
-       ['Paid (since start)', w.paid_all, 'This FY ' + rs(w.paid_fy)], ['Left', w.left, w.mandays ? 'Total ' + n(w.mandays) + ' mandays' : '']].forEach(function (x) {
+      [['Sanction', w.s_tot, 'U ' + rs(w.s_usk) + ' · M ' + rs(w.s_mat)], ['Booked (since start)', w.booked_all, (w.booked_all_usk != null ? 'U ' + rs(w.booked_all_usk) + ' · M ' + rs(w.booked_all_mat) + ' · ' : '') + 'FY ' + rs(w.booked_fy)],
+       ['Paid (since start)', w.paid_all, (w.paid_all_usk != null ? 'U ' + rs(w.paid_all_usk) + ' · M ' + rs(w.paid_all_mat) + ' · ' : '') + 'FY ' + rs(w.paid_fy)], ['Left', w.left, w.mandays ? 'Total ' + n(w.mandays) + ' mandays' : '']].forEach(function (x) {
         var d = el('div'); d.appendChild(el('span', x[0], 'mut')); d.appendChild(el('b', rs(x[1]))); if (x[2]) d.appendChild(el('span', x[2], 'mut')); m.appendChild(d);
       });
       var pm = el('div'); pm.appendChild(el('span', '👷 Pending mandays', 'mut'));                 // work-wise, last cell

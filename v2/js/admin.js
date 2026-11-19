@@ -678,6 +678,11 @@
         var act = el('td');
         // a GP Admin manages only their GP's supervisors and K-Desk login (the database checks this too)
         var canManage = u.role === 'gp_user' || u.role === 'kdesk' || u.role === 'viewer' || (u.role === 'gp_admin' && !lim);
+        if (u.role === 'gp_user' || u.role === 'kdesk' || u.role === 'viewer' || !lim) {   // ✏ Rename (full name); Super Admin can rename anyone incl. themself
+          var rn = el('button', '✏ Rename', 'btn-light btn-small');
+          rn.addEventListener('click', function () { renameUser(u); });
+          act.appendChild(rn);
+        }
         if (canManage) {
           var t = el('button', u.active ? 'Disable' : 'Enable', (u.active ? 'btn-danger' : 'btn-success') + ' btn-small');
           t.addEventListener('click', async function () {
@@ -1432,6 +1437,14 @@
 
   // ---------- PIN reset (Edge Function) ----------
   var pinTarget = null;
+  async function renameUser(u) {
+    var v = window.prompt('Full name of @' + u.username + ':', u.full_name || ''); if (v == null) return;
+    v = v.trim(); if (v.length < 2) { status('Enter the full name (at least 2 letters).', 'err'); return; }
+    if (v === (u.full_name || '')) return;
+    SB.rpc('admin_rename_user', { p_user_id: u.user_id, p_name: v })
+      .then(function (r) { status('✅ ' + u.username + ': name changed to ' + r.full_name, 'ok'); return loadUsers(); })
+      .catch(function (e) { if (!e.authLost) status(/Could not find the function/i.test(e.message || '') ? 'Database update (SQL v231) has not been run yet.' : errText(e), 'err'); });
+  }
   function openPinModal(u) {
     pinTarget = u; $('pinWho').textContent = (u.full_name || u.username) + ' (@' + u.username + ')';
     $('pinNew').value = ''; $('pinModal').classList.add('show'); $('pinNew').focus();

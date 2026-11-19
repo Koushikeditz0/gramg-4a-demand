@@ -376,6 +376,7 @@
         var f = d.fields || [];
         var rows = (d.rows || []).map(function (r) { var o = {}; f.forEach(function (k, i) { o[k] = r[i]; }); return o; });
         rows.forEach(function (w) {
+          fixLag(w);
           w.left = Math.max(0, (w.s_tot || 0) - Math.max(w.booked_all || 0, w.paid_all || 0));
           w.over = (w.s_tot || 0) > 0 && Math.max(w.booked_all || 0, w.paid_all || 0) > w.s_tot + 1;
           w.unpaid = Math.max(0, (w.booked_all || 0) - (w.paid_all || 0));
@@ -393,6 +394,22 @@
       .then(function () { loading(''); });
   }
   function isPba(w) { return /\/IAY\//i.test(w.code || ''); }       // PBA (IAY) house works carry /IAY/ in the work code
+  // The portal's "since inception" columns sometimes lag behind the "current FY" columns (e.g. Booked this FY 79,749 but
+  // Booked since inception 6,146). Since-start can never be below this FY, so raise it (per part when the FY split exists;
+  // otherwise the shortfall is added to Unskilled, the usual wage-only case).
+  function fixLag(w) {
+    var ch = false;
+    function lift(allK, fyK) { if (w[fyK] != null && (w[allK] || 0) < w[fyK]) { w[allK] = w[fyK]; ch = true; } }
+    lift('booked_all_usk', 'booked_fy_usk'); lift('booked_all_mat', 'booked_fy_mat'); lift('paid_all_usk', 'paid_fy_usk'); lift('paid_all_mat', 'paid_fy_mat');
+    [['booked_all', 'booked_fy', 'booked_all_usk', 'booked_all_mat'], ['paid_all', 'paid_fy', 'paid_all_usk', 'paid_all_mat']].forEach(function (k) {
+      var parts = w[k[2]] != null ? (w[k[2]] || 0) + (w[k[3]] || 0) : 0, need = Math.max(w[k[1]] || 0, parts);
+      if ((w[k[0]] || 0) < need - 0.5) {
+        if (w[k[2]] != null && parts < need) w[k[2]] = (w[k[2]] || 0) + (need - parts);
+        w[k[0]] = need; ch = true;
+      }
+    });
+    w.lag = ch;
+  }
   function wageRate() { return Number((S.ctx && S.ctx.wage_rate) || 300) || 300; }
   // Pending unskilled = Sanction (Unskilled) − unskilled already booked. If the portal has no Unskilled/Material
   // split for booked, the unskilled spent is estimated as Total Mandays × wage rate. Completed works have no "pending".
@@ -521,7 +538,7 @@
     if (S.view === 'list') {
       box.appendChild(listTable(['Work', 'Status', 'Start', 'Sanction', 'Booked', 'Booked U', 'Booked M', 'Paid', 'Paid U', 'Paid M', 'Left', 'Pending mandays', 'MR', ''], list.slice(0, S.limit).map(function (w) {
         var mr = (S.regMr || {})[w.code];
-        return [nameCell(w.name, w.code), w.status + (isPba(w) ? ' · PBA' : '') + (w.over ? ' · ⚠ over' : ''), w.fy, rs(w.s_tot), rs(w.booked_all), um1(w.booked_all_usk), um1(w.booked_all_mat), rs(w.paid_all), um1(w.paid_all_usk), um1(w.paid_all_mat), rs(w.left),
+        return [nameCell(w.name, w.code), w.status + (isPba(w) ? ' · PBA' : '') + (w.over ? ' · ⚠ over' : '') + (w.lag ? ' · ≈' : ''), w.fy, rs(w.s_tot), rs(w.booked_all), um1(w.booked_all_usk), um1(w.booked_all_mat), rs(w.paid_all), um1(w.paid_all_usk), um1(w.paid_all_mat), rs(w.left),
                 w.pu > 0 ? n(Math.round(w.pmd)) + (w.est ? ' ~' : '') : '—', mr ? mr.mrs + (mr.waiting ? ' (' + mr.waiting + ' pending)' : '') : '', noteBtn('work', w.code, mr ? mr.notes : 0, w.name || w.code, w.code)];
       })));
     }
@@ -533,6 +550,7 @@
       if (w.fy) l.appendChild(el('span', 'Start ' + w.fy, 'tag'));
       if (isPba(w)) l.appendChild(el('span', 'PBA', 'tag pba'));
       if (w.over) l.appendChild(el('span', 'Over sanction', 'tag over'));
+      if (w.lag) { var lg = el('span', '≈ Portal since-start < this FY', 'tag'); lg.title = 'Portal shows Booked/Paid since inception below this FY; raised to this FY.'; l.appendChild(lg); }
       tags.appendChild(l);
       var mr = (S.regMr || {})[w.code], r = el('span'); if (w.wtype && S.rgGroup !== 'wtype') r.appendChild(el('span', w.wtype, 'mut'));
       r.appendChild(noteBtn('work', w.code, mr ? mr.notes : 0, w.name || w.code, w.code)); tags.appendChild(r); it.appendChild(tags);

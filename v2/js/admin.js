@@ -109,7 +109,7 @@
     return SB.rpc('admin_list_gps').then(function (gps) {
       state.gps = gps || [];
       if (view.gp && !state.gps.some(function (g) { return g.id === view.gp; })) view.gp = null;
-      fillGpSelects();
+      fillGpSelects(); fillRenameGp();
       if (me.role === 'super_admin') {
         var vs = $('viewSel'), keep = view.gp ? String(view.gp) : '';
         vs.innerHTML = '';
@@ -1638,6 +1638,28 @@
       $('gpName').value = ''; $('gpPrefix').value = '';
       return loadGps().then(function () { $('gpSelect').value = String(g.id); showGpStats(); });
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
+      .then(function () { loading(''); });
+  });
+
+  // ---------- rename a GP (Super Admin) ----------
+  function fillRenameGp() {
+    var sel = $('gpRenSel'); if (!sel) return; var cur = sel.value; sel.innerHTML = '';
+    state.gps.forEach(function (g) { var o = document.createElement('option'); o.value = String(g.id); o.textContent = g.name + ' (' + g.jc_prefix + ')'; sel.appendChild(o); });
+    if (cur) sel.value = cur;
+    var g0 = state.gps.filter(function (x) { return String(x.id) === sel.value; })[0]; if (g0 && !$('gpRenName').value) $('gpRenName').value = g0.name;
+  }
+  $('gpRenSel').addEventListener('change', function () { var g = state.gps.filter(function (x) { return String(x.id) === $('gpRenSel').value; })[0]; $('gpRenName').value = g ? g.name : ''; });
+  $('gpRenBtn').addEventListener('click', async function () {
+    var id = Number($('gpRenSel').value), name = $('gpRenName').value.trim();
+    var g = state.gps.filter(function (x) { return x.id === id; })[0]; if (!g) return;
+    if (name.length < 2) { status('Enter the new GP name.', 'err'); return; }
+    if (name === g.name) { status('That is already the name.', 'err'); return; }
+    if (!await ask('Rename GP\n' + g.name + '  →  ' + name + '\n(Job Card prefix ' + g.jc_prefix + ' stays the same.)')) return;
+    loading('Saving the name...');
+    SB.rpc('admin_rename_gp', { p_gp_id: id, p_name: name }).then(function (r) {
+      status('✅ GP renamed: ' + g.name + ' → ' + r.name, 'ok');
+      return loadGps().then(function () { $('gpRenSel').value = String(id); $('gpRenName').value = r.name; });
+    }).catch(function (e) { if (!e.authLost) status(/Could not find the function/i.test(e.message || '') ? 'Database update (SQL v230) has not been run yet.' : errText(e), 'err'); })
       .then(function () { loading(''); });
   });
 

@@ -963,6 +963,15 @@
       </div>
       <div style="margin-top:8px;"><button class="btn-primary btn-small" id="gpAddBtn">➕ Add GP</button></div>
     </div>
+    <div class="card super-only" id="gpRenameCard">
+      <h2>✏️ Rename a Gram Panchayat</h2>
+      <div class="muted">Fix a wrong GP name. Only the display name changes; Job Card prefix, workers, lists and logins stay as they are.</div>
+      <div class="grid3" style="margin-top:6px;">
+        <div><label class="f" for="gpRenSel">GP</label><select id="gpRenSel"></select></div>
+        <div><label class="f" for="gpRenName">New name</label><input type="text" id="gpRenName" maxlength="100" placeholder="e.g. Putimari-II"></div>
+      </div>
+      <div style="margin-top:8px;"><button class="btn-primary btn-small" id="gpRenBtn">💾 Save name</button></div>
+    </div>
     <div class="card">
       <h2>💾 Backup</h2>
       <div class="muted">Downloads one Excel file with all workers of the GP selected below (with accounts), all lists (including past rounds) and the user list. The Workers sheet can be imported again on this page. <b>The file contains bank account numbers: keep it safe and do not send it to anyone.</b> Take a backup at least once a month.</div>
@@ -1224,7 +1233,7 @@
 <script src="./js/sb-client.js?v=20261119b"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261119a"></script>
+<script src="./js/admin.js?v=20261119b"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>

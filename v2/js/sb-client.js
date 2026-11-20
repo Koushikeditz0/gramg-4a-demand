@@ -102,7 +102,25 @@
     return Promise.resolve();
   }
 
+  // Shared reads (Admin panel speed, 2026-11-20): when two parts of a page ask the same
+  // read-only function with the same arguments at the same time, only one request goes out.
+  // Only requests still in flight are shared (never an old answer), every caller gets its own
+  // copy, and any other call (it may be a write) stops the sharing of earlier requests.
+  var shareNames = {}, inflight = {};
+  function shareReads(names) { (names || []).forEach(function (n) { shareNames[n] = true; }); }
+  function copy(d) { return d == null || typeof d !== 'object' ? d : JSON.parse(JSON.stringify(d)); }
   function rpc(fn, args, opts) {
+    if (!shareNames[fn]) { inflight = {}; return rpcOnce(fn, args, opts); }
+    var key = fn + '|' + JSON.stringify(args || {}), box = inflight;
+    if (!box[key]) {
+      var p = rpcOnce(fn, args, opts);
+      box[key] = p;
+      p.then(function () { if (box[key] === p) delete box[key]; }, function () { if (box[key] === p) delete box[key]; });
+    }
+    return box[key].then(copy);
+  }
+
+  function rpcOnce(fn, args, opts) {
     opts = opts || {};
     var attempt = 0;
     function once() {
@@ -258,7 +276,7 @@
   }
 
   var api = {
-    signIn: signIn, signOut: signOut, rpc: rpc, callFunction: callFunction, storage: storage, photos: photos, register: register,
+    signIn: signIn, signOut: signOut, rpc: rpc, shareReads: shareReads, callFunction: callFunction, storage: storage, photos: photos, register: register,
     hasSession: function () { return !!session; },
     userId: function () { return session && session.user_id; },
     onAuthLost: null

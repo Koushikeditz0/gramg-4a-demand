@@ -4,6 +4,7 @@
 (function () {
   'use strict';
   var NEEDED_DB = 233;
+  window.AdminDbVer = { need: NEEDED_DB };   // Today page → System health uses the same number
   var SB = window.GramgSB;
   if (!SB) return;
 

@@ -46,8 +46,12 @@
   function boot() {
     if (!SB.hasSession()) { location.replace('./index.html'); return; }
     loading('Opening report...');
+    var homeReq = null;   // speed (2026-11-20): the home numbers are asked together with the login context
     SB.rpc('register_session', { p_user_agent: String(navigator.userAgent).slice(0, 300) })
-      .then(function () { return SB.rpc('report_context'); })
+      .then(function () {
+        homeReq = SB.rpc('report_home', {}, { retry: true, timeout: 60000 }); homeReq.catch(function () {});
+        return SB.rpc('report_context');
+      })
       .then(function (ctx) {
         S.ctx = ctx;
         if (!ctx.gps || !ctx.gps.length) { status('No GP is assigned to you. Tell the Admin.'); return; }
@@ -59,7 +63,7 @@
         var saved = Number(read('gramg2.rgp')) || Number(read('gramg2.gp')) || 0;
         S.gp = ctx.gps.some(function (g) { return g.id === saved; }) ? saved : (ctx.gps.length > 1 ? 0 : ctx.gps[0].id);
         fillGpSel();
-        return loadHome();
+        return loadHome(homeReq);
       })
       .catch(function (e) {
         if (e.authLost) return;
@@ -85,8 +89,8 @@
     render();
   }
 
-  function loadHome() {
-    return SB.rpc('report_home', {}, { retry: true, timeout: 60000 }).then(function (h) { S.home = h || []; render(); });
+  function loadHome(req) {
+    return (req || SB.rpc('report_home', {}, { retry: true, timeout: 60000 })).then(function (h) { S.home = h || []; render(); });
   }
 
   // ---------------- navigation ----------------
@@ -213,11 +217,12 @@
   function loadMrs() {
     if (S.mrs && S.mrs.gp === S.gp) { renderMrs(); return; }
     loading('Loading MRs...');
-    SB.rpc('report_mrs', { p_gp: S.gp, p_stage: null }, { retry: true, timeout: 60000 })
-      .then(function (d) {
-        return SB.rpc('report_mrs', { p_gp: S.gp, p_stage: 'running' }, { retry: true, timeout: 60000 }).then(function (r) {
-          d.rows = (d.rows || []).concat(r.rows || []); d.gp = S.gp; S.mrs = d; S.limit = 300; renderMrs();
-        });
+    var gp = S.gp;   // both lists are asked together (speed, 2026-11-20)
+    Promise.all([SB.rpc('report_mrs', { p_gp: gp, p_stage: null }, { retry: true, timeout: 60000 }),
+                 SB.rpc('report_mrs', { p_gp: gp, p_stage: 'running' }, { retry: true, timeout: 60000 })])
+      .then(function (res) {
+        var d = res[0], r = res[1];
+        d.rows = (d.rows || []).concat(r.rows || []); d.gp = gp; S.mrs = d; S.limit = 300; renderMrs();
       }).catch(function (e) { if (!e.authLost) status(errText(e)); })
       .then(function () { loading(''); });
   }

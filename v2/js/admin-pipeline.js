@@ -58,13 +58,17 @@
         return mrs.then(function (r) {
           (d = d || {}).mrRep = r;
           var m = model(d, 'all'), rep = m.rep, iay = m.iay;
+          // Today page: the oldest "MR period ended" date, for "period শেষ N দিন আগে"
+          var fillOldest = null;
+          m.mrRows.forEach(function (x) { if ((x.s === 'fill_pending' || x.s === 'fill_today') && x.to && (!fillOldest || x.to < fillOldest)) fillOldest = x.to; });
           return {
             fill: rep ? m.cnt('fill_today') + m.cnt('fill_pending') : (iay.fill_due || 0), fillPbaOnly: !rep,
+            fillToday: rep ? m.cnt('fill_today') : (iay.fill_today || 0), fillOldest: fillOldest,
             emb: rep ? m.cnt('emb') + m.cnt('verify') : null,
             gen: m.gen.at ? m.gen.items.length : null,
             send: m.send.at ? m.send.items.length : null,
             sendAmt: sum(m.send.items, function (x) { return x.amt; }),
-            sent: m.sent.length,
+            sent: m.sent.length, sentAmt: sum(m.sent, function (x) { return x.amt; }),
             at: { rep: rep && typeof rep.at === 'string' ? rep.at : null, gen: m.gen.at, send: m.send.at, iay: iay.report_at }
           };
         });

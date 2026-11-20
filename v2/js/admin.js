@@ -84,13 +84,25 @@
   }
 
   SB.onAuthLost = function () { location.replace('./index.html'); };
+  // read-only functions that several parts of the panel ask at the same moment (Today page,
+  // Dashboard, badges, DB version check): one request is shared while it is running (sb-client.js)
+  if (SB.shareReads) SB.shareReads(['get_my_context', 'admin_list_gps', 'admin_dashboard', 'admin_list_duplicates', 'admin_list_extras',
+    'admin_import_history', 'admin_list_users', 'admin_list_viewers', 'admin_data_status', 'db_version', 'admin_count_account_requests',
+    'admin_account_photos', 'admin_marks_list', 'admin_portal_missing', 'admin_portal_new_count', 'admin_pipeline', 'admin_pipeline_mrs',
+    'admin_worker_stats', 'admin_get_signup_link', 'admin_list_account_requests']);
 
   // ---------- boot ----------
   function boot() {
     if (!SB.hasSession()) { location.replace('./index.html'); return; }
     loading('Opening the admin panel...');
+    // Speed (2026-11-20): after register_session, the login context and the GP list are asked
+    // together, then Dashboard, History and Users load side by side (before: 7 requests one after another).
+    var gpsReq = null;
     SB.rpc('register_session', { p_user_agent: String(navigator.userAgent).slice(0, 300) })
-      .then(function () { return SB.rpc('get_my_context'); })
+      .then(function () {
+        gpsReq = SB.rpc('admin_list_gps'); gpsReq.catch(function () {});   // a supervisor gets NOT_AUTHORIZED here: ignored
+        return SB.rpc('get_my_context');
+      })
       .then(function (ctx) {
         if (ctx.role !== 'super_admin' && ctx.role !== 'gp_admin') { location.replace('./index.html'); return; }
         me.role = ctx.role; me.gp = ctx.gp_id; me.gpName = ctx.gp_name || '';
@@ -98,15 +110,16 @@
         if (me.role === 'super_admin') {
           try { view.gp = Number(localStorage.getItem(VIEW_KEY)) || null; } catch (_e) { view.gp = null; }
         }
-        return loadGps().then(function () { applyView(false); }).then(loadDashboard).then(loadHistory).then(loadUsers)
+        return loadGps(gpsReq).then(function () { applyView(false); })
+          .then(function () { return Promise.all([loadDashboard(), loadHistory(), loadUsers()]); })
           .then(function () { photoCleanupAll(); photoBadge(); });
       })
       .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   }
 
-  function loadGps() {
-    return SB.rpc('admin_list_gps').then(function (gps) {
+  function loadGps(req) {
+    return (req || SB.rpc('admin_list_gps')).then(function (gps) {
       state.gps = gps || [];
       if (view.gp && !state.gps.some(function (g) { return g.id === view.gp; })) view.gp = null;
       fillGpSelects(); fillRenameGp();
@@ -657,9 +670,11 @@
   var ROLE_LABEL = { super_admin: 'Super Admin', gp_admin: '🛡 GP Admin', gp_user: 'Supervisor', kdesk: '🖥 K-Desk login', viewer: '📊 Report viewer' };
   var viewers = {};   // user_id → { designation, block } (v228)
   function loadUsers() {
+    var usersReq = SB.rpc('admin_list_users');   // asked together with the viewer list
+    usersReq.catch(function () {});              // (its error is handled below)
     return SB.rpc('admin_list_viewers').catch(function () { return []; }).then(function (vs) {
       viewers = {}; (vs || []).forEach(function (v) { viewers[v.user_id] = v; });
-      return SB.rpc('admin_list_users');
+      return usersReq;
     }).then(function (users) {
       state.users = users || []; gaPrefill();
       var tb = $('users'); tb.innerHTML = '';

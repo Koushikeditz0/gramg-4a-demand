@@ -840,41 +840,166 @@
       var ids = new Set(dash.rows.map(function (r) { return r.list_id; }));
       dash.picked.forEach(function (id) { if (!ids.has(id)) dash.picked.delete(id); });
       renderDashboard();
-      $('dashUpdated').textContent = 'Last updated: ' + fmtDate(new Date().toISOString());
+      dash.at = new Date(); dashStamp();          // one "last updated" line: the page header's, next to its Refresh
       loadDataLine(gp);
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { dash.loading = false; });
   }
 
-  // "Last data" line: when and from where this GP's worker data was last updated
+  // "Last data" line: when and from where this GP's worker data was last updated.
+  // 2026-11-20: shown small, inside the ⓘ box next to the page title (with the villages of the lists);
+  // the ⓘ turns orange when the data is older than STALE_DAYS.
   var STALE_DAYS = 7;
   function loadDataLine(gp) {
-    return SB.rpc('admin_data_status', { p_gp_id: gp }).then(function (d) {
-      var box = $('dataLine'), parts = [], newest = 0;
+    return SB.rpc('admin_data_status', { p_gp_id: gp }).then(function (d) { dash.dataStatus = d || {}; loadDataLineText(); })
+      .catch(function () { dash.dataStatus = null; loadDataLineText(); });   // older database without admin_data_status
+  }
+  function loadDataLineText() {
+    var box = $('dataLine'), d = dash.dataStatus, parts = [], newest = 0;
+    if (d) {
       if (d.last_sync) { parts.push('ABPS Sync (K-Desk) ' + fmtDate(d.last_sync.at) + ', ' + bn(d.last_sync.changed) + ' changed'); newest = Math.max(newest, Date.parse(d.last_sync.at)); }
       if (d.last_import) { parts.push('Excel import ' + fmtDate(d.last_import.at) + ' (' + d.last_import.file + ')'); newest = Math.max(newest, Date.parse(d.last_import.at)); }
-      var old = !newest || Date.now() - newest > STALE_DAYS * 86400000;
-      box.className = 'dataline' + (old ? ' old' : '');
-      box.textContent = parts.length ? '📅 Last data: ' + parts.join(' · ') + (old ? ' — older than ' + STALE_DAYS + ' days, run an ABPS Sync in K-Desk.' : '')
-                                     : '📅 Last data: no import or ABPS Sync yet.';
-    }).catch(function () { $('dataLine').textContent = ''; });   // older database without admin_data_status
+    }
+    var old = !!d && (!newest || Date.now() - newest > STALE_DAYS * 86400000);
+    box.className = 'dataline' + (old ? ' old' : '');
+    box.textContent = !d ? '' : parts.length ? '📅 Last data: ' + parts.join(' · ') + (old ? ' — older than ' + STALE_DAYS + ' days, run an ABPS Sync in K-Desk.' : '')
+                                             : '📅 Last data: no import or ABPS Sync yet.';
+    var vl = $('dashVillages'); if (vl) vl.textContent = (dash.villages && dash.villages.length) ? '🏘 ' + T('List-এর গ্রাম: ', 'Villages in the lists: ') + dash.villages.join(', ') : '';
+    var sm = $('dashInfoSum');
+    if (sm) { sm.textContent = old ? '⚠ ' + T('ডেটা পুরোনো', 'Old data') : 'ⓘ ' + T('ডেটা', 'Data');
+      sm.title = newest ? T('শেষ ডেটা: ', 'Last data: ') + ago(new Date(newest).toISOString()) : ''; sm.parentNode.classList.toggle('old', old); }
   }
+  // ---------- Demand lists page (2026-11-20): grouped by what has to be done ----------
+  // Same data as before (admin_dashboard + admin_list_extras), only the layout changed:
+  //  ① ready for K-Desk (Submitted + Locked) ② work left (drafts with workers) ③ empty drafts (folded)
+  //  ④ supervisors without a list (folded). "Supervisor ধরে" (old cards) and "☰ List" views stay.
+  // Colour rule: red ⛔ = the export would stop · orange ⚠ = work left · grey = information · green ✓ = fine.
+  var LANG_KEY = 'gramg2.adminLang';                 // same EN/বাং setting as the Today page
+  function dlang() { try { return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'bn'; } catch (e) { return 'bn'; } }
+  function T(b, e) { return dlang() === 'bn' ? b : e; }
+  function ago(s) {
+    if (!s) return T('কখনও না', 'never');
+    var m = Math.max(0, Math.round((Date.now() - new Date(s).getTime()) / 60000));
+    if (m < 1) return T('এইমাত্র', 'just now');
+    if (m < 60) return T(m + ' মিনিট আগে', m + ' min ago');
+    var h = Math.floor(m / 60); if (h < 24) return T(h + ' ঘণ্টা আগে', h + ' h ago');
+    var d = Math.floor(h / 24); return T(d + ' দিন আগে', d + (d === 1 ? ' day ago' : ' days ago'));
+  }
+  function ageDays(s) { return s ? (Date.now() - new Date(s).getTime()) / 864e5 : 0; }
+  function stLbl(st) { return st === 'empty' ? T('List নেই', 'No list') : (STATE_BN[st] || st); }
+  function hasDate(r) { return !!(r.from_date && r.work_days); }
+  function needSup(r) { var n = Number(r.workers || 0); return n > 0 && (r.supervisors || []).length < reqSup(n); }
+  function isToday(r) { return !!r.submitted_at && r.submit_state !== 'draft' && new Date(r.submitted_at).toDateString() === new Date().toDateString(); }
+  function userOf(r) { return dash.users.filter(function (u) { return u.user_id === r.user_id; })[0] || { username: r.username, full_name: r.full_name, active: r.user_active }; }
+  function rowOf(l) { return (dash.byId && dash.byId[l.list_id]) || l; }
+  // the filter chips + the clickable number tiles
+  function passRow(r) {
+    var f = dash.filter;
+    if (f === 'all') return true;
+    if (f === 'empty') return false;
+    if (f === 'nosup') return needSup(r);
+    if (f === 'noacc') return Number(r.no_account || 0) > 0;
+    if (f === 'today') return isToday(r);
+    return r.submit_state === f;
+  }
+  function filterName(f) {
+    return { nosup: T('Supervisor-এর নাম নেই/কম', 'Supervisor names missing'), noacc: T('Account/IFSC নেই', 'No Account/IFSC'), today: T('আজ submit', 'Submitted today') }[f] || '';
+  }
+  // small coloured label: kind = bad | warn | ok | info (the icon is part of the text)
+  function tag(kind, text, title) { var t = el('span', text, 'tg tg-' + kind); if (title) t.title = title; return t; }
+  function phoneOrUser(u) {
+    var un = String(u.username || '');
+    if (/^[6-9]\d{9}$/.test(un)) {
+      var a = el('a', '📱 ' + un, 'tel'); a.href = 'tel:' + un; a.title = T('ফোন করুন', 'Call');
+      a.addEventListener('click', function (e) { e.stopPropagation(); }); return a;
+    }
+    return el('span', '@' + un, 'un');
+  }
+
+  // ⋯ menu next to a supervisor's name: PIN, Disable / Enable, Team & Access
+  var supMenu = null;
+  function closeSupMenu() { if (supMenu) { supMenu.remove(); supMenu = null; } }
+  function toggleUser(u) {
+    return async function () {
+      if (u.active && !await ask(T(u.username + '-এর account বন্ধ (Disable) করবেন? সব device থেকে সঙ্গে সঙ্গে logout হয়ে যাবে।',
+        'Disable the account of ' + u.username + '? They are logged out of every device at once.'), 'Disable user')) return;
+      SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
+        .then(function () { status(u.username + ' ' + (u.active ? 'disabled' : 'enabled') + '.', 'ok'); return loadDashboard(); })
+        .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
+    };
+  }
+  function openSupMenu(u, anchor) {
+    var was = supMenu && supMenu.dataset.user === String(u.user_id); closeSupMenu(); if (was) return;
+    var m = el('div', null, 'supmenu'); m.setAttribute('role', 'menu'); m.dataset.user = u.user_id;
+    m.appendChild(el('div', u.full_name || u.username, 'smh'));
+    var sub = el('div', null, 'sms'); sub.appendChild(phoneOrUser(u));
+    sub.appendChild(document.createTextNode(' · ' + T('শেষ login ', 'last login ') + ago(u.last_seen) + ' · ' +
+      T(bn(u.active_devices) + 'টা device', bn(u.active_devices) + ' device(s)')));
+    sub.title = u.last_seen ? fmtDate(u.last_seen) : ''; m.appendChild(sub);
+    function item(label, fn, cls) { var b = el('button', label, 'smi' + (cls ? ' ' + cls : '')); b.type = 'button'; b.setAttribute('role', 'menuitem');
+      b.addEventListener('click', function () { closeSupMenu(); fn(); }); m.appendChild(b); }
+    item('🔑 ' + T('নতুন PIN দিন', 'New PIN'), function () { openPinModal(u); });
+    item(u.active ? '⛔ Disable user' : '✅ Enable user', toggleUser(u), u.active ? 'danger' : '');
+    item('👥 ' + T('Team & Access-এ খুলুন', 'Open Team & Access'), function () { var b = document.querySelector('.tab[data-tab="users"]'); if (b) b.click(); });
+    document.body.appendChild(m); supMenu = m;
+    var r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+    m.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+    m.style.top = (r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4) + 'px';
+    m.querySelector('.smi').focus();
+  }
+  document.addEventListener('click', function (e) { if (supMenu && !e.target.closest('.supmenu,.dots')) closeSupMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSupMenu(); });
+  window.addEventListener('scroll', closeSupMenu, true);
+  function dotsBtn(u) {
+    var b = el('button', '⋯', 'dots'); b.type = 'button'; b.title = T('PIN, Disable ইত্যাদি', 'PIN, Disable and more'); b.setAttribute('aria-label', b.title);
+    b.addEventListener('click', function (e) { e.stopPropagation(); openSupMenu(u, b); }); return b;
+  }
+  // "Nilkamal Mondal · 📱 7908378318 · login 3 দিন আগে ⋯"
+  function supLine(u) {
+    var d = el('div', null, 'wsup');
+    d.appendChild(el('b', u.full_name || u.username)); d.appendChild(document.createTextNode(' · ')); d.appendChild(phoneOrUser(u));
+    var lg = el('span', ' · login ' + ago(u.last_seen), 'lg'); lg.title = T('শেষ login: ', 'Last login: ') + (u.last_seen ? fmtDate(u.last_seen) : '—'); d.appendChild(lg);
+    if (u.active === false) { d.appendChild(document.createTextNode(' ')); d.appendChild(el('span', 'User disabled', 'pill off')); }
+    if (u.user_id) d.appendChild(dotsBtn(u));
+    return d;
+  }
+
+  // ---------- page language (EN / বাং): static texts carry data-bn / data-en ----------
+  function applyDashLang() {
+    var L = dlang();
+    [].forEach.call(document.querySelectorAll('#tab-dash [data-bn]'), function (x) {
+      var v = x.getAttribute('data-' + L); if (v == null) return;
+      if (x.hasAttribute('data-html')) x.innerHTML = v; else x.textContent = v;
+    });
+    [].forEach.call(document.querySelectorAll('#dashLang button'), function (b) { b.classList.toggle('on', b.dataset.l === L); });
+    if (!$('tab-dash').classList.contains('hidden')) document.documentElement.lang = L;
+  }
+  $('dashLang').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-l]'); if (!b) return;
+    try { localStorage.setItem(LANG_KEY, b.dataset.l); } catch (x) {}
+    applyDashLang(); renderDashboard(); dashStamp(); loadDataLineText();
+  });
+
+  // one "last updated" line: the page header's (admin-shell.js shows it next to its Refresh button)
+  function dashStamp() {
+    if (!dash.at || $('tab-dash').classList.contains('hidden') || !$('subWhen')) return;
+    $('subWhen').textContent = T('শেষ আপডেট ', 'Updated ') + dash.at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' (' + ago(dash.at.toISOString()) + ')';
+  }
+  setInterval(dashStamp, 30000);
+  [].forEach.call(document.querySelectorAll('.tab[data-tab="dash"]'), function (b) {
+    b.addEventListener('click', function () { setTimeout(function () { applyDashLang(); dashStamp(); }, 20); });
+  });
+
   function renderDashboard() {
-    var S = $('dashStats'); S.innerHTML = '';
-    var c = { submitted: 0, draft: 0, locked: 0, short: 0 };
-    dash.rows.forEach(function (r) { c[r.submit_state]++; if ((r.supervisors || []).length < reqSup(r.workers)) c.short++; });
-    var noList = dash.users.filter(function (u) { return !(u.lists || []).length; }).length;
-    function stat(n, label, cls) { var d = el('div', null, 'stat ' + (cls || '')); d.appendChild(el('div', bn(n), 'n')); d.appendChild(el('div', label, 'l')); S.appendChild(d); }
-    stat(dash.users.length, 'Supervisors'); stat(dash.rows.length, 'Current lists (works)');
-    stat(c.submitted, 'Submitted', 'good'); stat(c.draft, 'Draft (not submitted)', 'warn'); stat(c.locked, 'Locked');
-    stat(noList, 'No list'); stat(c.short, 'Too few supervisor names', c.short ? 'bad' : '');
-    if (dash.dups.length) stat(dash.dups.length, 'Same worker in two lists (old)', 'bad');
-    renderSummary();
+    dash.byId = {}; dash.rows.forEach(function (r) { dash.byId[r.list_id] = r; });
+    // a list that went back to draft cannot stay ticked for the export
+    dash.picked.forEach(function (id) { var r = dash.byId[id]; if (r && r.submit_state === 'draft') dash.picked.delete(id); });
+    renderTiles();
 
     var D = $('dupBox'); D.innerHTML = '';
     D.classList.toggle('hidden', !dash.dups.length);
     if (dash.dups.length) {
-      var det = el('details', null, 'dups'); det.appendChild(el('summary', '⚠ ' + dash.dups.length + ' worker(s) are in more than one list (from before the new rule) — show'));
+      var det = el('details', null, 'dups'); det.id = 'dupDetails'; det.appendChild(el('summary', '⚠ ' + dash.dups.length + ' worker(s) are in more than one list (from before the new rule) — show'));
       var wrap = el('div', null, 'table-wrap'); wrap.style.marginTop = '6px';
       var t = el('table'); var th = el('tr');
       ['Job Card No', 'App', 'Name', 'In the lists of'].forEach(function (h) { th.appendChild(el('th', h)); });
@@ -888,52 +1013,216 @@
       t.appendChild(tb); wrap.appendChild(t); det.appendChild(wrap); D.appendChild(det);
     }
 
-    document.querySelectorAll('#dashFilters button[data-f]').forEach(function (b) { b.classList.toggle('active', b.dataset.f === dash.filter); });
+    // filter chips with numbers: All 10 · Submitted 0 · Draft 9 · No list 4 · Locked 1
+    var c = { all: dash.rows.length, submitted: 0, draft: 0, locked: 0, empty: dash.users.filter(function (u) { return !(u.lists || []).length; }).length };
+    dash.rows.forEach(function (r) { c[r.submit_state]++; });
+    var names = { all: T('সব', 'All'), submitted: 'Submitted', draft: 'Draft', empty: T('List নেই', 'No list'), locked: 'Locked' };
+    document.querySelectorAll('#dashFilters button[data-f]').forEach(function (b) {
+      b.textContent = names[b.dataset.f] + ' ' + bn(c[b.dataset.f]); b.classList.toggle('active', b.dataset.f === dash.filter);
+    });
+    var fx = $('dashFilterX'); fx.classList.toggle('hidden', !filterName(dash.filter)); fx.textContent = '✕ ' + filterName(dash.filter);
     document.querySelectorAll('#dashView button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === dashView); });
-    var C = $('dashCards'); C.innerHTML = '';
+    var C = $('dashCards'); C.innerHTML = ''; C.className = 'ucards' + (dashView === 'work' ? ' wview' : '');
     if (dashView === 'list') { renderListTable(C); updateExportSummary(); return; }
+    if (dashView === 'work') { renderWorkView(C); updateExportSummary(); return; }
     var shown = 0;
     dash.users.forEach(function (u) {
-      var lists = (u.lists || []).filter(function (l) { return dash.filter === 'all' || l.submit_state === dash.filter; });
+      var lists = (u.lists || []).filter(function (l) { return passRow(rowOf(l)); });
       if (dash.filter === 'empty' ? (u.lists || []).length : (dash.filter !== 'all' && !lists.length)) return;
       C.appendChild(userCard(u, lists)); shown++;
     });
-    if (!shown) C.appendChild(el('div', dash.users.length ? 'Nothing in this group.' : 'This GP has no supervisors yet. Add them from the Users tab.', 'card muted'));
+    if (!shown) C.appendChild(el('div', dash.users.length ? T('এই ভাগে কিছু নেই।', 'Nothing in this group.') : T('এই GP-তে এখনও কোনো supervisor নেই। Team & Access থেকে যোগ করুন।', 'This GP has no supervisors yet. Add them from the Users tab.'), 'card muted'));
     updateExportSummary();
   }
 
-  // Short summary under the numbers: today, workers, accounts, villages, who is still pending
-  function renderSummary() {
-    var box = $('dashSum'); if (!box) { box = el('div', null, 'dsum'); box.id = 'dashSum'; $('dashStats').after(box); }
-    box.innerHTML = '';
-    var today = new Date().toDateString(), tLists = 0, tWorkers = 0, workers = 0, noAcc = 0, vs = {};
+  // One row of numbers (the old number tiles + the old summary block). A tile with a filter is a button.
+  function renderTiles() {
+    var S = $('dashStats'); S.innerHTML = '';
+    var old = $('dashSum'); if (old) old.remove();          // (the separate summary block is now part of the tiles)
+    var c = { submitted: 0, draft: 0, locked: 0, short: 0, todo: 0 }, workers = 0, noAcc = 0, tLists = 0, tWorkers = 0, vs = {};
     dash.rows.forEach(function (r) {
-      var n = Number(r.workers || 0); workers += n; noAcc += Number(r.no_account || 0);
+      var n = Number(r.workers || 0); c[r.submit_state]++; workers += n; noAcc += Number(r.no_account || 0);
+      if (needSup(r)) c.short++;
+      if (r.submit_state === 'draft' && n > 0) c.todo++;
+      if (isToday(r)) { tLists++; tWorkers += n; }
       (r.villages || []).forEach(function (v) { vs[vno(v)] = 1; });
-      if (r.submitted_at && new Date(r.submitted_at).toDateString() === today && r.submit_state !== 'draft') { tLists++; tWorkers += n; }
     });
-    function row(icon, label, html, cls) { var d = el('div', null, 'dsum-row' + (cls ? ' ' + cls : '')); d.appendChild(el('span', icon)); d.appendChild(el('b', label));
-      var v = el('span'); v.textContent = html; d.appendChild(v); box.appendChild(d); }
-    row('📅', 'Today', tLists ? bn(tLists) + ' list(s) submitted · ' + bn(tWorkers) + ' workers' : 'no list submitted yet today');
-    row('👥', 'Workers', bn(workers) + ' in ' + bn(dash.rows.length) + ' current list(s)' + (dash.extrasOk ? (noAcc ? ' · ⚠ ' + bn(noAcc) + ' without account' : ' · ✓ all have an account') : ''), dash.extrasOk && noAcc ? 'warn' : '');
-    var vk = Object.keys(vs).sort(); row('🏘', 'Villages', vk.length ? vk.join(', ') : '—');
-    var draft = [], none = [];
-    dash.users.forEach(function (u) {
-      if (!u.active) return;
-      var ls = u.lists || [];
-      if (!ls.length) none.push(u.full_name || u.username);
-      else if (ls.some(function (l) { return l.submit_state === 'draft' && Number(l.workers || 0) > 0; })) draft.push(u.full_name || u.username);
-    });
-    row('⏳', 'Not submitted', draft.length ? draft.join(', ') : 'nobody — every list with workers is submitted', draft.length ? 'warn' : 'ok');
-    if (none.length) row('➖', 'No list yet', none.join(', '));
+    dash.villages = Object.keys(vs).sort();
+    var noList = dash.users.filter(function (u) { return !(u.lists || []).length; });
+    function tile(icon, n, label, sub, cls, f, title) {
+      var d = el(f ? 'button' : 'div', null, 'stat ' + (cls || '') + (f ? ' click' : '') + (f && f === dash.filter && f !== 'all' ? ' on' : ''));
+      if (f) { d.type = 'button'; d.addEventListener('click', function () {
+        if (f === 'dups') { var x = $('dupDetails'); if (x) { x.open = true; x.scrollIntoView({ behavior: 'smooth', block: 'center' }); } return; }
+        dash.filter = dash.filter === f ? 'all' : f; renderDashboard(); }); }
+      var top = el('div', null, 'n'); top.appendChild(el('span', icon, 'ic')); top.appendChild(document.createTextNode(bn(n))); d.appendChild(top);
+      d.appendChild(el('div', label, 'l')); if (sub) d.appendChild(el('div', sub, 's'));
+      if (title) d.title = title;
+      S.appendChild(d);
+    }
+    tile('📋', dash.rows.length, T('মোট list', 'Lists'), T(bn(workers) + ' জন worker', bn(workers) + ' workers'), '', 'all');
+    tile('✓', c.submitted, 'Submitted', T('export করা যাবে', 'ready to export'), c.submitted ? 'good' : '', 'submitted');
+    tile('⚠', c.draft, 'Draft', c.todo ? T(bn(c.todo) + 'টায় worker আছে', bn(c.todo) + ' with workers') : T('কোনোটায় worker নেই', 'none has workers'), c.todo ? 'warn' : '', 'draft');
+    tile('🔒', c.locked, 'Locked', T('K-Desk-এর জন্য বন্ধ', 'closed for K-Desk'), '', 'locked');
+    tile('➖', noList.length, T('List নেই', 'No list'), T('supervisor', 'supervisors'), '', 'empty', noList.map(function (u) { return u.full_name || u.username; }).join(', '));
+    tile(c.short ? '⚠' : '✓', c.short, T('list-এ supervisor-এর নাম নেই বা কম', 'lists without enough supervisor names'), T('ক্লিক করলে list দেখাবে', 'click to see them'), c.short ? 'warn' : 'good', 'nosup');
+    if (dash.extrasOk) tile(noAcc ? '⚠' : '✓', noAcc, T('জনের Account/IFSC নেই', 'workers without Account/IFSC'), noAcc ? T('export আটকাবে না', 'does not stop the export') : T('সবার আছে', 'all have one'), noAcc ? 'warn' : 'good', 'noacc');
+    tile('📅', tLists, T('আজ submit', 'Submitted today'), T(bn(tWorkers) + ' জন worker', bn(tWorkers) + ' workers'), '', 'today');
+    tile('👥', dash.users.length, 'Supervisors', T(bn(dash.users.filter(function (u) { return u.active; }).length) + ' জন চালু', bn(dash.users.filter(function (u) { return u.active; }).length) + ' active'), '', null);
+    if (dash.dups.length) tile('⚠', dash.dups.length, T('worker দুই list-এ (পুরোনো)', 'Same worker in two lists (old)'), T('ক্লিক করে দেখুন', 'click to see'), 'warn', 'dups');
+    loadDataLineText();
   }
 
-  // ---------- ☰ List view: one row per list (Details view = the cards) ----------
-  var dashView = 'details';
-  try { dashView = localStorage.getItem('gramg2.adminDashView') || 'details'; } catch (e) {}
+  // ---------- default view: grouped by what has to be done ----------
+  function section(kind, title, sub, count) {
+    var box = el('div', null, 'wsec ' + kind), head = el('div', null, 'wsh');
+    var h = el('h3'); h.appendChild(document.createTextNode(title + ' ')); h.appendChild(el('span', bn(count), 'cnt')); head.appendChild(h);
+    box.appendChild(head); if (sub) box.appendChild(el('div', sub, 'wss'));
+    var body = el('div', null, 'wbody'); box.appendChild(body);
+    return { box: box, head: head, body: body };
+  }
+  function fold(kind, summary, open) {
+    var d = el('details', null, 'wsec wfold ' + kind); if (open) d.open = true;
+    d.appendChild(el('summary', summary)); var body = el('div', null, 'wbody'); d.appendChild(body);
+    return { box: d, body: body };
+  }
+  function renderWorkView(C) {
+    var ready = [], todo = [], empty = [];
+    dash.rows.forEach(function (r) {
+      if (!passRow(r)) return;
+      var n = Number(r.workers || 0);
+      if (!n) empty.push(r); else if (r.submit_state === 'draft') todo.push(r); else ready.push(r);
+    });
+    function t(r, k) { var v = r[k] ? Date.parse(r[k]) : 0; return v || 0; }
+    ready.sort(function (a, b) { return (a.submit_state === 'submitted' ? 0 : 1) - (b.submit_state === 'submitted' ? 0 : 1) || t(b, 'submitted_at') - t(a, 'submitted_at'); });
+    todo.sort(function (a, b) { return t(a, 'list_updated_at') - t(b, 'list_updated_at'); });
+    empty.sort(function (a, b) { return t(a, 'list_updated_at') - t(b, 'list_updated_at'); });
+    var noList = dash.users.filter(function (u) { return !(u.lists || []).length; });
+    var all = dash.filter === 'all';
+
+    if (!dash.users.length) { C.appendChild(el('div', T('এই GP-তে এখনও কোনো supervisor নেই। Team & Access থেকে যোগ করুন।', 'This GP has no supervisors yet. Add them from Team & Access.'), 'card muted')); return; }
+
+    if (all || ready.length) {
+      var s1 = section('ready', '✅ ' + T('K-Desk-এ পাঠানোর জন্য তৈরি', 'Ready for K-Desk'), T('Submitted আর Locked list। টিক দিয়ে এখান থেকেই Excel বানান।', 'Submitted and Locked lists. Tick them and make the Excel right here.'), ready.length);
+      var tools = el('div', null, 'wtools');
+      if (ready.some(function (r) { return r.submit_state === 'submitted'; })) {
+        var pa = el('button', T('সব submitted বাছুন', 'Select all submitted'), 'btn-light btn-small'); pa.type = 'button';
+        pa.addEventListener('click', function () { $('pickSubmitted').click(); }); tools.appendChild(pa);
+      }
+      var ex = el('button', '', 'btn-success btn-small expMirror'); ex.type = 'button'; ex.addEventListener('click', goExport); tools.appendChild(ex);
+      s1.head.appendChild(tools);
+      ready.forEach(function (r) { s1.body.appendChild(workRow(r, 'ready')); });
+      if (!ready.length) s1.body.appendChild(el('div', T('এখনও কোনো list submit হয়নি। নিচের "কাজ বাকি" দেখুন।', 'No list is submitted yet. See "Work left" below.'), 'wempty'));
+      C.appendChild(s1.box);
+    }
+    if (todo.length) {
+      var s2 = section('todo', '⚠ ' + T('কাজ বাকি', 'Work left'), T('Worker আছে কিন্তু এখনও submit হয়নি। প্রতিটার পাশে লেখা আছে কী বাকি।', 'These have workers but are not submitted yet. Each says what is missing.'), todo.length);
+      todo.forEach(function (r) { s2.body.appendChild(workRow(r, 'todo')); });
+      C.appendChild(s2.box);
+    }
+    if (empty.length) {
+      var s3 = fold('empty', T('খালি draft (' + bn(empty.length) + 'টা) · কোনো worker নেই', 'Empty drafts (' + bn(empty.length) + ') · no workers'), false);
+      var del = el('button', '🗑 ' + T('সব খালি draft মুছুন', 'Delete all empty drafts'), 'btn-ghost btn-small'); del.type = 'button';
+      del.addEventListener('click', function () { deleteEmptyDrafts(empty); });
+      var bar = el('div', null, 'wtools'); bar.appendChild(del); s3.body.appendChild(bar);
+      empty.forEach(function (r) { s3.body.appendChild(workRow(r, 'empty')); });
+      C.appendChild(s3.box);
+    }
+    if ((all || dash.filter === 'empty') && noList.length) {
+      var s4 = fold('nolist', T('List বানাননি (' + bn(noList.length) + ' জন supervisor)', 'No list yet (' + bn(noList.length) + ' supervisors)'), dash.filter === 'empty');
+      noList.forEach(function (u) { var r = el('div', null, 'wrow nl'); r.appendChild(supLine(u)); s4.body.appendChild(r); });
+      C.appendChild(s4.box);
+    }
+    if (!C.children.length) C.appendChild(el('div', T('এই ভাগে কিছু নেই।', 'Nothing in this group.'), 'card muted'));
+  }
+
+  // what a draft still needs before it can be submitted
+  function missingOf(r) {
+    var m = [], sups = (r.supervisors || []).length;
+    if (!sups) m.push(T('Supervisor-এর নাম নেই', 'No supervisor name'));
+    else if (needSup(r)) m.push(T('Supervisor কম: ' + reqSup(r.workers) + ' জন দরকার', 'Too few supervisors: ' + reqSup(r.workers) + ' needed'));
+    if (!r.work_code) m.push(T('Work code নেই', 'No Work code'));
+    if (dash.extrasOk && !hasDate(r)) m.push(T('Date নেই', 'No date'));
+    return m;
+  }
+  function draftAge(r) {
+    var d = Math.floor(ageDays(r.list_updated_at));
+    var txt = d < 1 ? T('🕘 আজ বদলেছে', '🕘 changed today') : T('🕘 ' + bn(d) + ' দিন ধরে draft', '🕘 draft for ' + bn(d) + (d === 1 ? ' day' : ' days'));
+    return { d: d, txt: txt, title: T('শেষ বদল: ', 'Last change: ') + fmtDate(r.list_updated_at) };
+  }
+  function workRow(r, kind) {
+    var n = Number(r.workers || 0), st = r.submit_state, u = userOf(r);
+    var row = el('div', null, 'wrow ' + kind + (dash.picked.has(r.list_id) ? ' sel' : ''));
+    var ck = el('label', null, 'wck');
+    if (kind !== 'empty') {
+      var cb = document.createElement('input'); cb.type = 'checkbox';
+      if (st === 'draft') { cb.disabled = true; ck.title = T('আগে submit করতে হবে', 'Submit it first'); ck.classList.add('off'); }
+      else {
+        cb.checked = dash.picked.has(r.list_id); ck.title = T('K-Desk export-এ যোগ করুন', 'Add to K-Desk export');
+        cb.addEventListener('change', function () { if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id); row.classList.toggle('sel', cb.checked); updateExportSummary(); });
+      }
+      cb.setAttribute('aria-label', ck.title); ck.appendChild(cb);
+    }
+    row.appendChild(ck);
+    var main = el('div', null, 'wmain');
+    var head = el('div', null, 'whead');
+    var nm = el('div', r.work_name || T('(Work Name নেই)', '(no Work Name)'), 'wname'); nm.title = r.work_name || '';
+    head.appendChild(nm); head.appendChild(el('span', stLbl(st), 'pill ' + st)); main.appendChild(head);
+    main.appendChild(supLine(u));
+    var tags = el('div', null, 'wtags');
+    if (kind === 'todo') {
+      var miss = missingOf(r);
+      miss.forEach(function (x) { tags.appendChild(tag('warn', '⚠ ' + x)); });
+      tags.appendChild(tag('warn', '⚠ ' + (miss.length ? T('Submit বাকি', 'Not submitted') : T('সব আছে, শুধু submit বাকি', 'All filled, only Submit left'))));
+    }
+    if (kind !== 'empty') {
+      if (kind === 'ready') {
+        if (r.kdesk_loaded_at) tags.appendChild(tag('ok', '✓ ' + T('K-Desk-এ গেছে ', 'In K-Desk ') + ago(r.kdesk_loaded_at), fmtDate(r.kdesk_loaded_at) + (r.export_count > 1 ? ' (' + r.export_count + 'x)' : '')));
+        else if (r.exported_at) tags.appendChild(tag('info', '📤 Export ' + ago(r.exported_at), fmtDate(r.exported_at) + (r.export_count > 1 ? ' (' + r.export_count + 'x)' : '')));
+        if (needSup(r)) tags.appendChild(tag('warn', '⚠ ' + T('Supervisor কম: ' + reqSup(n) + ' জন দরকার', 'Too few supervisors: ' + reqSup(n) + ' needed')));
+      }
+      if (dash.extrasOk) {
+        if (hasDate(r)) tags.appendChild(tag('info', '📅 ' + ddmmyyyy(r.from_date).slice(0, 5) + ' → ' + dateTo(r.from_date, Number(r.work_days)).slice(0, 5) + ' · ' + T(r.work_days + ' দিন', r.work_days + ' days'), dateText(r.from_date, r.work_days)));
+        else if (kind === 'ready') tags.appendChild(tag('info', '📅 ' + T('Date নেই: panel-এর From/Days বসবে', 'No date: panel From/Days used')));
+        var na = Number(r.no_account || 0);
+        if (na) tags.appendChild(tag('warn', '⚠ ' + T(bn(na) + ' জনের Account/IFSC নেই', bn(na) + ' without Account/IFSC'), T('Export আটকাবে না, তবে payment-এর আগে ঠিক করুন', 'Does not stop the export; fix before payment')));
+        else if (kind === 'ready') tags.appendChild(tag('ok', '✓ ' + T('সবার Account আছে', 'All have an account')));
+      }
+      if (kind === 'ready') {
+        if (r.work_code) tags.appendChild(tag('info mono', '🏷 ' + r.work_code));
+        else tags.appendChild(tag('info', '🏷 ' + T('Work code নেই: panel-এরটা বসবে', 'No Work code: panel one used')));
+        if (r.submitted_at) tags.appendChild(tag('info', '🕘 Submit ' + ago(r.submitted_at), fmtDate(r.submitted_at)));
+        var rt = resultsText(r.results, n);
+        if (rt) tags.appendChild(tag((r.results.demand_err || r.results.alloc_err) ? 'warn' : 'ok', ((r.results.demand_err || r.results.alloc_err) ? '⚠ ' : '✓ ') + rt));
+      }
+      if (r.villages && r.villages.length) tags.appendChild(tag('info', '🏘 ' + r.villages.map(vno).join(', ')));
+    }
+    if (st === 'draft') { var ag = draftAge(r); tags.appendChild(tag(kind === 'todo' && ag.d > 3 ? 'warn' : 'info', ag.txt, ag.title)); }
+    main.appendChild(tags);
+    row.appendChild(main);
+    var num = el('div', null, 'wnum'); num.appendChild(el('b', bn(n))); num.appendChild(el('span', T('জন', 'workers'))); row.appendChild(num);
+    var acts = el('div', null, 'wacts');
+    function act(label, cls, fn, title) { var b = el('button', label, cls + ' btn-small'); b.type = 'button'; if (title) b.title = title; b.addEventListener('click', fn); acts.appendChild(b); return b; }
+    act('👁 View', 'btn-primary', function () { openPreview(r); });
+    if ((st === 'submitted' || st === 'draft') && n > 0) act('🔒 Lock', 'btn-light', function () { listAction(r, 'lock'); });
+    if (st === 'submitted' || st === 'locked') act('↩ Send back', 'btn-light', function () {
+      ask('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.').then(function (ok) { if (ok) listAction(r, 'reopen'); });
+    });
+    if (st === 'locked') act('✔ Work complete', 'btn-light', function () {
+      ask('"' + r.work_name + '" (' + r.username + ') — work complete?\nThe list is closed (it stays in the history) and its ' + n + ' workers can be picked for new work again.', 'Yes, complete', 'ok').then(function (ok) { if (ok) listAction(r, 'complete'); });
+    });
+    if (Number(r.submissions)) act('🕘 ' + r.submissions, 'btn-light', function () { openSubmissions(r); }, 'Past submissions (' + r.submissions + ')');
+    act('🗑', 'btn-ghost', function () { deleteList(r); }, T('List মুছুন', 'Delete list'));
+    row.appendChild(acts);
+    return row;
+  }
+
+  // ---------- ☰ List view: one row per list ----------
+  var dashView = 'work';
+  try { dashView = localStorage.getItem('gramg2.adminDashView2') || 'work'; } catch (e) {}
+  if (['work', 'details', 'list'].indexOf(dashView) < 0) dashView = 'work';
   $('dashView').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-v]'); if (!b) return;
-    dashView = b.dataset.v; try { localStorage.setItem('gramg2.adminDashView', dashView); } catch (x) {}
+    dashView = b.dataset.v; try { localStorage.setItem('gramg2.adminDashView2', dashView); } catch (x) {}
     renderDashboard();
   });
   function renderListTable(C) {
@@ -942,12 +1231,13 @@
       var ls = u.lists || [];
       if (dash.filter === 'empty') { if (!ls.length) rows.push({ u: u, r: null }); return; }
       ls.forEach(function (l) {
-        if (dash.filter !== 'all' && l.submit_state !== dash.filter) return;
-        rows.push({ u: u, r: dash.rows.filter(function (x) { return x.list_id === l.list_id; })[0] });
+        var r = rowOf(l);
+        if (!passRow(r)) return;
+        rows.push({ u: u, r: r });
       });
       if (dash.filter === 'all' && !ls.length) rows.push({ u: u, r: null });
     });
-    if (!rows.length) { C.appendChild(el('div', dash.users.length ? 'Nothing in this group.' : 'This GP has no supervisors yet. Add them from the Users tab.', 'card muted')); return; }
+    if (!rows.length) { C.appendChild(el('div', dash.users.length ? T('এই ভাগে কিছু নেই।', 'Nothing in this group.') : 'This GP has no supervisors yet. Add them from the Users tab.', 'card muted')); return; }
     var wrap = el('div', null, 'lwrap'), t = el('table', null, 'ltable'), hr = el('tr');
     ['', 'Supervisor', 'Work', 'Status', 'Workers', 'Date', 'Accounts', ''].forEach(function (h) { hr.appendChild(el('th', h)); });
     var th = el('thead'); th.appendChild(hr); t.appendChild(th);
@@ -958,21 +1248,25 @@
       var c0 = cell(tr, 'Export');
       var n = r ? Number(r.workers || 0) : 0;
       if (r && n > 0) {
-        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.title = 'Add to K-Desk export'; cb.checked = dash.picked.has(r.list_id);
-        cb.addEventListener('change', function () { if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id); tr.classList.toggle('sel', cb.checked); updateExportSummary(); });
+        var cb = document.createElement('input'); cb.type = 'checkbox';
+        if (r.submit_state === 'draft') { cb.disabled = true; cb.title = T('আগে submit করতে হবে', 'Submit it first'); }
+        else {
+          cb.title = 'Add to K-Desk export'; cb.checked = dash.picked.has(r.list_id);
+          cb.addEventListener('change', function () { if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id); tr.classList.toggle('sel', cb.checked); updateExportSummary(); });
+        }
         c0.appendChild(cb);
       }
-      var cs = cell(tr, 'Supervisor'); cs.appendChild(el('div', u.full_name || u.username)); cs.appendChild(el('div', '@' + u.username + (u.active ? '' : ' · disabled'), 'sub'));
-      if (!r) { var cn = cell(tr, 'Work', 'sub'); cn.textContent = 'No current list'; cn.colSpan = 6; tr.appendChild(el('td')); tb.appendChild(tr); return; }
-      var cw = cell(tr, 'Work', 'wk'); cw.appendChild(el('div', r.work_name || '(no Work Name)'));
+      var cs = cell(tr, 'Supervisor'); cs.appendChild(el('div', u.full_name || u.username));
+      var sl = el('div', null, 'sub'); sl.appendChild(phoneOrUser(u)); if (!u.active) sl.appendChild(document.createTextNode(' · disabled')); cs.appendChild(sl);
+      if (!r) { var cn = cell(tr, 'Work', 'sub'); cn.textContent = T('এখন কোনো list নেই', 'No current list'); cn.colSpan = 6; tr.appendChild(el('td')); tb.appendChild(tr); return; }
+      var cw = cell(tr, 'Work', 'wk'); var wn = el('div', r.work_name || '(no Work Name)', 'clamp2'); wn.title = r.work_name || ''; cw.appendChild(wn);
       cw.appendChild(el('div', r.work_code || 'no Work Code', 'sub'));
       if (r.villages && r.villages.length) cw.appendChild(el('div', 'village ' + r.villages.map(vno).join(', '), 'sub'));
       cell(tr, 'Status').appendChild(el('span', STATE_BN[r.submit_state], 'pill ' + r.submit_state));
-      var sups = (r.supervisors || []).length, need = reqSup(n);
       var cwk = cell(tr, 'Workers'); cwk.appendChild(el('div', bn(n)));
-      if (sups < need) cwk.appendChild(el('div', '⚠ needs ' + need + ' sup.', 'sub warn'));
-      var cd = cell(tr, 'Date', r.from_date && r.work_days ? '' : 'sub');
-      if (r.from_date && r.work_days) { cd.appendChild(el('div', ddmmyyyy(r.from_date).slice(0, 5) + ' → ' + dateTo(r.from_date, Number(r.work_days)))); cd.appendChild(el('div', r.work_days + ' working days', 'sub')); }
+      if (needSup(r)) cwk.appendChild(el('div', '⚠ needs ' + reqSup(n) + ' sup.', 'sub warn'));
+      var cd = cell(tr, 'Date', hasDate(r) ? '' : 'sub');
+      if (hasDate(r)) { cd.appendChild(el('div', ddmmyyyy(r.from_date).slice(0, 5) + ' → ' + dateTo(r.from_date, Number(r.work_days)))); cd.appendChild(el('div', r.work_days + ' working days', 'sub')); }
       else cd.textContent = '—';
       var ca = cell(tr, 'Accounts');
       if (dash.extrasOk && n) { var na = Number(r.no_account || 0); ca.textContent = na ? '⚠ ' + bn(na) + ' no A/C' : '✓ all'; ca.title = na ? bn(na) + ' worker(s) without Account No / IFSC' : 'Every worker has an account'; ca.className = na ? 'warn' : 'okc'; } else ca.textContent = '—';
@@ -988,30 +1282,21 @@
     t.appendChild(tb); wrap.appendChild(t); C.appendChild(wrap);
   }
 
+  // ---------- "Supervisor ধরে" view: one card per supervisor (the old Details view) ----------
   function userCard(u, lists) {
     var card = el('div', null, 'ucard');
     var top = el('div', null, 'top');
-    var who = el('div'); who.appendChild(el('div', u.full_name || u.username, 'nm')); who.appendChild(el('div', '@' + u.username + (u.active ? '' : ' · disabled'), 'un'));
-    var pills = el('div'); pills.style.textAlign = 'right';
+    var who = el('div'); who.appendChild(el('div', u.full_name || u.username, 'nm'));
+    var un = el('div', null, 'un'); un.appendChild(phoneOrUser(u)); if (!u.active) un.appendChild(document.createTextNode(' · disabled')); who.appendChild(un);
+    var pills = el('div', null, 'tr'); pills.style.textAlign = 'right';
     pills.appendChild(el('span', (u.lists || []).length + ' list(s)', 'pill neutral'));
     if (!u.active) { pills.appendChild(document.createTextNode(' ')); pills.appendChild(el('span', 'User disabled', 'pill off')); }
+    pills.appendChild(dotsBtn(u));
     top.appendChild(who); top.appendChild(pills); card.appendChild(top);
-    card.appendChild(el('div', 'Devices: ' + u.active_devices + ' active · last login ' + fmtDate(u.last_seen), 'meta'));
-    if (!(u.lists || []).length) card.appendChild(el('div', 'No current list.', 'muted'));
-    lists.forEach(function (l) {
-      var r = dash.rows.filter(function (x) { return x.list_id === l.list_id; })[0];
-      card.appendChild(listCard(r));
-    });
-    var acts = el('div', null, 'acts');
-    function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
-    act('🔑 PIN', 'btn-light', function () { openPinModal(u); });
-    act(u.active ? 'Disable user' : 'Enable user', u.active ? 'btn-danger' : 'btn-success', async function () {
-      if (u.active && !await ask('Disable the account of ' + u.username + '? They are logged out of every device at once.')) return;
-      SB.rpc('admin_set_user_active', { p_user_id: u.user_id, p_active: !u.active })
-        .then(function () { status(u.username + ' ' + (u.active ? 'disabled' : 'enabled') + '.', 'ok'); return loadDashboard(); })
-        .catch(function (e) { if (!e.authLost) status(errText(e), 'err'); });
-    });
-    card.appendChild(acts);
+    var meta = el('div', 'Devices: ' + u.active_devices + ' active · last login ' + ago(u.last_seen), 'meta'); meta.title = u.last_seen ? fmtDate(u.last_seen) : ''; card.appendChild(meta);
+    if (!(u.lists || []).length) card.appendChild(el('div', T('এখন কোনো list নেই।', 'No current list.'), 'muted'));
+    lists.forEach(function (l) { card.appendChild(listCard(rowOf(l))); });
+    // 🔑 PIN and Disable user moved into the ⋯ menu next to the name
     return card;
   }
 
@@ -1027,18 +1312,19 @@
     var box = el('div', null, 'lcard' + (dash.picked.has(r.list_id) ? ' sel' : ''));
     box.dataset.list = r.list_id;
     var head = el('div', null, 'lhead');
-    head.appendChild(el('div', r.work_name || '(no Work Name)', 'lname'));
+    var ln = el('div', r.work_name || '(no Work Name)', 'lname clamp2'); ln.title = r.work_name || ''; head.appendChild(ln);
     head.appendChild(el('span', STATE_BN[st], 'pill ' + st));
     box.appendChild(head);
     var meta = el('div', null, 'meta');
     function line(label, value, cls) { var d = el('div', null, cls || ''); d.appendChild(el('b', label + ': ')); d.appendChild(document.createTextNode(value)); meta.appendChild(d); return d; }
     line('Workers', bn(n) + (r.villages && r.villages.length ? ' · village ' + r.villages.map(vno).join(', ') : ''));
-    line('Supervisors', (sups.length ? sups.join(', ') : '—') + (sups.length < need ? '  ⚠ ' + need + ' needed' : ''), sups.length < need ? 'warnline' : '');
+    line('Supervisors', (sups.length ? sups.join(', ') : '—') + (needSup(r) ? '  ⚠ ' + need + ' needed' : ''), needSup(r) ? 'warnline' : '');
     line('Work Code', r.work_code || '— (not set)', r.work_code ? 'mono' : 'muted');
     if (dash.extrasOk) {
-      line('Date', r.from_date && r.work_days ? dateText(r.from_date, r.work_days) : '— (supervisor has not given it)', r.from_date && r.work_days ? '' : 'muted');
+      line('Date', hasDate(r) ? dateText(r.from_date, r.work_days) : '— (supervisor has not given it)', hasDate(r) ? '' : 'muted');
       if (n > 0) line('Accounts', Number(r.no_account) ? '⚠ ' + bn(r.no_account) + ' of ' + bn(n) + ' workers have no Account No / IFSC' : '✓ all ' + bn(n) + ' have an account', Number(r.no_account) ? 'warnline' : 'kdline');
     }
+    if (st === 'draft') { var ag = draftAge(r); var al = line(T('Draft', 'Draft'), ag.txt.replace('🕘 ', ''), n > 0 && ag.d > 3 ? 'warnline' : 'muted'); al.title = ag.title; }
     if (r.submitted_at) line('Submitted', fmtDate(r.submitted_at));
     if (r.kdesk_loaded_at) line('🖥 K-Desk', 'loaded ' + fmtDate(r.kdesk_loaded_at) + (r.export_count > 1 ? ' (' + r.export_count + ' times in all)' : ''), 'kdline');
     else if (r.exported_at) line('Exported', fmtDate(r.exported_at) + (r.export_count > 1 ? ' (' + r.export_count + ' times)' : ''));
@@ -1047,12 +1333,16 @@
     box.appendChild(meta);
     if (n > 0) {
       var pick = el('label', null, 'pick'); var cb = document.createElement('input'); cb.type = 'checkbox';
-      cb.checked = dash.picked.has(r.list_id); cb.dataset.list = r.list_id;
-      cb.addEventListener('change', function () {
-        if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id);
-        box.classList.toggle('sel', cb.checked); updateExportSummary();
-      });
-      pick.appendChild(cb); pick.appendChild(document.createTextNode('Add to K-Desk export')); box.appendChild(pick);
+      cb.dataset.list = r.list_id;
+      if (st === 'draft') { cb.disabled = true; pick.title = T('আগে submit করতে হবে', 'Submit it first'); pick.classList.add('off'); }
+      else {
+        cb.checked = dash.picked.has(r.list_id);
+        cb.addEventListener('change', function () {
+          if (cb.checked) dash.picked.add(r.list_id); else dash.picked.delete(r.list_id);
+          box.classList.toggle('sel', cb.checked); updateExportSummary();
+        });
+      }
+      pick.appendChild(cb); pick.appendChild(document.createTextNode('Add to K-Desk export' + (st === 'draft' ? T(' (আগে submit করতে হবে)', ' (submit it first)') : ''))); box.appendChild(pick);
     }
     var acts = el('div', null, 'acts');
     function act(label, cls, fn) { var b = el('button', label, cls + ' btn-small'); b.addEventListener('click', fn); acts.appendChild(b); return b; }
@@ -1061,11 +1351,11 @@
     if (st === 'submitted' || st === 'locked') act('↩ Send back', 'btn-light', function () {
       ask('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.').then(function (ok) { if (ok) listAction(r, 'reopen'); });
     });
-    if (st === 'locked') act('✔ Work complete', 'btn-success', function () {
+    if (st === 'locked') act('✔ Work complete', 'btn-light', function () {
       ask('"' + r.work_name + '" (' + r.username + ') — work complete?\nThe list is closed (it stays in the history) and its ' + n + ' workers can be picked for new work again.', 'Yes, complete', 'ok').then(function (ok) { if (ok) listAction(r, 'complete'); });
     });
     if (Number(r.submissions)) act('🕘 Past submissions (' + r.submissions + ')', 'btn-light', function () { openSubmissions(r); });
-    act('🗑 Delete', 'btn-danger', function () { deleteList(r); });
+    act('🗑 Delete', 'btn-ghost', function () { deleteList(r); });
     box.appendChild(acts);
     return box;
   }
@@ -1083,12 +1373,29 @@
   }
 
   // ---------- delete list (database: admin_delete_list; soft delete, kept in Backup) ----------
+  // A list with workers needs its name typed before Delete works.
+  function normName(s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function askTyped(msg, need, yes) {
+    var inp = $('askInput'), y = $('askYes');
+    inp.value = ''; inp.placeholder = need; inp.classList.remove('hidden');
+    var p = ask(msg, yes, 'danger');
+    y.disabled = true;
+    function check() { y.disabled = normName(inp.value) !== normName(need); }
+    inp.addEventListener('input', check);
+    setTimeout(function () { inp.focus(); }, 30);
+    return p.then(function (ok) { inp.removeEventListener('input', check); inp.classList.add('hidden'); inp.placeholder = ''; y.disabled = false; return ok && normName(inp.value) === normName(need); });
+  }
   async function deleteList(r) {
-    var n = Number(r.workers || 0);
-    if (!await ask('Delete "' + (r.work_name || '(no Work Name)') + '" (' + r.username + ', ' + (STATE_BN[r.submit_state] || r.submit_state) + ', ' + n + ' workers)?\n' +
-      'The list disappears from the panel and the supervisor app, and its workers can be picked for a new list again.\n' +
-      'It stays in the database (Backup) with its K-Desk results.' +
-      (r.submit_state === 'locked' ? '\n\n⚠ This list is Locked (it may be in K-Desk now).' : ''))) return;
+    var n = Number(r.workers || 0), name = r.work_name || '';
+    var msg = T('এই list মুছবেন?', 'Delete this list?') + '\n\n📋 ' + (name || '(no Work Name)') + '\n👤 ' + (r.full_name || r.username) + ' · ' + (STATE_BN[r.submit_state] || r.submit_state) +
+      ' · ' + T(bn(n) + ' জন worker', bn(n) + ' workers') + '\n\n' +
+      T('List-টা panel আর supervisor app থেকে সরে যাবে, এর worker-রা আবার নতুন list-এ বাছা যাবে। Database-এ (Backup) K-Desk result সহ থেকে যাবে।',
+        'The list disappears from the panel and the supervisor app, and its workers can be picked for a new list again. It stays in the database (Backup) with its K-Desk results.') +
+      (r.submit_state === 'locked' ? '\n\n⚠ ' + T('এই list Locked (হয়তো এখন K-Desk-এ আছে)।', 'This list is Locked (it may be in K-Desk now).') : '');
+    var ok = n > 0
+      ? await askTyped(msg + '\n\n' + T('নিশ্চিত করতে list-এর নাম টাইপ করুন: ', 'Type the list name to confirm: ') + (name || r.username), name || r.username, '🗑 ' + T('মুছুন', 'Delete'))
+      : await ask(msg, '🗑 ' + T('মুছুন', 'Delete'));
+    if (!ok) return;
     loading('Deleting the list...');
     return SB.rpc('admin_delete_list', { p_list_id: r.list_id })
       .then(function () {
@@ -1098,21 +1405,73 @@
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   }
-
-  function pickedRows() { return dash.rows.filter(function (r) { return dash.picked.has(r.list_id); }); }
-  function updateExportSummary() {
-    var rows = pickedRows(), n = 0, notSub = 0, noCode = 0, noDate = 0;
-    rows.forEach(function (r) { n += Number(r.workers || 0); if (r.submit_state === 'draft') notSub++; if (!r.work_code) noCode++; if (!(r.from_date && r.work_days)) noDate++; });
-    $('expSummary').textContent = rows.length
-      ? rows.length + ' list(s) selected (' + rows.map(function (r) { return (r.work_name || '—') + ' / ' + r.username; }).join(', ') + '), ' + bn(n) + ' workers in all.' +
-        (notSub ? ' ⚠ ' + notSub + ' list(s) not submitted yet.' : '') +
-        (noCode ? ' ' + noCode + ' list(s) have no Work Code of their own: the Work code below is used for them.' : ' Every selected list has its own Work Code.') +
-        (noDate ? ' ' + noDate + ' list(s) have no date from the supervisor: From and Days below are used for them.' : ' Every selected list has its own From + Days.')
-      : 'No list selected.';
-    $('expBtn').disabled = !rows.length;
-    $('expFloatN').textContent = rows.length; $('expFloat').classList.toggle('hidden', !rows.length);
+  // "সব খালি draft মুছুন": the same admin_delete_list, once per empty draft (only lists with 0 workers)
+  async function deleteEmptyDrafts(list) {
+    list = list.filter(function (r) { return !Number(r.workers || 0) && r.submit_state === 'draft'; });
+    if (!list.length) return;
+    var names = list.slice(0, 12).map(function (r) { return '• ' + (r.work_name || '(no Work Name)') + ' — ' + (r.full_name || r.username); }).join('\n') + (list.length > 12 ? '\n…' : '');
+    if (!await ask(T(bn(list.length) + 'টা খালি draft মুছবেন? এগুলোতে কোনো worker নেই।', 'Delete ' + list.length + ' empty drafts? They have no workers.') + '\n\n' + names +
+      '\n\n' + T('Database-এ (Backup) থেকে যাবে।', 'They stay in the database (Backup).'), '🗑 ' + T('সব মুছুন', 'Delete all'))) return;
+    var done = 0, failed = 0;
+    for (var i = 0; i < list.length; i++) {
+      loading(T('মুছছি… ', 'Deleting… ') + (i + 1) + '/' + list.length);
+      try { await SB.rpc('admin_delete_list', { p_list_id: list[i].list_id }); done++; dash.picked.delete(list[i].list_id); }
+      catch (e) { if (e.authLost) { loading(''); return; } failed++; }
+    }
+    loading('');
+    status('🗑 ' + T(bn(done) + 'টা খালি draft মোছা হয়েছে।', done + ' empty draft(s) deleted.') + (failed ? ' ⚠ ' + T(failed + 'টা মোছা যায়নি।', failed + ' could not be deleted.') : ''), failed ? 'err' : 'ok');
+    return loadDashboard();
   }
-  $('expFloat').addEventListener('click', function () { $('exportCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+
+  // ---------- K-Desk export panel ----------
+  function pickedRows() { return dash.rows.filter(function (r) { return dash.picked.has(r.list_id); }); }
+  function shortNames(rs) { return rs.map(function (r) { return '"' + (r.work_name || '—') + '" (' + (r.full_name || r.username) + ')'; }).join(', '); }
+  // what still stops the export: missing From/Days or Work code for lists that have none of their own
+  function exportNeeds() {
+    var rows = pickedRows();
+    var noDate = rows.filter(function (r) { return !hasDate(r); }), noCode = rows.filter(function (r) { return !r.work_code; });
+    var days = parseInt($('expDays').value, 10);
+    return { rows: rows, noDate: noDate, noCode: noCode,
+             dateBad: noDate.length && (!$('expFrom').value || !(days >= 1 && days <= 366)), codeBad: noCode.length && !$('expWork').value.trim() };
+  }
+  function updateExportSummary() {
+    var x = exportNeeds(), rows = x.rows, n = 0;
+    rows.forEach(function (r) { n += Number(r.workers || 0); });
+    $('expDateBox').classList.toggle('hidden', !x.noDate.length);
+    $('expCodeBox').classList.toggle('hidden', !x.noCode.length);
+    $('expDateFor').textContent = x.noDate.length ? T('এই ' + bn(x.noDate.length) + 'টা list-এ date নেই: ', 'These ' + x.noDate.length + ' list(s) have no date: ') + shortNames(x.noDate) : '';
+    $('expCodeFor').textContent = x.noCode.length ? T('এই ' + bn(x.noCode.length) + 'টা list-এ Work code নেই: ', 'These ' + x.noCode.length + ' list(s) have no Work code: ') + shortNames(x.noCode) : '';
+    var S = $('expSummary'); S.innerHTML = '';
+    if (!rows.length) S.appendChild(el('div', T('কোনো list বাছা হয়নি। উপরে "K-Desk-এ পাঠানোর জন্য তৈরি" থেকে টিক দিন।', 'No list selected. Tick lists in "Ready for K-Desk".'), 'muted'));
+    else {
+      S.appendChild(el('div', T(bn(rows.length) + 'টা list বাছা হয়েছে: ', rows.length + ' list(s) selected: ') + shortNames(rows), 'muted'));
+      if (x.dateBad) S.appendChild(tag('bad', '⛔ ' + T('From আর Days দিন, নইলে export হবে না', 'Enter From and Days, or the export stops')));
+      if (x.codeBad) S.appendChild(tag('bad', '⛔ ' + T('Work code দিন, নইলে export হবে না', 'Enter the Work code, or the export stops')));
+      if (!x.noDate.length && !x.noCode.length) S.appendChild(tag('ok', '✓ ' + T('সব list-এ নিজের date আর Work code আছে', 'Every list has its own date and Work code')));
+    }
+    var label = rows.length ? T('📥 ' + bn(rows.length) + 'টা list-এর K-Desk Excel বানান (মোট ' + bn(n) + ' জন)', '📥 Make K-Desk Excel of ' + rows.length + ' list(s) (' + bn(n) + ' workers)')
+                            : T('📥 K-Desk Excel বানান', '📥 Create K-Desk Excel');
+    $('expBtn').textContent = label; $('expBtn').disabled = !rows.length;
+    [].forEach.call(document.querySelectorAll('.expMirror'), function (b) { b.textContent = label; b.disabled = !rows.length; });
+    $('expFloatN').textContent = T(bn(rows.length) + 'টা বাছাই', rows.length + ' selected');
+    $('expFloat').classList.toggle('hidden', !rows.length);
+  }
+  // the sticky bar on phones and the button in "Ready for K-Desk": export at once, or show the
+  // export panel first when it still needs From/Days or the Work code
+  function goExport() {
+    var x = exportNeeds();
+    if (!x.rows.length) return;
+    if (x.dateBad || x.codeBad) {
+      $('exportCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var f = x.dateBad ? (!$('expFrom').value ? $('expFrom') : $('expDays')) : $('expWork');
+      setTimeout(function () { f.focus(); }, 400);
+      status(T('আগে export panel-এ ', 'First fill ') + (x.dateBad ? 'From/Days' : 'Work code') + T(' দিন।', ' in the export panel.'), 'err');
+      return;
+    }
+    $('expBtn').click();
+  }
+  $('expFloat').addEventListener('click', goExport);
+  ['expFrom', 'expDays', 'expWork'].forEach(function (id) { $(id).addEventListener('input', updateExportSummary); });
   // phone: tables become cards, each cell shows its column name
   function labelTable(tbody) {
     var tbl = tbody.closest('table'), heads = tbl ? Array.prototype.map.call(tbl.querySelectorAll('thead th'), function (h) { return h.textContent.trim(); }) : [];
@@ -1127,6 +1486,8 @@
   document.querySelectorAll('#dashFilters button[data-f]').forEach(function (b) {
     b.addEventListener('click', function () { dash.filter = b.dataset.f; renderDashboard(); });
   });
+  $('dashFilterX').addEventListener('click', function () { dash.filter = 'all'; renderDashboard(); });
+  applyDashLang();
   $('pickSubmitted').addEventListener('click', function () {
     dash.rows.forEach(function (r) { if (Number(r.workers) && r.submit_state === 'submitted') dash.picked.add(r.list_id); });
     renderDashboard();
@@ -1520,6 +1881,10 @@
         $('pvSearch').value = ''; $('pvAddInput').value = ''; $('pvAddResults').innerHTML = '';
       }
       $('pvPick').checked = dash.picked.has(r.list_id);
+      // a draft cannot go to the K-Desk export: it has to be submitted first
+      var pvDraft = d.submit_state === 'draft'; $('pvPick').disabled = pvDraft;
+      $('pvPick').parentNode.title = pvDraft ? T('আগে submit করতে হবে', 'Submit it first') : '';
+      $('pvPick').parentNode.classList.toggle('off', pvDraft);
       renderListPreview(); $('pvModal').classList.add('show');
     }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });

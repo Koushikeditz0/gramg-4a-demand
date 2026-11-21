@@ -24,8 +24,8 @@
   var S = { ctx: null, home: [], gp: null, page: 'home', viewerMode: read('gramg2.rViewer') === '1',
             view: read('gramg2.rView') === 'list' ? 'list' : 'cards', mrs: null, mrStage: 'all', mrKind: 'all', works: null, reg: null, wkKind: 'all', caste: null, ek: null, limit: 300 };
   var STAGES = [
-    ['all', 'All pending'], ['emb', 'e-MB pending'], ['verify', 'Verify pending'], ['fill_pending', 'Fill pending'],
-    ['fill_today', 'Ends today'], ['wl_pending', 'WL pending'], ['running', 'Running']];   // v238: e-MB → verify → fill → WL
+    ['all', 'All pending'], ['running', 'Running'], ['emb', 'e-MB pending'], ['verify', 'Verify pending'], ['fill_pending', 'Fill pending'],
+    ['fill_today', 'Ends today'], ['wl_pending', 'WL pending']];   // v238: Running → e-MB → verify → fill → WL
   var STAGE_LABEL = { fill_pending: 'Fill pending', fill_today: 'Ends today', emb: 'e-MB pending', verify: 'Verify pending', wl_pending: 'WL pending', running: 'Running', wl_done: 'WL done', zero: 'Zero' };
 
   function loading(t) { var l = $('loading'); l.textContent = t || ''; l.style.display = t ? 'block' : 'none'; }
@@ -129,8 +129,9 @@
   // ---------------- home ----------------
   function st(g, k, f) { var s = (g.stages || {})[k]; return s ? Number(s[f || 'all'] || 0) : 0; }
   function sums(list) {
-    var t = { fill: 0, today: 0, emb: 0, wl: 0, wlAmt: 0, pbaToday: 0, pbaTom: 0, works: 0, workers: 0, ekyc: 0, abps: 0, ready: 0, notes: 0 };
+    var t = { running: 0, fill: 0, today: 0, emb: 0, wl: 0, wlAmt: 0, pbaToday: 0, pbaTom: 0, works: 0, workers: 0, ekyc: 0, abps: 0, ready: 0, notes: 0 };
     list.forEach(function (g) {
+      t.running += st(g, 'running');
       t.fill += st(g, 'fill_pending') + st(g, 'fill_today'); t.today += st(g, 'fill_today');
       t.emb += st(g, 'emb') + st(g, 'verify'); t.wl += st(g, 'wl_pending'); t.wlAmt += st(g, 'wl_pending', 'amt');
       t.pbaToday += st(g, 'fill_today', 'pba'); t.pbaTom += Number(g.pba_tomorrow || 0); t.works += Number(g.works_waiting || 0);
@@ -149,23 +150,24 @@
   function renderHome() {
     var list = S.gp ? S.home.filter(function (g) { return g.id === S.gp; }) : S.home;
     var t = sums(list), tl = $('tiles'); tl.innerHTML = '';
+    tl.appendChild(tile('t4', '🏃', n(t.running), 'Running MR', 'Period not ended yet', pipeTo('running')));
     tl.appendChild(tile('t2', '📐', n(t.emb), 'e-MB / Verify pending', 'Before MR fill', pipeTo('emb')));
     tl.appendChild(tile('t1', '⏳', n(t.fill), 'MR fill pending', t.today ? 'Ends today: ' + n(t.today) : '', pipeTo('fill_pending')));
     tl.appendChild(tile('t5', '📄', n(t.wl), 'WL to generate', t.wlAmt ? rs(t.wlAmt) : '', pipeTo('wl_pending')));
     tl.appendChild(tile('t6', '🏠', n(t.pbaToday), 'PBA fill today', 'Ends tomorrow: ' + n(t.pbaTom), pipeTo('fill_today', 'pba')));
     tl.appendChild(tile('t3', '✅', pct(t.ready, t.workers) + '%', 'eKYC + ABPS ready', n(t.ready) + ' / ' + n(t.workers) + ' workers', function () { if (S.gp) go('ekyc'); else status('First pick a GP.'); }));
-    tl.appendChild(tile('t4', '📝', n(t.notes), 'New notes (7 days)', '', function () { if (S.gp) go('notes'); else status('First pick a GP.'); }));
 
     // GP compare (several GPs, none picked)
     var cc = $('cmpCard'), tb = $('cmp');
     cc.classList.toggle('hidden', !!S.gp || S.home.length < 2);
     if (!S.gp && S.home.length > 1) {
       tb.innerHTML = '';
-      var hr = el('tr'); ['GP', 'e-MB/Verify', 'Fill pending', 'WL pending', 'Ready %', 'MR data'].forEach(function (h) { hr.appendChild(el('th', h)); }); tb.appendChild(hr);
+      var hr = el('tr'); ['GP', 'Running', 'e-MB/Verify', 'Fill pending', 'WL pending', 'Ready %', 'MR data'].forEach(function (h) { hr.appendChild(el('th', h)); }); tb.appendChild(hr);
       var mx = { f: 0, w: 0 }; S.home.forEach(function (g) { mx.f = Math.max(mx.f, st(g, 'fill_pending') + st(g, 'fill_today')); mx.w = Math.max(mx.w, st(g, 'wl_pending')); });
       S.home.forEach(function (g) {
         var tr = el('tr', null, 'click'), f = st(g, 'fill_pending') + st(g, 'fill_today'), e = g.ekyc || {};
         tr.appendChild(el('td', g.name));
+        tr.appendChild(el('td', n(st(g, 'running'))));
         tr.appendChild(el('td', n(st(g, 'emb') + st(g, 'verify'))));
         tr.appendChild(el('td', n(f), f && f === mx.f ? 'bad' : ''));
         tr.appendChild(el('td', n(st(g, 'wl_pending')), st(g, 'wl_pending') && st(g, 'wl_pending') === mx.w ? 'bad' : ''));
@@ -201,15 +203,7 @@
       ad.appendChild(el('div', 'Viewers cannot see this part.', 'mut'));
     }
 
-    // new notes
-    var nn = $('newNotes'); nn.innerHTML = '';
-    nn.appendChild(el('h3', '📝 Recent notes'));
-    if (!S.gp) { nn.appendChild(el('div', 'Pick a GP to see its notes.', 'mut')); return; }
-    SB.rpc('report_notes', { p_gp: S.gp, p_limit: 5 }).then(function (list) {
-      if (S.page !== 'home') return;
-      if (!list.length) { nn.appendChild(el('div', 'No notes yet. Tap 📝 on any MR or work to add one.', 'mut')); return; }
-      list.forEach(function (x) { nn.appendChild(noteEl(x, true)); });
-    }).catch(function (e) { if (!e.authLost) nn.appendChild(el('div', errText(e), 'mut')); });
+    // v238: the 'Recent notes' box on Home was removed (Koushik); notes stay on the 📝 Notes page and on each MR / work
   }
   function latestOf(k) { return S.home.reduce(function (m, x) { return x[k] && (!m || x[k] > m) ? x[k] : m; }, null); }
 

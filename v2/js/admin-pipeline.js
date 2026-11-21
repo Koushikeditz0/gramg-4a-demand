@@ -156,15 +156,20 @@
     var rep = m.rep, repWhen = rep ? ' · MR report ' + fmtAt(rep.at) : '';
     var wlAmt = sum(m.mrRows.filter(function (x) { return x.s === 'wl_pending'; }), function (x) { return x.tot; });
     var steps = [
+      // v238: Running → e-MB / verify → MR fill → WL (Koushik). Count only: running MR rows are not sent to the page.
+      rep
+        ? { key: 'running', n: m.cnt('running'), unit: 'MR', title: 'Running MR', color: '#64748b', noDetail: true,
+            sub: 'MR period not ended yet' + repWhen }
+        : { key: 'running', n: null, unit: '', title: 'Running MR', off: true, color: '#64748b',
+            sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
       rep
         ? { key: 'emb', n: m.cnt('emb') + m.cnt('verify'), unit: 'MR', title: 'e-MB / AE verification pending',
-            sub: m.cnt('emb') + ' e-MB entry · ' + m.cnt('verify') + ' AE verification · must be done before the MR can be filled (not for PBA)' + repWhen }
+            sub: m.cnt('emb') + ' e-MB entry · ' + m.cnt('verify') + ' AE verification · must be done before the MR can be filled (not for PBA)' }
         : { key: 'emb', n: null, unit: '', title: 'e-MB / AE verification pending', off: true,
             sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
       rep
         ? { key: 'fill', n: m.cnt('fill_today') + m.cnt('fill_pending'), unit: 'MR', title: 'MR fill pending',
             sub: 'e-MB verified (PBA: period ended), not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') +
-                 ' · ' + m.cnt('running') + ' running' +
                  (m.cnt('wl_pending') ? ' · ' + m.cnt('wl_pending') + ' filled MRs wait for a wage list' + (wlAmt ? ' (' + money(wlAmt) + ')' : '') : '') }
         : pp.mode === 'other'
         ? { key: 'fill', n: null, unit: '', title: 'MR fill pending', off: true,
@@ -187,22 +192,24 @@
     ];
 
     // bar
-    var parts = steps.slice(0, 5).map(function (s, i) { return { n: s.n || 0, c: COLORS[i], t: s.title }; });
+    var flowSteps = steps.filter(function (s) { return s.key !== 'running' && s.key !== 'paid'; });
+    var parts = flowSteps.map(function (s, i) { return { n: s.n || 0, c: COLORS[i], t: s.title }; });
     var tot = sum(parts, function (p) { return p.n; });
     parts.forEach(function (p) { if (!p.n) return; var i = el('i'); i.style.width = (p.n * 100 / tot) + '%'; i.style.background = p.c; i.title = p.t + ': ' + p.n; bar.appendChild(i); });
-    $('ppBarText').textContent = tot ? steps.slice(0, 5).map(function (s) { return (s.n == null ? '—' : s.n) + ' ' + s.unit; }).join(' · ') : 'Nothing to show yet.';
+    $('ppBarText').textContent = tot ? flowSteps.map(function (s) { return (s.n == null ? '—' : s.n) + ' ' + s.unit; }).join(' · ') : 'Nothing to show yet.';
 
     steps.forEach(function (s, i) {
       var row = el('div', null, 'pp-step' + (s.off ? ' off' : '') + (pp.open === s.key ? ' open' : ''));
+      var ci = flowSteps.indexOf(s);
       var dot = el('div', s.off ? '?' : s.key === 'sent' ? '✓' : String(i + 1), 'pp-dot');
-      dot.style.background = s.off ? '#94a3b8' : COLORS[i] || '#94a3b8';
+      dot.style.background = s.off ? '#94a3b8' : s.color || COLORS[ci] || '#94a3b8';
       var tx = el('div', null, 'pp-txt'); tx.appendChild(el('b', s.title)); tx.appendChild(el('small', s.sub));
       var num = el('div', s.n == null ? '—' : String(s.n), 'pp-num');
       if (s.bad) num.style.color = '#b91c1c';
       if (s.n != null && s.unit) num.appendChild(el('small', s.unit + (s.n === 1 ? '' : 's')));
       row.appendChild(dot); row.appendChild(tx); row.appendChild(num);
       stepsBox.appendChild(row);
-      if (s.off) return;
+      if (s.off || s.noDetail) { if (s.noDetail) row.style.cursor = 'default'; return; }
       row.addEventListener('click', function () { pp.open = pp.open === s.key ? '' : s.key; render(); });
       if (pp.open === s.key) stepsBox.appendChild(detail(s.key, m));
     });

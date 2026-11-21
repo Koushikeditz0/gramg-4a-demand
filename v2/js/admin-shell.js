@@ -340,16 +340,17 @@
     var lsState = D.draft || D.noList ? 'warn' : D.lists ? 'done' : 'idle';
     f.push({ key: 'lists', n: 1, val: D.sub, of: D.lists, unit: '', label: L('List submit হয়েছে', 'Lists submitted'),
              note: D.draft ? cnt(D.draft, 'draft list', 'draft list') : D.lists ? L('সব submit হয়েছে', 'all submitted') : L('এখনও কোনো list নেই', 'no list yet'), state: lsState, tab: 'dash' });
+    // v238: e-MB / AE verify comes before MR fill (normal works), so it is ② and MR fill is ③
+    f.push({ key: 'emb', n: 2, val: p.emb, unit: p.emb != null ? L('টা MR', p.emb === 1 ? 'MR' : 'MRs') : '', label: L('e-MB / AE verify', 'e-MB / AE verify'),
+             note: p.emb == null ? L('MR report লাগবে', 'needs MR report') : p.emb ? L('e-MB entry বা AE verify বাকি · তারপর MR fill', 'e-MB entry or AE verify left · then MR fill') : L('কিছু বাকি নেই', 'nothing left'),
+             state: p.emb ? 'warn' : 'idle', tab: 'pipeline' });
     var fillLate = has && p.fill > 0;
     var dl = p.fillOldest ? Math.floor((Date.now() - new Date(p.fillOldest + 'T23:59:59').getTime()) / 864e5) : null;
-    f.push({ key: 'fill', n: 2, val: has ? p.fill : null, unit: has ? L('টা MR', p.fill === 1 ? 'MR' : 'MRs') : '', label: L('MR fill বাকি', 'MR to fill'),
+    f.push({ key: 'fill', n: 3, val: has ? p.fill : null, unit: has ? L('টা MR', p.fill === 1 ? 'MR' : 'MRs') : '', label: L('MR fill বাকি', 'MR to fill'),
              note: !has ? L('pipeline তৈরি নয়', 'pipeline not ready') : !p.fill ? L('period শেষ হওয়া সব MR fill হয়েছে', 'all ended MRs are filled')
                : (dl != null && dl > 0 ? L('period শেষ ' + dl + ' দিন আগে', 'period ended ' + dl + (dl === 1 ? ' day' : ' days') + ' ago')
                  : p.fillToday ? L('period আজ শেষ', 'period ends today') : L('period শেষ', 'period ended')) + (p.fillPbaOnly ? ' · PBA' : ''),
              state: fillLate ? 'late' : 'idle', tab: 'pipeline', days: dl });
-    f.push({ key: 'emb', n: 3, val: p.emb, unit: p.emb != null ? L('টা MR', p.emb === 1 ? 'MR' : 'MRs') : '', label: L('e-MB / AE verify', 'e-MB / AE verify'),
-             note: p.emb == null ? L('MR report লাগবে', 'needs MR report') : p.emb ? L('e-MB entry বা AE verify বাকি', 'e-MB entry or AE verify left') : L('কিছু বাকি নেই', 'nothing left'),
-             state: p.emb ? 'warn' : 'idle', tab: 'pipeline' });
     f.push({ key: 'gen', n: 4, val: p.gen, unit: p.gen != null ? L('টা work', p.gen === 1 ? 'work' : 'works') : '', label: L('WL generate হয়নি', 'WL not generated'),
              note: p.gen == null ? L('K-Desk এখনও পড়েনি', 'K-Desk not read yet') : p.gen ? L('MR fill হয়েছে, WL নেই', 'MR filled, no wage list') : L('কিছু বাকি নেই', 'nothing left'),
              state: p.gen ? 'warn' : 'idle', tab: 'pipeline' });

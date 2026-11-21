@@ -132,7 +132,7 @@
     var weekAgo = Date.now() - 7 * 864e5;
     var sent = wls.filter(function (w) { return w.stage === 'sent' && w.sent_at && new Date(w.sent_at).getTime() >= weekAgo && want(wlPba(w.wl, w.code)); });
     // MR-wise report: rows still to move, filtered by mode; per work code the earliest open stage
-    var rep = d.mrRep || null, mrRows = [], mrByCode = {}, ORDER = { fill_pending: 1, fill_today: 1, emb: 2, verify: 3, wl_pending: 4 };
+    var rep = d.mrRep || null, mrRows = [], mrByCode = {}, ORDER = { emb: 1, verify: 2, fill_pending: 3, fill_today: 3, wl_pending: 4 };   // v238: e-MB → verify → fill → WL
     if (rep) {
       mrRows = (rep.rows || []).filter(function (x) { return want(isPba(x.code)); });
       (rep.rows || []).forEach(function (x) { var k = String(x.code).toUpperCase(); if (!mrByCode[k] || ORDER[x.s] < ORDER[mrByCode[k]]) mrByCode[k] = x.s; });
@@ -154,23 +154,29 @@
     var iayWhen = iay.report_at ? ' · IAY Tracker ' + fmtDay(iay.report_at) : '';
 
     var rep = m.rep, repWhen = rep ? ' · MR report ' + fmtAt(rep.at) : '';
-    var embAmt = sum(m.mrRows.filter(function (x) { return x.s === 'verify' || x.s === 'wl_pending'; }), function (x) { return x.tot; });
+    var wlAmt = sum(m.mrRows.filter(function (x) { return x.s === 'wl_pending'; }), function (x) { return x.tot; });
     var steps = [
+      // v238: Running → e-MB / verify → MR fill → WL (Koushik). Count only: running MR rows are not sent to the page.
+      rep
+        ? { key: 'running', n: m.cnt('running'), unit: 'MR', title: 'Running MR', color: '#64748b', noDetail: true,
+            sub: 'MR period not ended yet' + repWhen }
+        : { key: 'running', n: null, unit: '', title: 'Running MR', off: true, color: '#64748b',
+            sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
+      rep
+        ? { key: 'emb', n: m.cnt('emb') + m.cnt('verify'), unit: 'MR', title: 'e-MB / AE verification pending',
+            sub: m.cnt('emb') + ' e-MB entry · ' + m.cnt('verify') + ' AE verification · must be done before the MR can be filled (not for PBA)' }
+        : { key: 'emb', n: null, unit: '', title: 'e-MB / AE verification pending', off: true,
+            sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
       rep
         ? { key: 'fill', n: m.cnt('fill_today') + m.cnt('fill_pending'), unit: 'MR', title: 'MR fill pending',
-            sub: 'MR period ended, not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') +
-                 ' · ' + m.cnt('running') + ' running' + repWhen }
+            sub: 'e-MB verified (PBA: period ended), not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') +
+                 (m.cnt('wl_pending') ? ' · ' + m.cnt('wl_pending') + ' filled MRs wait for a wage list' + (wlAmt ? ' (' + money(wlAmt) + ')' : '') : '') }
         : pp.mode === 'other'
         ? { key: 'fill', n: null, unit: '', title: 'MR fill pending', off: true,
             sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' }
         : { key: 'fill', n: iay.fill_due || 0, unit: 'MR', title: 'MR fill pending' + (pp.mode === 'all' ? ' (PBA only)' : ''),
             sub: 'PBA MRs whose period has ended but are not filled' + (iay.fill_today ? ' · ' + iay.fill_today + ' end today' : '') + iayWhen +
                  (pp.mode === 'all' ? '. Other works show after the MR-wise report (R4.2 + R4.4) is sent to Gram Setu.' : '') },
-      rep
-        ? { key: 'emb', n: m.cnt('emb') + m.cnt('verify'), unit: 'MR', title: 'e-MB / AE verification pending',
-            sub: m.cnt('emb') + ' e-MB entry · ' + m.cnt('verify') + ' AE verification' + (m.cnt('wl_pending') ? ' · ' + m.cnt('wl_pending') + ' verified MRs wait for a wage list' + (embAmt ? ' (' + money(embAmt) + ')' : '') : '') }
-        : { key: 'emb', n: null, unit: '', title: 'e-MB / AE verification pending', off: true,
-            sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
       { key: 'gen', n: m.gen.at ? m.gen.items.length : null, unit: 'work', title: 'Wage List not generated',
         sub: (m.gen.at ? 'MR filled, no wage list yet (Generate Wagelist page)' + (held.length ? ' · ' + held.length + ' held back for accounts' : '')
                        : 'K-Desk has not read the Generate Wagelist page yet') +
@@ -186,22 +192,24 @@
     ];
 
     // bar
-    var parts = steps.slice(0, 5).map(function (s, i) { return { n: s.n || 0, c: COLORS[i], t: s.title }; });
+    var flowSteps = steps.filter(function (s) { return s.key !== 'running' && s.key !== 'paid'; });
+    var parts = flowSteps.map(function (s, i) { return { n: s.n || 0, c: COLORS[i], t: s.title }; });
     var tot = sum(parts, function (p) { return p.n; });
     parts.forEach(function (p) { if (!p.n) return; var i = el('i'); i.style.width = (p.n * 100 / tot) + '%'; i.style.background = p.c; i.title = p.t + ': ' + p.n; bar.appendChild(i); });
-    $('ppBarText').textContent = tot ? steps.slice(0, 5).map(function (s) { return (s.n == null ? '—' : s.n) + ' ' + s.unit; }).join(' · ') : 'Nothing to show yet.';
+    $('ppBarText').textContent = tot ? flowSteps.map(function (s) { return (s.n == null ? '—' : s.n) + ' ' + s.unit; }).join(' · ') : 'Nothing to show yet.';
 
     steps.forEach(function (s, i) {
       var row = el('div', null, 'pp-step' + (s.off ? ' off' : '') + (pp.open === s.key ? ' open' : ''));
+      var ci = flowSteps.indexOf(s);
       var dot = el('div', s.off ? '?' : s.key === 'sent' ? '✓' : String(i + 1), 'pp-dot');
-      dot.style.background = s.off ? '#94a3b8' : COLORS[i] || '#94a3b8';
+      dot.style.background = s.off ? '#94a3b8' : s.color || COLORS[ci] || '#94a3b8';
       var tx = el('div', null, 'pp-txt'); tx.appendChild(el('b', s.title)); tx.appendChild(el('small', s.sub));
       var num = el('div', s.n == null ? '—' : String(s.n), 'pp-num');
       if (s.bad) num.style.color = '#b91c1c';
       if (s.n != null && s.unit) num.appendChild(el('small', s.unit + (s.n === 1 ? '' : 's')));
       row.appendChild(dot); row.appendChild(tx); row.appendChild(num);
       stepsBox.appendChild(row);
-      if (s.off) return;
+      if (s.off || s.noDetail) { if (s.noDetail) row.style.cursor = 'default'; return; }
       row.addEventListener('click', function () { pp.open = pp.open === s.key ? '' : s.key; render(); });
       if (pp.open === s.key) stepsBox.appendChild(detail(s.key, m));
     });
@@ -239,8 +247,8 @@
       if (rows.length > 800) box.appendChild(el('div', 'First 800 of ' + rows.length + ' MRs.', 'muted'));
       return box;
     }
-    if (key === 'fill' && m.rep) return mrTable(['fill_today', 'fill_pending']);
-    if (key === 'emb') return mrTable(['emb', 'verify', 'wl_pending']);
+    if (key === 'fill' && m.rep) return mrTable(['fill_today', 'fill_pending', 'wl_pending']);
+    if (key === 'emb') return mrTable(['emb', 'verify']);
     if (key === 'fill') {
       box.appendChild(el('div', 'The IAY tab has the MR-wise list (which MR, which beneficiary, fill date).', 'muted'));
       var b = el('button', '🏠 Open IAY tab', 'btn-light btn-small'); b.style.marginTop = '6px';
@@ -286,7 +294,7 @@
     if (ms === 'fill_pending' || ms === 'fill_today') return tag('MR fill pending', 'bad');
     if (ms === 'emb') return tag('e-MB pending', 't1');
     if (ms === 'verify') return tag('AE verify pending', 't2');
-    if (ms === 'wl_pending') return tag('MR verified · WL pending', 't2');
+    if (ms === 'wl_pending') return tag('MR filled · WL pending', 't2');
     var ws = m.byCode[code] || [], inSend = {};
     m.send.items.forEach(function (x) { inSend[String(x.wl).toUpperCase()] = 1; });
     var waiting = ws.filter(function (w) { return w.stage !== 'sent' && inSend[String(w.wl).toUpperCase()]; });

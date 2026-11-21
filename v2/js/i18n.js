@@ -157,6 +157,7 @@
     '✓ সফল': '✓ Done', '⊘ বাদ': '⊘ Skipped', 'সফল': 'Done',
     // steps, tabs, bar
     '🔎 খুঁজুন': '🔎 Search',
+    '📋 সব family': '📋 All families',
     '✅ বাছাই (': '✅ Picked (',
     'জন বাছাই': 'picked',
     '⚠ ③ Supervisor-এ নাম দিন': '⚠ Add names in ③ Supervisor',

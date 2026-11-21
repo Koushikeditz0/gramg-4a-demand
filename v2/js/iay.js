@@ -112,13 +112,17 @@
     var cb = $('calBody'); cb.innerHTML = '';
     calendarFor(p).then(function (cal) {
       cb.innerHTML = '';
-      if (!cal.length) { var tr0 = el('tr'); var td0 = el('td', 'Nothing in the next 35 days'); td0.colSpan = 3; tr0.appendChild(td0); cb.appendChild(tr0); return; }
-      cal.forEach(function (c) {
-        var tr = el('tr', null, c.date === todayIso ? 'today' : '');
-        tr.appendChild(el('td', dmy(c.date) + ' (' + dayName(c.date) + ')' + (c.date === todayIso ? ' · today' : ''), 'nw'));
-        tr.appendChild(cntCell(c.fill, function () { openList('fill_on', c.date, dmy(c.date) + ' — MR fill'); }));
-        tr.appendChild(cntCell(c.mr_start, function () { openList('mr_start_on', c.date, dmy(c.date) + ' — new MR must start'); }));
-        cb.appendChild(tr);
+      if (!cal.length) { var tr0 = el('tr'); var td0 = el('td', 'Nothing in the next 35 days'); td0.colSpan = 4; tr0.appendChild(td0); cb.appendChild(tr0); return; }
+      return printNotesFor(p, cal).then(function (notes) {
+        cb.innerHTML = '';
+        cal.forEach(function (c) {
+          var tr = el('tr', null, c.date === todayIso ? 'today' : '');
+          tr.appendChild(el('td', dmy(c.date) + ' (' + dayName(c.date) + ')' + (c.date === todayIso ? ' · today' : ''), 'nw'));
+          tr.appendChild(cntCell(c.fill, function () { openList('fill_on', c.date, dmy(c.date) + ' — MR fill'); }));
+          tr.appendChild(printCell(p, c, notes));
+          tr.appendChild(cntCell(c.mr_start, function () { openList('mr_start_on', c.date, dmy(c.date) + ' — new MR must start'); }));
+          cb.appendChild(tr);
+        });
       });
     });
     // GP table
@@ -140,6 +144,66 @@
     if (n) { var a = el('a', nf(n), 'c'); a.onclick = fn; td.appendChild(a); } else td.textContent = '—';
     return td;
   }
+  // ---------- MR Print note per GP + date (SQL v237) ----------
+  var PRINT_OPTS = [
+    ['no', '⚪ No · হয়নি'],
+    ['pdf', '🟡 Only PDF'],
+    ['print', '🟡 Only Print'],
+    ['done', '🟢 PDF & Print done']
+  ];
+  var printOff = false;                // v237 not run yet → hide quietly
+  function printNotesFor(p, cal) {
+    if (printOff || !cal.length) return Promise.resolve({});
+    return SB.rpc('iay_print_notes', { p_jc_prefix: p || null, p_from: cal[0].date, p_to: cal[cal.length - 1].date }, { retry: true, timeout: 30000 })
+      .then(function (rows) {
+        var m = {};
+        (rows || []).forEach(function (r) { (m[r.date] = m[r.date] || []).push(r); });
+        return m;
+      }, function (e) {
+        if (/iay_print_notes|PGRST202|function/i.test(errText(e) + ' ' + (e && (e.code || e.message) || ''))) printOff = true;
+        else status(errText(e), 'err');
+        return {};
+      });
+  }
+  function printCell(p, c, notes) {
+    var td = el('td'), rows = notes[c.date] || [];
+    if (printOff) { td.textContent = '—'; td.title = 'Run SQL v237 to use MR Print notes'; return td; }
+    if (!p) {                          // block view: read only, count by status
+      var n = { pdf: 0, print: 0, done: 0 };
+      rows.forEach(function (r) { if (n[r.status] != null) n[r.status]++; });
+      var parts = [];
+      if (n.done) parts.push('🟢 ' + n.done);
+      if (n.pdf) parts.push('🟡 PDF ' + n.pdf);
+      if (n.print) parts.push('🟡 Print ' + n.print);
+      td.appendChild(el('span', parts.length ? parts.join(' · ') + ' GP' : '—', 'pnro'));
+      if (rows.length) td.title = rows.map(function (r) { return r.jc_prefix + ': ' + r.status + (r.note ? ' — ' + r.note : ''); }).join('\n');
+      return td;
+    }
+    if (!c.fill && !rows.length) { td.textContent = '—'; return td; }   // no MR to fill that day
+    var cur = rows[0] || { status: 'no', note: '' };
+    var box = el('div', null, 'pn');
+    var sel = el('select'); sel.setAttribute('aria-label', 'MR Print ' + dmy(c.date));
+    PRINT_OPTS.forEach(function (o) { var op = el('option', o[1]); op.value = o[0]; sel.appendChild(op); });
+    sel.value = cur.status; sel.className = 's-' + cur.status;
+    var inp = el('input'); inp.type = 'text'; inp.maxLength = 300; inp.placeholder = 'Note · নোট'; inp.value = cur.note || '';
+    var msg = el('span', null, 'saved');
+    var last = { status: cur.status, note: cur.note || '' };
+    function save() {
+      var v = { status: sel.value, note: inp.value.trim() };
+      if (v.status === last.status && v.note === last.note) return;
+      sel.className = 's-' + v.status; msg.className = 'saved'; msg.textContent = 'Saving…';
+      SB.rpc('iay_print_note_save', { p_jc_prefix: p, p_date: c.date, p_status: v.status, p_note: v.note }, { retry: true, timeout: 30000 })
+        .then(function () { last = v; msg.textContent = 'Saved ✓'; setTimeout(function () { if (msg.textContent === 'Saved ✓') msg.textContent = ''; }, 2500); },
+              function (e) { msg.className = 'saved err'; msg.textContent = '✕ ' + errText(e); });
+    }
+    sel.addEventListener('change', save);
+    inp.addEventListener('change', save);
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') inp.blur(); });
+    box.appendChild(sel); box.appendChild(inp); box.appendChild(msg);
+    td.appendChild(box);
+    return td;
+  }
+
   // the overview call was for all GPs; ask for the calendar of the chosen GP
   function calendarFor(p) {
     if (!p || me.scope) return Promise.resolve(ov.calendar || []);

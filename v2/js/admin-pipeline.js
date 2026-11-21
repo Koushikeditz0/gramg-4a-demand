@@ -76,6 +76,7 @@
     }
   };
   $('ppRefresh').addEventListener('click', load);
+  $('ppXlsx').addEventListener('click', downloadAll);
   [].forEach.call($('ppMode').querySelectorAll('button'), function (b) {
     b.addEventListener('click', function () {
       pp.mode = b.dataset.m;
@@ -235,8 +236,71 @@
   }
   function tag(text, cls) { return el('span', text, 'pp-tag ' + (cls || '')); }
 
+  /* ---------------------- Excel download (2026-11-21, Koushik: every step downloadable) ---------------------- */
+  var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script'); s.src = XLSX_URL; s.onload = function () { res(); };
+      s.onerror = function () { rej(new Error('Could not load the Excel library. Check the internet.')); }; document.head.appendChild(s);
+    });
+  }
+  var STAGE_TXT = { running: 'Running', emb: 'e-MB pending', verify: 'AE verify pending', fill_pending: 'MR fill pending', fill_today: 'MR fill pending (ends today)', wl_pending: 'Filled · WL pending' };
+  function num(v) { return v == null || v === '' ? '' : Number(v); }
+  function mrSheet(m, keys) {
+    return [['Work code', 'Work', 'PBA', 'MR', 'MR ended', 'Stage', 'Amount']].concat(m.mrRows.filter(function (x) { return keys.indexOf(x.s) >= 0; }).map(function (x) {
+      return [x.code, x.name || '', isPba(x.code) ? 'PBA' : '', x.mr, x.to || '', STAGE_TXT[x.s] || x.s, num(x.tot)];
+    }));
+  }
+  // one step → [{ name, rows }] (plain values, all rows, full codes)
+  function stepSheets(key, m) {
+    if (key === 'emb') return m.rep ? [{ name: 'e-MB AE verify', rows: mrSheet(m, ['emb', 'verify']) }] : [];
+    if (key === 'fill') return m.rep ? [{ name: 'MR fill pending', rows: mrSheet(m, ['fill_today', 'fill_pending']) }] : [];
+    if (key === 'gen') {
+      var out = [{ name: 'WL not generated', rows: [['Work code', 'Work', 'Held back (A/c)']].concat(m.gen.items.map(function (x) { return [x.code, x.name || '', x.held > 0 ? x.held : '']; })) }];
+      if (m.rep) out.push({ name: 'Filled MRs WL pending', rows: mrSheet(m, ['wl_pending']) });
+      return out;
+    }
+    if (key === 'send') return [{ name: 'Send pending', rows: [['Wage list', 'FY', 'Work code', 'PBA', 'Amount', 'Amount from']].concat(m.send.items.map(function (x) {
+      return [x.wl, x.scope || '', x.code || '', x.pba ? 'PBA' : '', num(x.amt), x.amtFrom === 'wlc' ? 'WL Caste' : x.amt != null ? 'K-Desk' : ''];
+    })) }];
+    if (key === 'sent') return [{ name: 'Sent 7 days', rows: [['Wage list', 'Work code', 'Amount', 'Sent at']].concat(m.sent.map(function (x) {
+      return [x.wl, x.code || '', num(x.amt), x.sent_at ? new Date(x.sent_at).toLocaleString('en-GB') : ''];
+    })) }];
+    return [];
+  }
+  function gpLabel() { var o = $('ppGp').selectedOptions && $('ppGp').selectedOptions[0]; return (o ? o.textContent : 'GP').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, ''); }
+  function saveSheets(sheets, what) {
+    if (!sheets.length) { status('Nothing to download here.', 'info'); return; }
+    loadXlsx().then(function () {
+      var wb = XLSX.utils.book_new();
+      sheets.forEach(function (sh) {
+        var ws = XLSX.utils.aoa_to_sheet(sh.rows);
+        ws['!cols'] = sh.rows[0].map(function (h, i) { return { wch: Math.min(60, Math.max(String(h).length + 2, i === 1 ? 40 : 12)) }; });
+        XLSX.utils.book_append_sheet(wb, ws, sh.name.slice(0, 31));
+      });
+      var mode = pp.mode === 'pba' ? '_PBA' : pp.mode === 'other' ? '_Other' : '';
+      XLSX.writeFile(wb, 'Pipeline_' + what + '_' + gpLabel() + mode + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+    }).catch(function (e) { status(e.message || String(e), 'error'); });
+  }
+  function dlButton(onClick) {
+    var b = el('button', '⭳ Excel', 'btn-light btn-small'); b.type = 'button'; b.style.margin = '0 0 6px';
+    b.addEventListener('click', function (e) { e.stopPropagation(); onClick(); }); return b;
+  }
+  function downloadAll() {
+    if (!pp.data) { status('Pick a GP first.', 'info'); return; }
+    var m = model(), sheets = [];
+    ['emb', 'fill', 'gen', 'send', 'sent'].forEach(function (k) { sheets = sheets.concat(stepSheets(k, m)); });
+    var lists = (m.d.lists || []).filter(function (l) { return pp.mode === 'pba' ? isPba(l.code) : pp.mode === 'other' ? !isPba(l.code) : true; });
+    sheets.push({ name: 'Demand lists', rows: [['Work', 'Work code', 'Workers', 'Demand OK', 'Demand failed', 'Allocation OK', 'Allocation failed', 'Now', 'Last update']].concat(lists.map(function (l) {
+      return [l.name || '', l.code || '', l.n || 0, l.d_ok || 0, l.d_err || 0, l.a_ok || 0, l.a_err || 0, listStage(l, m).textContent, l.r_at || l.at ? new Date(l.r_at || l.at).toLocaleString('en-GB') : ''];
+    })) });
+    saveSheets(sheets, 'All');
+  }
+
   function detail(key, m) {
     var box = el('div', null, 'pp-detail');
+    if (stepSheets(key, m).length) box.appendChild(dlButton(function () { saveSheets(stepSheets(key, model()), key); }));
     var STXT = { fill_today: ['Ends today', 'bad'], fill_pending: ['Not filled', 'bad'], emb: ['e-MB pending', 't1'], verify: ['AE verify pending', 't2'], wl_pending: ['WL pending', 't3'] };
     function mrTable(keys) {
       var rows = m.mrRows.filter(function (x) { return keys.indexOf(x.s) >= 0; });

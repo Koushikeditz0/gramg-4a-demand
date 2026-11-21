@@ -22,7 +22,7 @@
   function daysLate(to, today) { if (!to || !today) return 0; return Math.round((new Date(today) - new Date(to)) / 864e5); }
 
   var S = { ctx: null, home: [], gp: null, page: 'home', viewerMode: read('gramg2.rViewer') === '1',
-            view: read('gramg2.rView') === 'list' ? 'list' : 'cards', mrs: null, mrStage: 'all', mrKind: 'all', works: null, reg: null, wkKind: 'all', caste: null, ek: null, limit: 300 };
+            view: read('gramg2.rView') === 'list' ? 'list' : 'cards', mrs: null, mrStage: 'all', kind: /^(pba|other)$/.test(read('gramg2.rKind') || '') ? read('gramg2.rKind') : 'all', works: null, reg: null, wkKind: 'all', caste: null, ek: null, limit: 300 };
   var STAGES = [
     ['all', 'All pending'], ['running', 'Running'], ['emb', 'e-MB pending'], ['verify', 'Verify pending'], ['fill_pending', 'Fill pending'],
     ['fill_today', 'Ends today'], ['wl_pending', 'WL pending']];   // v238: Running → e-MB → verify → fill → WL
@@ -62,7 +62,7 @@
         $('asViewer').classList.toggle('on', S.viewerMode);
         var saved = Number(read('gramg2.rgp')) || Number(read('gramg2.gp')) || 0;
         S.gp = ctx.gps.some(function (g) { return g.id === saved; }) ? saved : (ctx.gps.length > 1 ? 0 : ctx.gps[0].id);
-        fillGpSel();
+        fillGpSel(); renderKind();
         return loadHome(homeReq);
       })
       .catch(function (e) {
@@ -89,6 +89,18 @@
     render();
   }
 
+  // One PBA filter for all pages, next to the GP name (2026-11-21, Koushik)
+  var KIND_ON = { home: 1, pipe: 1, works: 1, reg: 1 };
+  function renderKind() {
+    var box = $('kindBar');
+    seg(box, [['all', 'All works'], ['pba', '🏠 PBA'], ['other', 'Other works']], S.kind, null, function (k) {
+      S.kind = k; store('gramg2.rKind', k); S.rgSel = null; S.limit = 300; renderKind(); render();
+    });
+    var on = !!KIND_ON[S.page];
+    box.classList.toggle('dim', !on); box.title = on ? '' : 'This page is not split by PBA';
+  }
+  function kst(g, k, f) { return S.kind === 'pba' ? st(g, k, f || 'pba') : S.kind === 'other' ? st(g, k) - st(g, k, 'pba') : st(g, k, f); }
+
   function loadHome(req) {
     return (req || SB.rpc('report_home', {}, { retry: true, timeout: 60000 })).then(function (h) { S.home = h || []; render(); });
   }
@@ -103,7 +115,7 @@
     S.page = p;
     [].forEach.call(document.querySelectorAll('#nav button'), function (b) { b.classList.toggle('on', b.dataset.p === p); });
     ['home', 'pipe', 'works', 'reg', 'caste', 'ekyc', 'notes'].forEach(function (x) { $('p-' + x).classList.toggle('hidden', x !== p); });
-    $('regKindSeg').classList.toggle('hidden', p !== 'reg');
+    renderKind();
     window.scrollTo(0, 0);
     render();
   }
@@ -131,9 +143,9 @@
   function sums(list) {
     var t = { running: 0, fill: 0, today: 0, emb: 0, wl: 0, wlAmt: 0, pbaToday: 0, pbaTom: 0, works: 0, workers: 0, ekyc: 0, abps: 0, ready: 0, notes: 0 };
     list.forEach(function (g) {
-      t.running += st(g, 'running');
-      t.fill += st(g, 'fill_pending') + st(g, 'fill_today'); t.today += st(g, 'fill_today');
-      t.emb += st(g, 'emb') + st(g, 'verify'); t.wl += st(g, 'wl_pending'); t.wlAmt += st(g, 'wl_pending', 'amt');
+      t.running += kst(g, 'running');
+      t.fill += kst(g, 'fill_pending') + kst(g, 'fill_today'); t.today += kst(g, 'fill_today');
+      t.emb += kst(g, 'emb') + kst(g, 'verify'); t.wl += kst(g, 'wl_pending'); t.wlAmt += S.kind === 'all' ? st(g, 'wl_pending', 'amt') : 0;
       t.pbaToday += st(g, 'fill_today', 'pba'); t.pbaTom += Number(g.pba_tomorrow || 0); t.works += Number(g.works_waiting || 0);
       var e = g.ekyc || {}; t.workers += Number(e.workers || 0); t.ekyc += Number(e.ekyc || 0); t.abps += Number(e.abps || 0); t.ready += Number(e.ready || 0);
       t.notes += Number(g.notes_7d || 0);
@@ -146,7 +158,7 @@
     if (sub) b.appendChild(el('em', sub));
     if (onClick) b.addEventListener('click', onClick); return b;
   }
-  function pipeTo(stage, kind) { return function () { if (!S.gp) { status('First pick a GP from the list above.'); return; } S.mrStage = stage; S.mrKind = kind || 'all'; go('pipe'); }; }
+  function pipeTo(stage) { return function () { if (!S.gp) { status('First pick a GP from the list above.'); return; } S.mrStage = stage; go('pipe'); }; }
   function renderHome() {
     var list = S.gp ? S.home.filter(function (g) { return g.id === S.gp; }) : S.home;
     var t = sums(list), tl = $('tiles'); tl.innerHTML = '';
@@ -154,7 +166,7 @@
     tl.appendChild(tile('t2', '📐', n(t.emb), 'e-MB / Verify pending', 'Before MR fill', pipeTo('emb')));
     tl.appendChild(tile('t1', '⏳', n(t.fill), 'MR fill pending', t.today ? 'Ends today: ' + n(t.today) : '', pipeTo('fill_pending')));
     tl.appendChild(tile('t5', '📄', n(t.wl), 'WL to generate', t.wlAmt ? rs(t.wlAmt) : '', pipeTo('wl_pending')));
-    tl.appendChild(tile('t6', '🏠', n(t.pbaToday), 'PBA fill today', 'Ends tomorrow: ' + n(t.pbaTom), pipeTo('fill_today', 'pba')));
+    if (S.kind !== 'other') tl.appendChild(tile('t6', '🏠', n(t.pbaToday), 'PBA fill today', 'Ends tomorrow: ' + n(t.pbaTom), pipeTo('fill_today')));
     tl.appendChild(tile('t3', '✅', pct(t.ready, t.workers) + '%', 'eKYC + ABPS ready', n(t.ready) + ' / ' + n(t.workers) + ' workers', function () { if (S.gp) go('ekyc'); else status('First pick a GP.'); }));
 
     // GP compare (several GPs, none picked)
@@ -163,14 +175,14 @@
     if (!S.gp && S.home.length > 1) {
       tb.innerHTML = '';
       var hr = el('tr'); ['GP', 'Running', 'e-MB/Verify', 'Fill pending', 'WL pending', 'Ready %', 'MR data'].forEach(function (h) { hr.appendChild(el('th', h)); }); tb.appendChild(hr);
-      var mx = { f: 0, w: 0 }; S.home.forEach(function (g) { mx.f = Math.max(mx.f, st(g, 'fill_pending') + st(g, 'fill_today')); mx.w = Math.max(mx.w, st(g, 'wl_pending')); });
+      var mx = { f: 0, w: 0 }; S.home.forEach(function (g) { mx.f = Math.max(mx.f, kst(g, 'fill_pending') + kst(g, 'fill_today')); mx.w = Math.max(mx.w, kst(g, 'wl_pending')); });
       S.home.forEach(function (g) {
-        var tr = el('tr', null, 'click'), f = st(g, 'fill_pending') + st(g, 'fill_today'), e = g.ekyc || {};
+        var tr = el('tr', null, 'click'), f = kst(g, 'fill_pending') + kst(g, 'fill_today'), e = g.ekyc || {};
         tr.appendChild(el('td', g.name));
-        tr.appendChild(el('td', n(st(g, 'running'))));
-        tr.appendChild(el('td', n(st(g, 'emb') + st(g, 'verify'))));
+        tr.appendChild(el('td', n(kst(g, 'running'))));
+        tr.appendChild(el('td', n(kst(g, 'emb') + kst(g, 'verify'))));
         tr.appendChild(el('td', n(f), f && f === mx.f ? 'bad' : ''));
-        tr.appendChild(el('td', n(st(g, 'wl_pending')), st(g, 'wl_pending') && st(g, 'wl_pending') === mx.w ? 'bad' : ''));
+        tr.appendChild(el('td', n(kst(g, 'wl_pending')), kst(g, 'wl_pending') && kst(g, 'wl_pending') === mx.w ? 'bad' : ''));
         var p = pct(e.ready, e.workers); tr.appendChild(el('td', e.workers ? p + '%' : '—', p >= 85 ? 'ok' : ''));
         tr.appendChild(el('td', g.mr_at ? when(g.mr_at) : '—', 'mut'));
         tr.addEventListener('click', function () { setGp(g.id); });
@@ -224,19 +236,19 @@
     var q = $('pipeQ').value.trim().toLowerCase();
     return (S.mrs.rows || []).filter(function (r) {
       if (S.mrStage === 'all' ? r.s === 'running' : (S.mrStage === 'fill_pending' ? (r.s !== 'fill_pending' && r.s !== 'fill_today') : r.s !== S.mrStage)) return false;
-      if (S.mrKind === 'pba' && !r.pba) return false;
-      if (S.mrKind === 'other' && r.pba) return false;
+      if (S.kind === 'pba' && !r.pba) return false;
+      if (S.kind === 'other' && r.pba) return false;
       if (q && (String(r.mr) + ' ' + r.code + ' ' + r.name).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
   }
+  function kindOk(pba) { return S.kind === 'all' || (S.kind === 'pba') === !!pba; }
   function renderMrs() {
     $('pipeAt').textContent = 'Data: ' + when(S.mrs.at);
-    var rows = S.mrs.rows || [], cnt = {};
+    var rows = (S.mrs.rows || []).filter(function (r) { return kindOk(r.pba); }), cnt = {};
     rows.forEach(function (r) { var k = r.s === 'fill_today' ? 'fill_pending' : r.s; cnt[k] = (cnt[k] || 0) + 1; if (r.s !== 'running') cnt.all = (cnt.all || 0) + 1; if (r.s === 'fill_today') cnt.fill_today = (cnt.fill_today || 0) + 1; });
     cnt.fill_today = rows.filter(function (r) { return r.s === 'fill_today'; }).length;
     seg($('stageSeg'), STAGES, S.mrStage, cnt, function (k) { S.mrStage = k; S.limit = 300; renderMrs(); });
-    seg($('kindSeg'), [['all', 'All works'], ['pba', '🏠 PBA'], ['other', 'Other works']], S.mrKind, null, function (k) { S.mrKind = k; S.limit = 300; renderMrs(); });
     viewSeg('pipeView', renderMrs);
     var list = mrFiltered(), box = $('pipeList'); box.innerHTML = '';
     if (!list.length) { box.appendChild(el('div', 'No MR in this step.', 'mut')); return; }
@@ -313,17 +325,17 @@
     var q = $('worksQ').value.trim().toLowerCase();
     return S.works.rows.filter(function (w) {
       if (S.wkKind === 'waiting' && !w.waiting) return false;
-      if (S.wkKind === 'pba' && !w.pba) return false;
-      if (S.wkKind === 'other' && w.pba) return false;
+      if (S.kind === 'pba' && !w.pba) return false;
+      if (S.kind === 'other' && w.pba) return false;
       if (q && (w.code + ' ' + w.name).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
   }
   function renderWorks() {
     var g = gpRow(); $('worksAt').textContent = g ? 'Data: ' + when(g.mr_at) : '';
-    var rows = S.works.rows, cnt = { all: rows.length, waiting: 0, pba: 0, other: 0 };
-    rows.forEach(function (w) { if (w.waiting) cnt.waiting++; if (w.pba) cnt.pba++; else cnt.other++; });
-    seg($('wkSeg'), [['all', 'All'], ['waiting', 'MR pending'], ['pba', '🏠 PBA'], ['other', 'Other works']], S.wkKind, cnt, function (k) { S.wkKind = k; S.limit = 300; renderWorks(); });
+    var rows = S.works.rows.filter(function (w) { return kindOk(w.pba); }), cnt = { all: rows.length, waiting: 0 };
+    rows.forEach(function (w) { if (w.waiting) cnt.waiting++; });
+    seg($('wkSeg'), [['all', 'All'], ['waiting', 'MR pending']], S.wkKind, cnt, function (k) { S.wkKind = k; S.limit = 300; renderWorks(); });
     var list = worksFiltered(), box = $('worksList'); box.innerHTML = '';
     if (!list.length) { box.appendChild(el('div', 'No works.', 'mut')); return; }
     list.slice(0, S.limit).forEach(function (w) {
@@ -382,7 +394,7 @@
           pendingOf(w);
         });
         S.reg = { gp: S.gp, at: d.at, upd: d.upd, fy: d.fy, rows: rows, split: rows.some(function (w) { return w.booked_all_usk != null; }) };
-        S.rgGroup = 'cat'; S.rgSt = 'all'; S.rgKind = S.rgKind || 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
+        S.rgGroup = 'cat'; S.rgSt = 'all'; S.rgFy = ''; S.rgSel = null; S.rgSort = 'sanction'; S.limit = 300;
         renderReg();
       })
       .catch(function (e) {
@@ -422,8 +434,8 @@
   function regFiltered(skipSel) {
     var q = $('regQ').value.trim().toLowerCase();
     return S.reg.rows.filter(function (w) {
-      if (S.rgKind === 'pba' && !isPba(w)) return false;
-      if (S.rgKind === 'other' && isPba(w)) return false;
+      if (S.kind === 'pba' && !isPba(w)) return false;
+      if (S.kind === 'other' && isPba(w)) return false;
       if (S.rgSt !== 'all' && stKey(w.status) !== S.rgSt) return false;
       if (S.rgFy && w.fy !== S.rgFy) return false;
       if (!skipSel && S.rgSel != null && S.rgSel !== REG_ALL && (w[S.rgGroup] || '—') !== S.rgSel) return false;
@@ -454,14 +466,11 @@
     var R = S.reg;
     $('regAt').textContent = R.at ? 'Data: ' + when(R.at) : '';
     if (R.none) {
-      ['regTiles', 'regKindSeg', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
+      ['regTiles', 'regStSeg', 'regBar', 'regBarKey', 'regFyLine'].forEach(function (id) { $(id).innerHTML = ''; });
       $('regTiles').appendChild(el('div', 'This GP\'s Work Register has not arrived yet. It appears here after the Raspberry Pi reads R6.12 at night.', 'mut'));
       $('regGroupCard').classList.add('hidden'); $('regWorkCard').classList.add('hidden'); return;
     }
-    var kc = { all: 0, pba: 0, other: 0 };
-    S.reg.rows.forEach(function (w) { if (S.rgFy && w.fy !== S.rgFy) return; kc.all++; kc[isPba(w) ? 'pba' : 'other']++; });
-    seg($('regKindSeg'), [['all', 'With PBA'], ['other', 'Without PBA'], ['pba', 'PBA only']], S.rgKind, kc, function (k) { S.rgKind = k; S.rgSel = null; S.limit = 300; renderReg(); });
-    var base = S.reg.rows.filter(function (w) { return (!S.rgFy || w.fy === S.rgFy) && (S.rgKind === 'all' || (S.rgKind === 'pba') === isPba(w)); }), sc = { all: base.length, appr: 0, on: 0, done: 0, other: 0 };
+    var base = S.reg.rows.filter(function (w) { return (!S.rgFy || w.fy === S.rgFy) && (S.kind === 'all' || (S.kind === 'pba') === isPba(w)); }), sc = { all: base.length, appr: 0, on: 0, done: 0, other: 0 };
     base.forEach(function (w) { sc[stKey(w.status)]++; });
     seg($('regStSeg'), [['all', 'All'], ['appr', 'Approved'], ['on', 'Ongoing'], ['done', 'Complete']].concat(sc.other ? [['other', 'Other']] : []), S.rgSt, sc, function (k) { S.rgSt = k; S.limit = 300; renderReg(); });
     var fySel = $('regFy');
@@ -583,7 +592,7 @@
   $('regQ').addEventListener('input', function () { if (S.reg && !S.reg.none) { S.limit = 300; renderReg(); } });
   $('regCsv').addEventListener('click', function () {
     if (!S.reg || S.reg.none) return;
-    csv('Work_Register_' + gpName() + (S.rgKind !== 'all' ? '_' + S.rgKind : '') + (S.rgSel ? '_' + (S.rgSel === REG_ALL ? 'all' : S.rgSel) : ''),
+    csv('Work_Register_' + gpName() + (S.kind !== 'all' ? '_' + S.kind : '') + (S.rgSel ? '_' + (S.rgSel === REG_ALL ? 'all' : S.rgSel) : ''),
       ['Work Code', 'Work Name', 'Status', 'Start FY', 'Master Category', 'Category', 'Work Type (new)', 'Work Type', 'Agency',
        'Sanction Unskilled', 'Sanction Material', 'Sanction Total', 'Booked this FY', 'Paid this FY', 'Booked since inception', 'Paid since inception',
        'Sanction left', 'Over sanction', 'PBA', 'Pending unskilled', 'Pending mandays', 'MR', 'MR running', 'MR waiting', 'WL done', 'Total Mandays', 'Mandays this FY', 'Units', 'Started', 'Completed'],

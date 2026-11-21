@@ -38,7 +38,8 @@
     .tw{overflow:auto;max-height:65vh;}
     .bad{color:var(--red);font-weight:700;} .ok{color:var(--grn);font-weight:700;} .mut{color:var(--mut);font-size:12px;}
     .mono{font-family:Consolas,monospace;font-size:11.5px;color:#475569;word-break:break-all;}
-    .hdrseg{margin:8px 0 0;} .hdrseg button{border-color:transparent;} .hdrseg button.on{background:#fff;color:var(--or);}
+    .hdrrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;} .hdrrow .gpsel{margin-top:0;}
+    .hdrseg{margin:0;} .hdrseg.dim{opacity:.55;} .hdrseg button{border-color:transparent;background:rgba(255,255,255,.2);color:#fff;} .hdrseg button.on{background:#fff;color:var(--or);}
     .seg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px;}
     .seg button{border:1px solid #e2e8f0;background:#fff;border-radius:20px;padding:6px 11px;font:600 12.5px inherit;color:#475569;cursor:pointer;}
     .seg button.on{background:var(--or);border-color:var(--or);color:#fff;}
@@ -101,8 +102,10 @@
   <h1 id="title">Report</h1>
   <small id="who"></small>
   <div id="chips"></div>
-  <select class="gpsel hidden" id="gpSel" aria-label="GP"></select>
-  <div class="seg hdrseg hidden" id="regKindSeg"></div>
+  <div class="hdrrow">
+    <select class="gpsel hidden" id="gpSel" aria-label="GP"></select>
+    <div class="seg hdrseg" id="kindBar" aria-label="PBA filter"></div>
+  </div>
 </div></div>
 
 <div class="body"><div class="wrap">
@@ -122,7 +125,6 @@
     <div class="card">
       <h3>💸 MR pipeline <span class="mut" id="pipeAt"></span></h3>
       <div class="seg" id="stageSeg"></div>
-      <div class="seg" id="kindSeg"></div>
       <div class="seg" id="pipeView"></div>
       <div class="tools"><input type="search" id="pipeQ" placeholder="Search MR no, work code or name"><button class="btn sm" id="pipeCsv" type="button">⭳ Excel (CSV)</button></div>
       <div id="pipeList"></div>
@@ -227,6 +229,6 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261120a"></script>
-<script src="./js/report.js?v=20261121f"></script>
+<script src="./js/report.js?v=20261121g"></script>
 </body>
 </html>

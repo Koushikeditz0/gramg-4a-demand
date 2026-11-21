@@ -33,7 +33,14 @@
     BAD_ACCOUNT_NO: 'Account No ঠিক নয় (৬–২০টা সংখ্যা)।',
     BAD_IFSC: 'IFSC ঠিক নয় (যেমন SBIN0001234)।',
     ALREADY_DONE: 'এটা আগেই Portal-এ হয়ে গেছে / Admin কাজ শেষ করেছেন। App reload করুন।',
-    AADHAAR_SETUP: 'মৃত-Migrant অংশ এখনো চালু হয়নি (Admin SQL v214 চালাননি)।'
+    AADHAAR_SETUP: 'মৃত-Migrant অংশ এখনো চালু হয়নি (Admin SQL v214 চালাননি)।',
+    SR_SETUP: 'অনুরোধ অংশ এখনো চালু হয়নি (Admin SQL v234 চালাননি)।',
+    NO_AADHAAR: 'Aadhaar নম্বর লেখা যাবে না। নম্বরটা মুছে আবার পাঠান (দরকার হলে Admin নিজে নেবেন)।',
+    ALREADY_OPEN: 'এই worker-এর এই কাজের একটা অনুরোধ আগেই চলছে।',
+    NEED_TITLE: 'কী কাজ, সেটা লিখুন।',
+    NEED_NOTE: 'নোট লিখুন।',
+    WORKER_NOT_FOUND: 'Worker আবার খুঁজে বাছুন।',
+    TOO_MANY_REQUESTS: 'অনেক অনুরোধ চলছে। আগেরগুলো শেষ হলে নতুন পাঠান।'
   };
   function bnError(e) {
     var out = new Error(BN[e.code] || ('Server error: ' + (e.message || e)));
@@ -510,6 +517,21 @@
         throw bnError(e || {});
       });
     },
+    // ---- সেবা অনুরোধ / notes (SQL v234) ----
+    srMy: function () {
+      return SB.rpc('sr_my_requests', {}, { retry: true }).catch(function (e) {
+        if (e && e.status === 404) return null;                       // SQL v234 not run yet
+        throw bnError(e || {});
+      });
+    },
+    srCreate: function (wid, kind, title, note, details) {
+      return SB.rpc('sr_create', { p_worker_id: wid || null, p_kind: kind, p_title: title || null, p_note: note || null, p_details: details || {} })
+        .catch(function (e) { if (e && e.status === 404) e.code = 'SR_SETUP'; throw bnError(e || {}); });
+    },
+    srCancel: function (id) { return SB.rpc('sr_cancel', { p_id: id }).catch(function (e) { throw bnError(e || {}); }); },
+    srAck: function (id) { return SB.rpc('sr_ack', { p_id: id }).catch(function (e) { throw bnError(e || {}); }); },
+    srEkycDone: function (id) { return SB.rpc('sr_ekyc_done', { p_id: id }).catch(function (e) { throw bnError(e || {}); }); },
+    srSeen: function () { return SB.rpc('sr_seen', {}).catch(function () {}); },
     workName: function () { return st.workName; },
     whenIdle: whenIdle
   };

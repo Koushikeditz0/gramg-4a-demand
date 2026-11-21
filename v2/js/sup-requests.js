@@ -15,7 +15,8 @@
 (function () {
   'use strict';
   var KIND = {
-    aadhaar_delink: { t: 'Aadhaar Delink', i: '🪪', s: 'Job Card থেকে Aadhaar সরানো' },
+    aadhaar_delink: { t: 'Aadhaar Delink', i: '🪪', s: 'Aadhaar অন্য Job Card-এ seed আছে, এই Job Card-এ আনতে হবে' },
+    aadhaar_update: { t: 'Aadhaar update', i: '🪪', s: 'Aadhaar seed নেই বা ভুল, নতুন করে দিতে হবে' },
     aadhaar_wrong_seed: { t: 'ভুল applicant-এ Aadhaar', i: '🪪', s: 'একই Job Card-এ অন্যজনের Aadhaar বসে গেছে' },
     name_mismatch: { t: 'নামের অমিল', i: '🪪', s: 'Job Card আর Aadhaar-এ নাম আলাদা' },
     gender_hoh: { t: 'লিঙ্গ / HoH বদল', i: '⚧', s: 'লিঙ্গ ভুল বা পরিবারের প্রধান বদল' },
@@ -24,18 +25,21 @@
     other: { t: 'অন্য কাজ', i: '📌', s: 'নিজে লিখুন' },
     note: { t: 'Admin-কে নোট', i: '📝', s: 'যেকোনো কথা লিখে পাঠান' }
   };
-  var ORDER = ['aadhaar_delink', 'aadhaar_wrong_seed', 'name_mismatch', 'gender_hoh', 'applicant_add', 'payment', 'other', 'note'];
+  var ORDER = ['aadhaar_delink', 'aadhaar_update', 'aadhaar_wrong_seed', 'name_mismatch', 'gender_hoh', 'payment', 'other', 'note'];   // applicant_add: no longer offered (old rows still show)
   var ST = { new: 'নতুন', working: 'কাজ চলছে', block: 'Block-এ পাঠানো', district: 'District-এ পাঠানো', done: 'হয়ে গেছে ✓',
              rejected: 'হবে না', cancelled: 'বাতিল', seen: 'দেখেছি', ekyc: 'eKYC হয়েছে' };
   var GENDER = [['', '— বাছুন —'], ['Male', 'পুরুষ (Male)'], ['Female', 'মহিলা (Female)'], ['Transgender', 'Transgender']];
   var FIELDS = {
     aadhaar_delink: [
-      { k: 'reason', l: 'কেন সরাতে হবে', o: [['', '— বাছুন —'], ['dead', 'মৃত্যু হয়েছে'], ['shifted', 'অন্য GP / Block-এ চলে গেছে'], ['duplicate', 'ডুপ্লিকেট'], ['wrong', 'ভুল করে seed হয়েছে'], ['other', 'অন্য কারণ']] },
-      { k: 'reason_text', l: 'কারণ লিখুন (ইচ্ছা হলে)' },
-      { k: 'shift_block', l: 'কোন Block-এ গেছে', when: function (d) { return d.reason === 'shifted'; } },
-      { k: 'shift_gp', l: 'কোন GP-তে গেছে', when: function (d) { return d.reason === 'shifted'; } },
-      { k: 'shift_jc', l: 'নতুন Job Card নম্বর (জানা থাকলে)', when: function (d) { return d.reason === 'shifted'; } },
+      { k: 'old_jc', l: 'Aadhaar এখন কোন Job Card-এ seed আছে? (সেই Job Card নম্বর)', req: true },
+      { k: 'old_name', l: 'সেই Job Card-এ worker-এর নাম' },
+      { k: 'old_gp', l: 'সেই Job Card-এর GP (এই GP হলে ফাঁকা রাখুন)' },
+      { k: 'old_block', l: 'সেই Job Card-এর Block (এই Block হলে ফাঁকা রাখুন)' },
       { k: 'aadhaar_name', l: 'Aadhaar-এ লেখা নাম (ইংরেজিতে)' }],
+    aadhaar_update: [
+      { k: 'aadhaar_name', l: 'Aadhaar card-এ লেখা নাম (ইংরেজিতে)' },
+      { k: 'gender', l: 'Aadhaar card-এ লেখা লিঙ্গ', o: GENDER },
+      { k: 'remarks', l: 'কী সমস্যা (যেমন seed নেই, ভুল নম্বর)' }],
     aadhaar_wrong_seed: [
       { k: 'aadhaar_name', l: 'Aadhaar card-এ লেখা নাম (ইংরেজিতে)' },
       { k: 'gender', l: 'Aadhaar card-এ লেখা লিঙ্গ', o: GENDER },
@@ -49,7 +53,7 @@
       { k: 'new_hoh', l: 'নতুন HoH-এর নাম (একই থাকলে লিখুন Same)' },
       { k: 'members', l: 'Job Card-এর সবার নতুন HoH-এর সঙ্গে সম্পর্ক আর লিঙ্গ', members: true }]
   };
-  var AA_KINDS = ['aadhaar_delink', 'aadhaar_wrong_seed', 'name_mismatch', 'gender_hoh'];
+  var AA_KINDS = ['aadhaar_delink', 'aadhaar_update', 'aadhaar_wrong_seed', 'name_mismatch', 'gender_hoh'];
 
   var rq = { rows: null, at: 0, busy: false, view: 'list', open: {}, f: null, setup: false };
   window.reqRows = function () { return rq.rows || []; };
@@ -94,6 +98,13 @@
   };
   function paintBadge() {
     var n = badgeN(), b = document.getElementById('gsNReq'); if (b) b.textContent = n ? String(n) : '';
+    // Home stat card: new things to see (Admin replies, notes, eKYC to do); else how many are still open
+    var st = document.getElementById('nhReq'), card = document.getElementById('nhReqSt');
+    if (st && rq.rows) {
+      var open = rq.rows.filter(function (r) { return ['new', 'working', 'block', 'district'].indexOf(r.status) >= 0; }).length;
+      st.textContent = typeof window.gsNum === 'function' ? window.gsNum(n || open) : String(n || open);
+      if (card) { card.classList.toggle('new', n > 0); card.querySelector('small').textContent = n ? 'নতুন খবর' : 'অনুরোধ চলছে'; }
+    }
   }
 
   // ---------- Home: eKYC to do + Admin notes in "আজকের কাজ" ----------
@@ -233,7 +244,7 @@
   }
   function renderRest(b, f) {
     // ② worker
-    b.insertAdjacentHTML('beforeend', '<div class="rq-step">② কোন worker?' + (f.kind === 'note' ? ' <small>(না বাছলেও চলবে)</small>' : '') + '</div>');
+    b.insertAdjacentHTML('beforeend', '<div class="rq-step">② কোন worker?' + (f.kind === 'note' ? ' <small>(না বাছলেও চলবে)</small>' : f.kind === 'aadhaar_delink' ? ' <small>(যে Job Card-এ Aadhaar seed করতে হবে)</small>' : '') + '</div>');
     var wbox = document.createElement('div'); b.appendChild(wbox);
     if (f.worker) {
       var pk = document.createElement('div'); pk.className = 'rq-picked';
@@ -325,6 +336,8 @@
     var f = rq.f;
     if (f.kind === 'other' && !(f.title || '').trim()) { showStatus('কী কাজ, সেটা লিখুন।', 'error'); return; }
     if (f.kind === 'note' && !(f.note || '').trim()) { showStatus('নোট লিখুন।', 'error'); return; }
+    var need = (FIELDS[f.kind] || []).filter(function (d) { return d.req && !String((f.details || {})[d.k] || '').trim(); })[0];
+    if (need) { showStatus(need.l + ' লিখুন।', 'error'); return; }
     var det = JSON.parse(JSON.stringify(f.details || {}));
     if (det.members) det.members = det.members.filter(function (m) { return (m.name || '').trim(); });
     if (hasAadhaar((f.note || '') + ' ' + (f.title || '') + ' ' + JSON.stringify(det))) {

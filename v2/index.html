@@ -1504,7 +1504,7 @@
     .nh-st{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:#fff;border:0;border-radius:16px;padding:12px 12px 10px;font:inherit;cursor:pointer;text-align:left;box-shadow:0 4px 14px -8px rgba(15,23,42,.25);min-width:0;}
     .nh-st small{font-size:12px;color:var(--nmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
     .nh-st b{font-size:24px;font-weight:800;color:var(--nink);line-height:1.1;}
-    .nh-st.warn b{color:#d97706;} .nh-st.bad b{color:#dc2626;}
+    .nh-st.warn b{color:#d97706;} .nh-st.bad b{color:#dc2626;} .nh-st.new{box-shadow:0 0 0 2px #3b2fb8,0 4px 14px -8px rgba(15,23,42,.25);} .nh-st.new b{color:#3b2fb8;}
     .nh-hero{position:relative;overflow:hidden;display:block;width:100%;text-align:left;margin:14px 0 4px;border:0;border-radius:22px;padding:20px 18px 18px;font:inherit;color:#fff;cursor:pointer;
       background:linear-gradient(135deg,#3730a3 0%,#312e81 60%,#1e1b4b 100%);box-shadow:0 14px 28px -14px rgba(55,48,163,.75);}
     .nh-hero:before{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.08);}
@@ -1824,7 +1824,7 @@
         <button type="button" class="nh-sn" onclick="openSansadPick()" title="আমার Sansad বাছুন"><span id="nhSn">সব Sansad</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
       </div>
       <div class="nh-stats">
-        <button type="button" class="nh-st" onclick="openSec('abps')"><small>মোট কর্মী</small><b id="nhTot">–</b></button>
+        <button type="button" class="nh-st" id="nhReqSt" onclick="openSec('req')"><small>অনুরোধ ও নোট</small><b id="nhReq">–</b><span id="nhTot" hidden></span></button>
         <button type="button" class="nh-st warn" onclick="openSec('abps')"><small>ABPS বাকি</small><b id="nhAbps">–</b></button>
         <button type="button" class="nh-st bad" onclick="openSec('acc')"><small>পাসবুক বাকি</small><b id="nhAcc">–</b></button>
       </div>
@@ -5534,7 +5534,7 @@ document.getElementById('workName').addEventListener('change',function(e){ gramg
   }, function(){ hideLoading(); });
 })();
 </script>
-<script src="./js/sup-requests.js?v=20261121b"></script>
+<script src="./js/sup-requests.js?v=20261121c"></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', function(){
@@ -5543,7 +5543,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261121c"></script>
+<script src="./js/i18n.js?v=20261121d"></script>
 </body>
 
 </html>

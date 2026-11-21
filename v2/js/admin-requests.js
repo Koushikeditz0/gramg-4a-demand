@@ -22,11 +22,12 @@
   var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';   // SheetJS + cell styles
 
   var KIND = {
-    aadhaar_delink: ['🪪 Aadhaar Delink', 'আধার ডিলিংক'],
+    aadhaar_delink: ['🪪 Aadhaar Delink (from another Job Card)', 'অন্য Job Card থেকে আধার ডিলিংক'],
+    aadhaar_update: ['🪪 Aadhaar update / seed', 'আধার আপডেট'],
     aadhaar_wrong_seed: ['🪪 Aadhaar seeded to wrong applicant', 'ভুল applicant-এ আধার seed'],
     name_mismatch: ['🪪 Name mismatch (Soft vs Aadhaar)', 'নামের অমিল'],
     gender_hoh: ['⚧ Gender / HoH change', 'লিঙ্গ / HoH বদল'],
-    applicant_add: ['➕ New applicant in Job Card', 'নতুন Applicant যোগ'],
+    applicant_add: ['➕ New applicant in Job Card (old)', 'নতুন Applicant যোগ'],   // no longer offered; old rows still show
     payment: ['💸 Payment problem', 'Payment সমস্যা'],
     other: ['📌 Other task', 'অন্য কাজ'],
     note: ['📝 Note', 'নোট / বার্তা']
@@ -38,13 +39,16 @@
   var REASON_TXT = { dead: 'Death', shifted: 'Shifted', duplicate: 'Duplicate', wrong: 'Wrongly seeded', other: 'Other' };
   // format fields of each kind (never an Aadhaar number)
   var FIELDS = {
-    aadhaar_delink: [
-      { k: 'reason', l: 'Reason for removal / deletion', o: REASON },
-      { k: 'reason_text', l: 'Reason in words (optional)' },
-      { k: 'shift_block', l: 'Name of shifted Block', when: function (d) { return d.reason === 'shifted'; } },
-      { k: 'shift_gp', l: 'Name of shifted GP', when: function (d) { return d.reason === 'shifted'; } },
-      { k: 'shift_jc', l: 'New (shifted) Job Card No (as in MIS)', when: function (d) { return d.reason === 'shifted'; } },
+    aadhaar_delink: [   // the worker = where the Aadhaar must be seeded now; old_* = the Job Card it is seeded in today
+      { k: 'old_jc', l: 'Job Card where the Aadhaar is seeded now (to delink)' },
+      { k: 'old_name', l: 'Name of the worker in that Job Card' },
+      { k: 'old_gp', l: 'GP of that Job Card (empty = this GP)' },
+      { k: 'old_block', l: 'Block of that Job Card (empty = this Block)' },
       { k: 'aadhaar_name', l: 'Name as per Aadhaar' }],
+    aadhaar_update: [
+      { k: 'aadhaar_name', l: 'Name as per Aadhaar Card' },
+      { k: 'gender', l: 'Gender as per Aadhaar Card', o: GENDER },
+      { k: 'remarks', l: 'What is wrong (not seeded, wrong number …)' }],
     aadhaar_wrong_seed: [
       { k: 'aadhaar_name', l: 'Name recorded in Aadhaar Card' },
       { k: 'gender', l: 'Gender recorded in Aadhaar Card', o: GENDER },
@@ -60,6 +64,7 @@
   };
   var AA = {   // Aadhaar boxes (Super Admin only)
     aadhaar_delink: [['a1', 'Aadhaar No. (already frozen in MIS)']],
+    aadhaar_update: [['a1', 'Aadhaar No. to seed']],
     aadhaar_wrong_seed: [['a1', 'Aadhaar No. seeded in MIS (wrongly)'], ['a2', 'Actual Aadhaar No. which needs to seed now']],
     name_mismatch: [['a1', 'Aadhaar Card Number']]
   };
@@ -498,6 +503,7 @@
     if (r.title) out.push(r.title);
     if (d.reason) out.push('Reason: ' + (REASON_TXT[d.reason] || d.reason) + (d.reason_text ? ' (' + d.reason_text + ')' : ''));
     else if (d.reason_text) out.push('Reason: ' + d.reason_text);
+    if (d.old_jc || d.old_name) out.push('Seeded now in: ' + [d.old_jc, d.old_name, d.old_gp, d.old_block].filter(Boolean).join(' · ') + ' → seed in this Job Card');
     if (d.shift_block || d.shift_gp || d.shift_jc) out.push('Shifted to: ' + [d.shift_block, d.shift_gp, d.shift_jc].filter(Boolean).join(' · '));
     if (d.aadhaar_name) out.push('Name in Aadhaar: ' + d.aadhaar_name);
     if (d.gender) out.push('Gender: ' + d.gender);
@@ -618,7 +624,7 @@
                   r ? r.for_user || '' : '');
     field(body, 'Supervisor (they see this in the phone app)', sup);
     // kind
-    var kinds = Object.keys(KIND).map(function (k) { return [k, KIND[k][0] + ' · ' + KIND[k][1]]; });
+    var kinds = Object.keys(KIND).filter(function (k) { return k !== 'applicant_add' || (r && r.kind === k); }).map(function (k) { return [k, KIND[k][0] + ' · ' + KIND[k][1]]; });
     var kindSel = sel('srMKind', [['', '— Pick the task —']].concat(kinds), f.kind); kindSel.disabled = edit;
     field(body, 'Task', kindSel);
     var titleIn = txt('srMTitleIn', r && r.title, 120, 'What is the task?');
@@ -768,6 +774,11 @@
                  ['Sl. No.', 'Block Name', 'GP Name', 'Name of Worker', 'Job Card  No.', 'Aadhaar No.', 'Name as per Aadhaar', 'Annexure - A', '', '', ''],
                  ['', '', '', '(as per Job card)', '(as shown in MIS)', '(already frozen in MIS)', '', 'Reason for Removal/Deletion', 'Name of Shifted Block', 'Name of Shifted GP', 'New (shifted) Job card number (as shown in MIS)']];
       rows.forEach(function (r, i) { var d = r.details || {}, a = aa[r.id] || {};
+        if (d.old_jc) {   // seeded in another Job Card → delink there, seed in this worker's Job Card
+          aoa.push([i + 1, d.old_block || blockName(), d.old_gp || gpName(), d.old_name || r.applicant_name, d.old_jc, fmtAa(a.a1), d.aadhaar_name || '',
+                    'Aadhaar seeded in another Job Card; to be seeded in the new Job Card', blockName(), gpName(), r.job_card_no || '']);
+          return;
+        }
         var why = (REASON_TXT[d.reason] || '') + (d.reason_text ? (d.reason ? ' – ' : '') + d.reason_text : '');
         aoa.push([i + 1, blockName(), gpName(), r.applicant_name, r.job_card_no, fmtAa(a.a1), d.aadhaar_name || '', why, d.shift_block || '', d.shift_gp || '', d.shift_jc || '']); });
       var end = aoa.length - 1;

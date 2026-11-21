@@ -1534,8 +1534,67 @@
     .nh-tile.dirty i{background:#fef3c7;} .nh-tile.dirty svg{stroke:#d97706;}
     .nh-tile .gs-n{top:10px;right:12px;}
     html[lang=en] .nh-hero>small{display:none;}
+    /* ===== v9 indigo theme for every page (2026-11-21, Koushik's Lovable screens "Modern Field App") =====
+       Colour + shape only: no element, id or flow changes. Tokens = the mockup's. */
+    :root{--gb:#3b2fb8;--gd:#1f1a6b;--gink:#14162b;--gmut:#6a6f88;--gground:#f2f3f8;--gamb:#e08a12;--gred:#d6455a;--ggreen:#1f9d6b;--gsh:0 10px 24px -10px rgba(59,47,184,.35);}
+    @media screen{
+      html{background:var(--gground)!important;}
+      body:before{opacity:1!important;height:200px!important;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 393 200' preserveAspectRatio='none'%3E%3Cpath d='M0 110 Q196 40 393 110 V200 H0z' fill='%233b2fb8' fill-opacity='.05'/%3E%3Cpath d='M0 150 Q196 50 393 150' fill='none' stroke='%233b2fb8' stroke-opacity='.18' stroke-width='5'/%3E%3Cpath d='M24 136v40M110 98v78M196 86v90M282 98v78M368 136v40' stroke='%233b2fb8' stroke-opacity='.14' stroke-width='3'/%3E%3C/svg%3E") no-repeat bottom/100% 100%!important;}
+    }
+    body,button,input,select,textarea{font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;}
+    #homePage{--ni:#3b2fb8;--ni2:#3b2fb8;--nsoft:#e7e5f7;--nink:#1f1a6b;}
+    .nh-hero{background:linear-gradient(135deg,#3b2fb8 0%,#2a2290 55%,#1f1a6b 100%);}
+    /* login: deep-navy banner + white card */
+    body:not(.gs-in) .header{background:var(--gd)!important;border-radius:22px;box-shadow:var(--gsh);}
+    .login-box{border-radius:22px!important;box-shadow:var(--gsh)!important;border:0!important;}
+    .login-box input{border-radius:16px!important;}
+    .login-box .btn-primary{border-radius:999px!important;background:var(--gb)!important;box-shadow:var(--gsh);}
+    /* sub page bar: light, like the mockup header (title in deep indigo) */
+    body.gs-in .gsbar{background:var(--gground)!important;color:var(--gd);box-shadow:none!important;border-bottom:1px solid rgba(20,22,43,.06);}
+    body.gs-in .gsbar .gs-back,body.gs-in .gsbar .gs-menu{color:var(--gd);}
+    body.gs-in .gs-t b{font-size:19px;color:var(--gd);} body.gs-in .gs-t small{color:var(--gmut);}
+    body.gs-in .gsbar .save-chip{background:#fff;color:var(--gmut);}
+    /* cards, inputs */
+    body.gs-in .sec-page,body.gs-in .list-panel,body.gs-in .control-box,body.gs-in .dt-box,body.gs-in .ac-grp{border-radius:22px!important;box-shadow:0 1px 2px rgba(20,22,43,.08)!important;}
+    body.gs-in input:not([type=checkbox]):not([type=radio]),body.gs-in select,body.gs-in .acpage input{border-radius:16px;}
+    body.gs-in .lcard{border-radius:22px!important;box-shadow:0 1px 2px rgba(20,22,43,.08)!important;}
+    body.gs-in .lcard.k-draft{border-left-color:var(--gamb)!important;} body.gs-in .lcard.k-sent{border-left-color:var(--gb)!important;} body.gs-in .lcard.k-portal{border-left-color:var(--ggreen)!important;}
+    body.gs-in .lcard .lc-go{color:var(--gb);}
+    .gst.k-draft{background:#fcf0dd;color:#a25f05;} .gst.k-sent{background:#e7e5f7;color:var(--gb);} .gst.k-portal{background:#dcf1e8;color:#177a53;}
+    /* primary buttons: indigo, pill */
+    body.gs-in .btn-primary,body.gs-in .lp-row #newListBtn,body.gs-in.list-open.step-1:not(.list-readonly) #pgSup .pg-btns .btn-primary,body.gs-in .gs-new,.ac-send,.ac-cam{background:var(--gb)!important;border:0!important;color:#fff!important;box-shadow:var(--gsh)!important;}
+    body.gs-in .lp-row #newListBtn,body.gs-in .pg-btns .btn-primary,body.gs-in .wbar .btn-primary,.ac-send,.ac-cam{border-radius:999px!important;}
+    body.gs-in .btn-primary:disabled,body.gs-in .lp-row #newListBtn:disabled{background:#a7a3d6!important;box-shadow:none!important;}
+    body.gs-in #addBtn{background:var(--gd)!important;border-radius:16px!important;}
+    body.gs-in.step-4 .preview-actions #pvSubmit{background:var(--gb)!important;box-shadow:var(--gsh)!important;border-radius:999px!important;}
+    body.gs-in.step-4 .preview-actions .btn-light{color:var(--gb)!important;border-color:rgba(59,47,184,.3)!important;border-radius:999px!important;}
+    /* chips / tiles picked = solid indigo */
+    body.gs-in .lc-chips button{border-radius:16px;}
+    body.gs-in .lc-chips button.on,.sn-tiles button.on,.sp-chips button.on,body.gs-in .dt-chips button.on{background:var(--gb)!important;border-color:var(--gb)!important;color:#fff!important;box-shadow:none!important;}
+    .sn-tiles button,.sp-chips button,body.gs-in .dt-chips button{border-radius:16px;}
+    .sn-tiles button.mine{border-color:#c9c5ee;background:#f1f0fb;} .sn-tiles button.mine:after{color:var(--gb);}
+    .sn-tiles .sn-more{color:var(--gb);}
+    body.gs-in .dt-res{background:var(--gd)!important;color:#fff!important;border-radius:16px;}
+    /* progress, tabs, links */
+    .gs-prog .bar{background:#e2e0f4;} .gs-prog .bar div{background:var(--gb);}
+    body.gs-in .wtabs button.on,body.gs-in .wtab.on{background:var(--gb)!important;color:#fff!important;}
+    body.gs-in .gs-sh button,.gs-pick button,.sp-chips .sp-hint a{color:var(--gb);}
+    /* Bank Account + passbook form */
+    body.gs-in .ac-gh{background:#fcf0dd;color:#a25f05;}
+    body.gs-in .ac-row .go{background:var(--gb)!important;box-shadow:var(--gsh)!important;}
+    body.gs-in .ac-row.sent .go{background:var(--ggreen)!important;}
+    .acpage{background:var(--gground)!important;}
+    .ac-top{background:var(--gground)!important;border-bottom:1px solid rgba(20,22,43,.06)!important;}
+    .ac-top b{color:var(--gd);}
+    .sn-list label.on{border-color:var(--gb);background:#f1f0fb;color:var(--gd);}
+    body.gs-in .wm-sel{background:#f1f0fb;border-color:#d5d2f2;border-radius:16px;} body.gs-in .wm-sel b{color:var(--gd);}
+    body.gs-in .preview-top{background:var(--gd)!important;border-radius:22px;}
+    body.gs-in .pdf-header-fields{background:#fff;border-radius:22px;border-left:4px solid var(--gb);box-shadow:0 1px 2px rgba(20,22,43,.08);}
+    body.gs-in .pv-chip{border-radius:16px;}
   </style>
 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap">
 </head>
 
 

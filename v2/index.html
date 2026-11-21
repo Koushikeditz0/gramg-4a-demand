@@ -1591,6 +1591,49 @@
     body.gs-in .preview-top{background:var(--gd)!important;border-radius:22px;}
     body.gs-in .pdf-header-fields{background:#fff;border-radius:22px;border-left:4px solid var(--gb);box-shadow:0 1px 2px rgba(20,22,43,.08);}
     body.gs-in .pv-chip{border-radius:16px;}
+    /* ===== 📨 অনুরোধ ও নোট (2026-11-21, SQL v234, js/sup-requests.js) — indigo look ===== */
+    body.sec-req #reqPage{display:block;}
+    .nh-task.t-req:before{background:#0e7490;} .nh-task.t-req .nh-tx small{color:#0e7490;}
+    .rq-add{display:block;width:100%;text-align:left;border:0;border-radius:18px;padding:14px 16px;margin:2px 0 10px;background:var(--gb,#3b2fb8);color:#fff;font:inherit;cursor:pointer;box-shadow:var(--gsh);}
+    .rq-add b{display:block;font-size:16px;} .rq-add small{display:block;font-size:12px;opacity:.85;margin-top:2px;}
+    .rq-gh{font-size:13px;font-weight:800;color:#475569;margin:14px 2px 6px;} .rq-gh span{background:#e7e5f7;color:var(--gb,#3b2fb8);border-radius:10px;padding:0 7px;margin-left:4px;}
+    .rq-card{background:#fff;border-radius:16px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 2px rgba(20,22,43,.08),0 4px 14px -10px rgba(20,22,43,.3);border-left:4px solid #c9c5ee;}
+    .rq-card.st-working{border-left-color:#e08a12;} .rq-card.st-block,.rq-card.st-district{border-left-color:#7c3aed;} .rq-card.st-done{border-left-color:#1f9d6b;}
+    .rq-card.st-rejected{border-left-color:#d6455a;} .rq-card.st-cancelled{opacity:.7;border-left-color:#cbd5e1;} .rq-card.ek{border-left-color:#e08a12;background:#fffaf0;}
+    .rq-card.unseen{box-shadow:0 0 0 2px #c7d2fe,0 4px 14px -10px rgba(20,22,43,.3);}
+    .rq-top{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;}
+    .rq-k{font-weight:800;font-size:14.5px;color:#14162b;}
+    .rq-st{flex:none;font-size:11.5px;font-weight:800;border-radius:12px;padding:3px 9px;background:#e7e5f7;color:var(--gb,#3b2fb8);}
+    .rq-st.st-working{background:#fcf0dd;color:#a25f05;} .rq-st.st-block,.rq-st.st-district{background:#ede9fe;color:#5b21b6;}
+    .rq-st.st-done{background:#dcf1e8;color:#177a53;} .rq-st.st-rejected{background:#fde2e6;color:#b4233a;} .rq-st.st-cancelled{background:#f1f5f9;color:#64748b;}
+    .rq-who{font-size:14px;margin-top:4px;} .rq-who small{color:#6a6f88;margin-left:4px;}
+    .rq-note{font-size:13.5px;color:#334155;margin-top:4px;white-space:pre-wrap;word-break:break-word;}
+    .rq-rm{font-size:13px;margin-top:6px;background:#f2f3f8;border-radius:10px;padding:6px 9px;color:#1f1a6b;}
+    .rq-ek{font-size:13px;font-weight:700;margin-top:6px;color:#a25f05;}
+    .rq-when{font-size:11.5px;color:#6a6f88;margin-top:5px;}
+    .rq-more{margin-top:6px;border-top:1px dashed #e2e8f0;padding-top:6px;}
+    .rq-det{font-size:12.5px;color:#334155;line-height:1.5;margin-bottom:4px;}
+    .rq-hist{list-style:none;margin:0;padding:0;font-size:12px;color:#475569;} .rq-hist li{padding:3px 0;border-bottom:1px dashed #eef0f6;}
+    .rq-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;} .rq-acts button{border-radius:12px;padding:9px 14px;font-weight:800;}
+    .rq-step{font-size:15px;font-weight:800;color:#14162b;margin:14px 2px 8px;} .rq-step small{font-weight:600;color:#6a6f88;font-size:12px;}
+    .rq-kinds{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .rq-kind{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:#fff;border:2px solid #e6e6f7;border-radius:16px;padding:10px;font:inherit;color:#14162b;cursor:pointer;}
+    .rq-kind i{font-style:normal;font-size:20px;} .rq-kind b{font-size:13.5px;line-height:1.25;} .rq-kind small{font-size:11px;color:#6a6f88;line-height:1.3;}
+    .rq-kind.on{border-color:var(--gb,#3b2fb8);background:#f1f0fb;}
+    .rq-elsewhere{font-size:12.5px;color:#475569;background:#f8f8fc;border:1px dashed #d4d2ee;border-radius:14px;padding:10px;margin-top:10px;line-height:1.45;}
+    .rq-elsewhere button{margin-top:6px;border-radius:12px;}
+    .rq-picked{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f1f0fb;border-radius:14px;padding:10px 12px;}
+    .rq-picked b{display:block;font-size:15px;} .rq-picked small{color:#6a6f88;font-size:12px;}
+    .rq-hit{display:block;width:100%;text-align:left;background:#fff;border:1px solid #e6e6f7;border-radius:12px;padding:9px 11px;margin:6px 0;font:inherit;color:#14162b;cursor:pointer;}
+    .rq-hit b{display:block;font-size:14.5px;} .rq-hit small{color:#6a6f88;font-size:12px;}
+    .rq-form label{display:block;font-size:13px;font-weight:700;color:#334155;margin:10px 0 0;}
+    .rq-form input,.rq-form select,.rq-form textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;border:1.5px solid #d4d2ee;border-radius:12px;padding:10px;font:inherit;font-size:15px;background:#fff;}
+    .rq-mem{margin-top:10px;} .rq-ml{font-size:13px;font-weight:700;color:#334155;}
+    .rq-mrow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;margin-top:8px;background:#f8f8fc;border-radius:12px;padding:8px;}
+    .rq-mrow b{grid-column:1/-1;font-size:14px;} .rq-mrow input,.rq-mrow select{width:100%;box-sizing:border-box;border:1.5px solid #d4d2ee;border-radius:10px;padding:8px;font:inherit;font-size:14px;}
+    .rq-warn{font-size:12.5px;color:#9a3412;background:#fff7ed;border-radius:12px;padding:8px 10px;margin-top:12px;}
+    .rq-send{display:block;width:100%;margin:14px 0 6px;border:0;border-radius:999px;padding:14px;background:var(--gb,#3b2fb8);color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer;box-shadow:var(--gsh);}
+    .rq-send:disabled{opacity:.6;}
   </style>
 
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1798,6 +1841,7 @@
         <button type="button" class="nh-tile" onclick="openSec('list')"><span class="gs-n" id="gsNList"></span><i><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 11h6M9 15h4"/></svg></i><b>My List</b></button>
         <button type="button" class="nh-tile" onclick="openSec('acc')"><span class="gs-n" id="gsNAcc"></span><i><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg></i><b>Bank Account</b></button>
         <button type="button" class="nh-tile" onclick="openSec('abps')"><span class="gs-n" id="gsNAbps"></span><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i><b>eKYC / ABPS</b></button>
+        <button type="button" class="nh-tile" onclick="openSec('req')"><span class="gs-n" id="gsNReq"></span><i><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></i><b>অনুরোধ ও নোট</b></button>
         <button type="button" class="nh-tile" onclick="openSansadPick()"><i><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></i><b>আমার সংসদ নির্বাচন</b></button>
         <button type="button" class="nh-tile wide" id="nhSync" onclick="homeSync()"><i><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></svg></i><span><b>অফলাইন ডেটা সিঙ্ক</b><small id="gsData"></small></span></button>
       </div>
@@ -1862,6 +1906,12 @@
       <div class="sp-h">✅ ABPS / eKYC</div>
       <div class="sp-sub" id="abpsSub">আপনার GP-র কোন village-এ কতজনের ABPS আর eKYC হয়েছে। Village ছুঁয়ে বাকি থাকা worker-দের দেখুন। <b>🪪</b> = যাদের Aadhaar দেওয়া নেই বা যাচাই হয়নি (Portal-এ ঠিক করতে হবে)। মৃত বা স্থায়ী Migrant হলে "⋯ মৃত / Migrant" চাপুন।</div>
       <div id="abpsBody"></div>
+    </div>
+
+    <!-- 📨 অনুরোধ ও নোট (SQL v234, js/sup-requests.js) -->
+    <div class="sec-page" id="reqPage">
+      <div class="sp-h">📨 অনুরোধ ও নোট</div>
+      <div id="reqBody"></div>
     </div>
 
     <!-- Others section -->
@@ -2316,7 +2366,7 @@
 
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261120a"></script>
-<script src="./js/gramg-adapter.js?v=20261119a"></script>
+<script src="./js/gramg-adapter.js?v=20261121a"></script>
 <script>
 
   // v2: the Apps Script bridge is replaced by js/gramg-adapter.js (Supabase).
@@ -3993,7 +4043,7 @@ function enterApp(res){
   document.getElementById('mainView').style.display='block';
   document.getElementById('userName').textContent=currentUser.name||currentUser.username;
   document.getElementById('userGp').textContent='GP: '+currentUser.gp;
-  loadVillageNames(); loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy(); if(typeof loadMarked==="function") loadMarked();
+  loadVillageNames(); loadVillages(); loadSavedSelection(); afterLogin(res); loadDataStatus(); loadAcRequests(); loadMasters(); loadIayBusy(); if(typeof loadMarked==="function") loadMarked(); if(typeof loadReqs==="function") loadReqs(true);
   document.body.classList.add('gs-in'); renderGsBar(); renderHome();
   // refresh (F5) restores the last section from localStorage, but its page was never filled -> blank eKYC/ABPS etc.
   try{ if(curSection==='abps') openAbps(); else if(curSection==='other') renderOthers(); else if(curSection==='acc') renderAcReqList(); }catch(e){}
@@ -4850,7 +4900,7 @@ function sendPhoto(){
 /* ---------- v6 Home + blue app bar (Koushik 2026-11-14: supervisors got lost in too many buttons) ----------
    Home = 3 tiles (My List · Bank Account · eKYC/ABPS) + new list + recent lists + passbook + eKYC bar.
    Sub pages get "‹" back in the bar; the old header, user bar and section tabs stay in the page but hidden. */
-const GS_SECS=['home','list','acc','abps','other'];
+const GS_SECS=['home','list','acc','abps','req','other'];
 let gsAbpsAt=0, gsAbpsBusy=false, gsAbpsErr='';
 const listRes={}; let listResBusy={};
 function gsEn(){ try{ return localStorage.getItem('GramG2_lang')==='en'; }catch(e){ return false; } }
@@ -4866,6 +4916,7 @@ function gsBack(){
     goMyLists(); return;
   }
   if(curSection==='abps' && abpsVillage!==null){ openAbps(); renderGsBar(); return; }
+  if(curSection==='req' && typeof reqBack==='function' && reqBack()) return;
   setSection('home');
 }
 function gsStepText(){
@@ -4885,6 +4936,7 @@ function renderGsBar(){
     t='🏦 Bank Account'; sub=n?n+' জনের passbook বাকি':'কোনো passbook বাকি নেই';
   }else if(sec==='abps'){
     t='✅ eKYC / ABPS'; sub=(abpsVillage!==null && abpsVillage!==undefined)?vLabel(abpsVillage,'Village'):'Village ছুঁয়ে বাকিদের দেখুন';
+  }else if(sec==='req' && typeof reqTitle==='function'){ const rt=reqTitle(); t=rt.t; sub=rt.sub;
   }else if(sec==='other'){ t='☰ আরও'; sub='Guide · ভাষা · Update · Logout'; }
   const tt=document.getElementById('gsTitle'), ss=document.getElementById('gsSub');
   if(tt.textContent!==t) tt.textContent=t;
@@ -4966,6 +5018,7 @@ function renderHome(){
     const m=document.createElement('button'); m.type='button'; m.className='nh-more'; m.textContent='আরও '+gsNum(open.length-2)+' জনের পাসবুক বাকি ›';
     m.onclick=function(){ openSec('acc'); }; tk.appendChild(m);
   }
+  if(typeof reqHomeTasks==='function') reqHomeTasks(tk);
   if(!tk.childNodes.length) tk.innerHTML='<div class="gs-none">আজ কোনো বাকি কাজ নেই ✓</div>';
   // সাম্প্রতিক list: the sent ones (unfinished lists are in আজকের কাজ)
   const rec=document.getElementById('gsRecent'); rec.innerHTML='';
@@ -5000,7 +5053,7 @@ function homeSync(){
   if(navigator.onLine===false){ showStatus('Internet নেই। Internet ফিরলে আবার চাপুন — পরিবর্তন এই phone-এ রাখা আছে।','error'); return; }
   if(listState.listId && isSelectionDirty() && !listLocked()) scheduleSaveSelection();
   gsAbpsAt=0; aaNewsAt=0;
-  loadDataStatus(); loadAcRequests(); loadIayBusy(true);
+  loadDataStatus(); loadAcRequests(); loadIayBusy(true); if(typeof loadReqs==='function') loadReqs(true);
   renderHome(); setTimeout(renderHome, 2500);
   showStatus('🔄 Data আবার আনা হচ্ছে...','success');
 }
@@ -5162,6 +5215,7 @@ function setSection(sec){
   renderGsBar();
   if(sec==='acc'){ document.getElementById('acrSearch').value=''; renderAcReqList(); loadAcRequests(); }
   if(sec==='abps') openAbps();
+  if(sec==='req' && typeof openReqPage==='function') openReqPage();
   if(sec==='other') renderOthers();
   window.scrollTo(0,0);
 }
@@ -5420,7 +5474,7 @@ document.getElementById('acOtherQ').addEventListener('input',function(){
   },400);
 });
 document.getElementById('acrSearch').addEventListener('input',renderAcReqList);
-document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'){ loadAcRequests(); if(typeof loadAaNews==='function') loadAaNews(false); } });
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'){ loadAcRequests(); if(typeof loadAaNews==='function') loadAaNews(false); if(typeof loadReqs==='function') loadReqs(false); } });
 function openResults(){
   showLoading('ফলাফল আনছি...');
   gramgAdapter.listResults().then(function(rows){
@@ -5480,6 +5534,7 @@ document.getElementById('workName').addEventListener('change',function(e){ gramg
   }, function(){ hideLoading(); });
 })();
 </script>
+<script src="./js/sup-requests.js?v=20261121a"></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', function(){
@@ -5488,7 +5543,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261121a"></script>
+<script src="./js/i18n.js?v=20261121b"></script>
 </body>
 
 </html>

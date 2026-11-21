@@ -581,6 +581,7 @@
         <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
         <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
         <button class="tab" data-tab="pmiss"><i>🔄</i><span>Portal new / removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
+        <button class="tab" data-tab="sreq"><i>📨</i><span>Supervisor requests <b class="badge badge-admin hidden" id="srBadge"></b></span></button>
         <button class="sact" type="button" data-click="ekycBtn"><i>📊</i><span>eKYC / ABPS summary</span></button>
       </div>
     </div>
@@ -933,6 +934,103 @@
     </div>
   </section>
 
+
+  <!-- ============ SUPERVISOR REQUESTS / সেবা অনুরোধ (v234, js/admin-requests.js) ============ -->
+  <section id="tab-sreq" class="hidden">
+    <style>
+      .sr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+      .sr-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+      .sr-lock{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px dashed #cbd5e1;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:12px;}
+      .sr-lock.on{border-color:#86efac;background:#f0fdf4;} .sr-lock.off{border-color:#fcd34d;background:#fffbeb;}
+      .sr-k{font-weight:800;font-size:12px;} .sr-k small{display:block;font-weight:600;color:#64748b;font-size:10.5px;}
+      .sr-det{font-size:11.5px;color:#334155;line-height:1.45;max-width:340px;}
+      .sr-det .aa{display:inline-block;margin-top:3px;font-family:ui-monospace,Consolas,monospace;background:#f1f5f9;border-radius:6px;padding:1px 6px;}
+      .sr-rm{font-size:11px;color:#475569;margin-top:3px;}
+      .pill.st-new{background:#dbeafe;color:#1e40af;} .pill.st-working{background:#fef3c7;color:#92400e;}
+      .pill.st-block,.pill.st-district{background:#ede9fe;color:#5b21b6;} .pill.st-done{background:#dcfce7;color:#166534;}
+      .pill.st-rejected{background:#fee2e2;color:#991b1b;} .pill.st-cancelled{background:#f1f5f9;color:#64748b;}
+      .pill.ek{background:#ffedd5;color:#9a3412;}
+      .sr-hist{margin:6px 0 0;padding:0;list-style:none;font-size:11px;color:#475569;}
+      .sr-hist li{padding:2px 0;border-top:1px dashed #e2e8f0;}
+      .sr-form label.f{margin-top:8px;}
+      .sr-form input[type=text],.sr-form select,.sr-form textarea{width:100%;}
+      .sr-hits{display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:220px;overflow:auto;}
+      .sr-hits button{text-align:left;background:#f8fafc;color:#0f172a;border:1px solid #e2e8f0;padding:6px 8px;font-size:12px;}
+      .sr-hits button.on{background:#e0e7ff;border-color:#6366f1;}
+      .sr-mem{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;} .sr-mem td{padding:3px;} .sr-mem input,.sr-mem select{width:100%;}
+      .sr-note-aa{font-size:11px;color:#9a3412;background:#fff7ed;border-radius:8px;padding:6px 8px;margin-top:8px;}
+      html[data-theme=dark] .sr-det{color:#cbd5e1;} html[data-theme=dark] .sr-det .aa,html[data-theme=dark] .sr-hits button{background:#1f2937;color:#e5e7eb;border-color:#334155;}
+      html[data-theme=dark] .sr-lock.on{background:#052e1f;} html[data-theme=dark] .sr-lock.off{background:#3a2a0c;}
+    </style>
+    <div class="card">
+      <div class="sr-top"><h2 style="margin:0;">📨 Supervisor requests · সেবা অনুরোধ</h2><button class="btn-light btn-small" id="srRefresh">🔄 Refresh</button></div>
+      <div class="muted">Supervisors send tasks from the phone app (Aadhaar Delink, name / gender correction, new applicant, payment problem, notes …). Applicant delete stays in <b>Expired / Migrant</b> and bank accounts in <b>Account copy</b>., or you write one for a supervisor with <b>＋ New request</b>. Tick requests and set the status: <b>Working</b>, <b>Sent to Block</b>, <b>Sent to District</b>, <b>Done</b> or <b>Rejected</b>, with a remark. The supervisor sees every change and its date. When an Aadhaar related task is Done the supervisor is told to do the worker's eKYC again. <b>📥 Block format</b> makes the Block's Excel format for the ticked requests of one kind. Supervisors can never send an Aadhaar number.</div>
+      <label class="f" for="srGp">Gram Panchayat</label>
+      <select id="srGp"></select>
+      <div class="muted" id="srSetup"></div>
+      <div class="row" style="margin-top:8px;align-items:flex-end;">
+        <div><label class="f" for="srBlock">Block name (for the formats)</label><input type="text" id="srBlock" maxlength="60" placeholder="e.g. Dinhata - I" style="min-width:200px;"></div>
+        <button class="btn-light btn-small" id="srBlockSave">💾 Save</button>
+      </div>
+      <div class="sr-lock hidden" id="srLock"></div>
+    </div>
+    <div class="card">
+      <div class="filters" id="srFilters">
+        <button data-f="open" class="active">Open</button>
+        <button data-f="new">New</button>
+        <button data-f="working">Working</button>
+        <button data-f="sent">Sent to Block / District</button>
+        <button data-f="ekyc">eKYC pending</button>
+        <button data-f="closed">Done / Rejected</button>
+        <button data-f="all">All</button>
+      </div>
+      <div class="row">
+        <select id="srKindF" aria-label="Kind"></select>
+        <input type="text" id="srQ" placeholder="🔍 Job Card / name / supervisor" style="min-width:200px;">
+        <label class="check" style="margin:0;"><input type="checkbox" id="srOld"><span>Load closed older than 7 days</span></label>
+      </div>
+      <div class="sr-bar">
+        <button class="btn-primary btn-small" id="srNew">＋ New request</button>
+        <button class="btn-light btn-small" id="srSWorking" disabled>⏳ Working</button>
+        <button class="btn-light btn-small" id="srSBlock" disabled>📤 Sent to Block</button>
+        <button class="btn-light btn-small" id="srSDistrict" disabled>📤 Sent to District</button>
+        <button class="btn-success btn-small" id="srSDone" disabled>✅ Done</button>
+        <button class="btn-danger btn-small" id="srSReject" disabled>✕ Reject</button>
+        <button class="btn-primary btn-small" id="srFormat" disabled>📥 Block format (ticked)</button>
+        <button class="btn-light btn-small" id="srXlsx">⭳ Excel list</button>
+      </div>
+      <div class="table-wrap stack" style="margin-top:8px;max-height:65vh;"><table>
+        <thead><tr><th><input type="checkbox" id="srAll" aria-label="Tick all"></th><th>Task</th><th>Village</th><th>Job Card</th><th>Name</th><th>Details</th><th>Supervisor</th><th>Sent</th><th>Status</th><th></th></tr></thead>
+        <tbody id="srBody"></tbody></table></div>
+    </div>
+
+    <!-- new / edit request -->
+    <div class="modal" id="srModal" role="dialog" aria-modal="true" aria-labelledby="srMTitle">
+      <div class="modal-box" style="max-width:560px;">
+        <div class="modal-head"><div><h2 id="srMTitle">New request</h2><div class="muted" id="srMSub"></div></div><button class="btn-light btn-small" id="srMClose">✕</button></div>
+        <div class="sr-form" id="srMBody"></div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px;"><button class="btn-light btn-small" id="srMNo">Cancel</button><button class="btn-primary btn-small" id="srMYes">Save</button></div>
+      </div>
+    </div>
+    <!-- status + remark -->
+    <div class="modal" id="srStModal" role="dialog" aria-modal="true" aria-labelledby="srStTitle">
+      <div class="modal-box" style="max-width:480px;">
+        <div class="modal-head"><div><h2 id="srStTitle">Status</h2><div class="muted" id="srStSub"></div></div><button class="btn-light btn-small" id="srStClose">✕</button></div>
+        <div class="chips" id="srStChips"></div>
+        <label class="f" for="srStText">Remark for the supervisor <span id="srStNeed"></span></label>
+        <textarea id="srStText" rows="3" maxlength="300" style="width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font:inherit;"></textarea>
+        <div class="row" style="justify-content:flex-end;margin-top:6px;"><button class="btn-light btn-small" id="srStNo">Cancel</button><button class="btn-primary btn-small" id="srStYes">Save</button></div>
+      </div>
+    </div>
+    <!-- Aadhaar lock password / Aadhaar numbers (Super Admin only) -->
+    <div class="modal" id="srAaModal" role="dialog" aria-modal="true" aria-labelledby="srAaTitle">
+      <div class="modal-box" style="max-width:460px;">
+        <div class="modal-head"><div><h2 id="srAaTitle">🔒 Aadhaar lock</h2><div class="muted" id="srAaSub"></div></div><button class="btn-light btn-small" id="srAaClose">✕</button></div>
+        <div class="sr-form" id="srAaBody"></div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px;"><button class="btn-light btn-small" id="srAaNo">Cancel</button><button class="btn-primary btn-small" id="srAaYes">OK</button></div>
+      </div>
+    </div>
+  </section>
 
   <!-- ============ PAYMENT PIPELINE (v217) ============ -->
   <section id="tab-pipeline" class="hidden">
@@ -1366,9 +1464,10 @@
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261120t"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261120t"></script>
+<script src="./js/admin-dbver.js?v=20261121a"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
-<script src="./js/admin-shell.js?v=20261120t"></script>
+<script src="./js/admin-requests.js?v=20261121a"></script>
+<script src="./js/admin-shell.js?v=20261121a"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>
 </html>

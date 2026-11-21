@@ -99,7 +99,7 @@
 
   /* ------------------------ one Gram Panchayat picker ------------------------ */
   // page → its own (now hidden) GP picker
-  var PAGE_GP = { dash: 'dashGp', photos: 'phGp', marks: 'mkGp', pmiss: 'pmGp', pipeline: 'ppGp', wlcaste: 'wcGp', masters: 'msGp', signup: 'suGp', import: 'gpSelect' };
+  var PAGE_GP = { dash: 'dashGp', photos: 'phGp', marks: 'mkGp', pmiss: 'pmGp', pipeline: 'ppGp', wlcaste: 'wcGp', masters: 'msGp', signup: 'suGp', sreq: 'srGp', import: 'gpSelect' };
   Object.keys(PAGE_GP).forEach(function (k) {
     var s = $(PAGE_GP[k]); if (!s) return;
     s.classList.add('gp-dup');
@@ -184,7 +184,7 @@
   $('srchBtn').addEventListener('click', function () { if (window.AdminSearch) window.AdminSearch.open(); });
 
   /* ------------------------------ page header: refresh + time ------------------------------ */
-  var REFRESH = { dash: 'dashRefresh', photos: 'phRefresh', marks: 'mkRefresh', pmiss: 'pmRefresh', pipeline: 'ppRefresh', wlcaste: 'wcRefresh', signup: 'suRefresh', iay: 'idRefresh' };
+  var REFRESH = { dash: 'dashRefresh', photos: 'phRefresh', marks: 'mkRefresh', pmiss: 'pmRefresh', pipeline: 'ppRefresh', wlcaste: 'wcRefresh', signup: 'suRefresh', sreq: 'srRefresh', iay: 'idRefresh' };
   function stamp() { $('subWhen').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
   $('subRefresh').addEventListener('click', function () { var b = $(REFRESH[current]); if (b) { b.click(); stamp(); } });
 
@@ -288,7 +288,8 @@
       q(SB.rpc('admin_portal_missing', { p_gp_id: g })),
       q(SB.rpc('admin_data_status', { p_gp_id: g })),
       q(SB.rpc('db_version')),
-      q(SB.rpc('admin_portal_new_count', { p_gp_id: g }))
+      q(SB.rpc('admin_portal_new_count', { p_gp_id: g })),
+      q(SB.rpc('admin_sr_count', { p_gp_id: g }))
     ]).then(function (r) {
       if (seq !== tdSeq) return;
       if (r[0] == null) {   // network / server failed: keep the last good numbers of this GP, say when, offer Retry
@@ -378,6 +379,7 @@
                       D.draft ? cnt(D.draft, 'list draft-এ আছে', 'list still draft', 'lists still draft') : L('Demand lists', 'Demand lists'), 'dash');
     else if (D.draft) add(13, 'warn', '📝', cnt(D.draft, 'list এখনও submit হয়নি', 'list not submitted yet', 'lists not submitted yet'), L('Supervisor-কে submit করতে বলুন', 'Ask the supervisor to submit'), 'dash');
     if (D.marks) add(14, 'warn', '🗑', cnt(D.marks, 'Expired / Migrant mark', 'Expired / Migrant mark'), L('Accept বা Return করুন', 'Accept or Return'), 'marks');
+    if (D.sreq) add(14.5, 'warn', '📨', cnt(D.sreq, 'নতুন supervisor request / নোট', 'new supervisor request / note', 'new supervisor requests / notes'), L('Workers & Accounts → Supervisor requests', 'Workers & Accounts → Supervisor requests'), 'sreq');
     if (D.login) add(15, 'warn', '🙋', cnt(D.login, 'supervisor login request', 'supervisor login request'), L('Team & Access → Login requests', 'Team & Access → Login requests'), 'signup');
     if (D.pnew) add(16, 'warn', '🆕', cnt(D.pnew, 'নতুন worker portal-এ', 'new worker on the portal', 'new workers on the portal'), L('ABPS Sync-এ পাওয়া, Gram Setu-তে নেই · Accept বা Ignore', 'Found by ABPS Sync, not in Gram Setu yet · Accept or Ignore'), 'pmiss');
     if (D.held) add(17, 'warn', '🚫', cnt(D.held, 'ABPS sync আটকে', 'ABPS sync held', 'ABPS syncs held'), L('Portal-এ worker পাওয়া যায়নি · Apply বা Ignore', 'Workers not found on the portal · Apply or Ignore'), 'pmiss');
@@ -387,7 +389,7 @@
   }
 
   function healthItems(D) {
-    var p = D.pp || {}, db = D.db || {}, ds = D.ds || {}, need = (window.AdminDbVer && window.AdminDbVer.need) || 233, out = [];
+    var p = D.pp || {}, db = D.db || {}, ds = D.ds || {}, need = (window.AdminDbVer && window.AdminDbVer.need) || 234, out = [];
     function fresh(at, okDays, warnDays) { var a = age(at); return a <= okDays ? 'ok' : a <= warnDays ? 'warn' : 'late'; }
     out.push({ label: L('Database version', 'Database version'),
                v: db.version ? 'v' + db.version + (db.version >= need ? '' : ' · ' + L('দরকার v' + need, 'needs v' + need)) : L('জানা নেই', 'unknown'),
@@ -414,7 +416,7 @@
     opt = opt || {}; tdLast = { r: r, opt: opt };
     var users = r[0] || [], pp = r[1], ds = r[6] || {}, db = r[7] || {};
     var D = { pp: pp, ds: ds, db: db, login: Number(r[2]) || 0, photos: (r[3] && r[3].new_count) || 0,
-              marks: ((r[4] && r[4].counts) || {}).new || 0, held: ((r[5] && r[5].held) || []).length, pnew: Number(r[8]) || 0 };
+              marks: ((r[4] && r[4].counts) || {}).new || 0, held: ((r[5] && r[5].held) || []).length, pnew: Number(r[8]) || 0, sreq: Number(r[9]) || 0 };
     var lists = [], noList = 0;
     users.forEach(function (u) { if (!(u.lists || []).length) noList++; (u.lists || []).forEach(function (l) { lists.push(l); }); });
     D.lists = lists.length; D.noList = noList;

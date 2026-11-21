@@ -1486,6 +1486,54 @@
     .aa-safe{font-size:12px;color:#475569;background:#f1f5f9;border-radius:10px;padding:8px 10px;margin-top:10px;line-height:1.5;}
     .gs-news{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:9px 11px;margin-bottom:6px;font:inherit;font-size:13px;color:inherit;cursor:pointer;}
     .gs-news i{font-style:normal;font-size:17px;} .gs-news small{display:block;color:#64748b;font-size:11.5px;margin-top:2px;}
+    /* ===== v8 Home (2026-11-21, Koushik's Lovable mockup): simple modern indigo; only #homePage ===== */
+    body.gs-in.sec-home .gsbar{display:none;}
+    #homePage{--ni:#3730a3;--ni2:#4338ca;--nsoft:#e6e6f7;--nink:#1e1b4b;--nmut:#64748b;padding-top:6px;}
+    .nh-top{display:flex;align-items:center;gap:10px;padding:6px 2px 4px;}
+    .nh-logo{width:44px;height:44px;border-radius:13px;background:var(--ni);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;box-shadow:0 6px 14px -6px rgba(55,48,163,.6);}
+    .nh-logo img{width:100%;height:100%;object-fit:cover;}
+    .nh-brand{flex:1;font-size:23px;font-weight:800;color:var(--nink);letter-spacing:.2px;}
+    .nh-av{width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:linear-gradient(145deg,#6366f1,#3730a3);color:#fff;font:inherit;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 12px -4px rgba(15,23,42,.35);flex:none;}
+    .nh-who{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 2px 14px;}
+    .nh-name{min-width:0;font-size:14.5px;color:var(--nmut);} .nh-name b{color:var(--nink);}
+    .nh-name .gs-date{display:block;font-size:11.5px;color:#94a3b8;margin-top:2px;position:static;}
+    .nh-sn{display:flex;align-items:center;gap:4px;max-width:52%;border:0;border-radius:20px;background:var(--nsoft);color:var(--ni);font:inherit;font-weight:800;font-size:13.5px;padding:8px 12px;cursor:pointer;}
+    .nh-sn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .nh-sn svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
+    .nh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .nh-st{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:#fff;border:0;border-radius:16px;padding:12px 12px 10px;font:inherit;cursor:pointer;text-align:left;box-shadow:0 4px 14px -8px rgba(15,23,42,.25);min-width:0;}
+    .nh-st small{font-size:12px;color:var(--nmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+    .nh-st b{font-size:24px;font-weight:800;color:var(--nink);line-height:1.1;}
+    .nh-st.warn b{color:#d97706;} .nh-st.bad b{color:#dc2626;}
+    .nh-hero{position:relative;overflow:hidden;display:block;width:100%;text-align:left;margin:14px 0 4px;border:0;border-radius:22px;padding:20px 18px 18px;font:inherit;color:#fff;cursor:pointer;
+      background:linear-gradient(135deg,#3730a3 0%,#312e81 60%,#1e1b4b 100%);box-shadow:0 14px 28px -14px rgba(55,48,163,.75);}
+    .nh-hero:before{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.08);}
+    .nh-hero>b{position:relative;display:block;font-size:24px;font-weight:800;} .nh-hero>small{position:relative;display:block;font-size:14px;color:#c7d2fe;margin-top:2px;}
+    .nh-foot{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:22px;}
+    .nh-dots{display:flex;gap:5px;} .nh-dots i{width:18px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);} .nh-dots i.on{width:26px;background:#fff;}
+    .nh-go{background:#fff;color:var(--ni);border-radius:24px;padding:10px 16px;font-weight:800;font-size:14px;white-space:nowrap;}
+    .nh-hero:active,.nh-st:active,.nh-task:active,.nh-tile:active,.nh-warn:active{transform:scale(.98);}
+    .nh-task{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;margin:8px 0;background:#fff;border:0;border-radius:16px;padding:12px 12px 12px 16px;font:inherit;color:inherit;cursor:pointer;box-shadow:0 4px 14px -8px rgba(15,23,42,.25);}
+    .nh-task:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ni);}
+    .nh-task.t-acc:before{background:#d97706;}
+    .nh-tx{min-width:0;} .nh-tx small{display:block;font-size:12px;font-weight:700;color:var(--ni);} .nh-task.t-acc .nh-tx small{color:#d97706;}
+    .nh-tx b{display:block;font-size:14.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;} .nh-tx b small{display:inline;color:var(--nmut);font-weight:400;}
+    .nh-btn{flex:none;display:flex;align-items:center;gap:5px;background:var(--ni);color:#fff;border-radius:20px;padding:8px 14px;font-weight:800;font-size:13px;white-space:nowrap;}
+    .nh-btn.ghost{background:#fff;color:#0f172a;border:1.5px solid #cbd5e1;}
+    .nh-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;}
+    .nh-warn{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;margin:8px 0;background:#fdf2f4;border:1.5px solid #f5c2cc;border-radius:16px;padding:12px 14px;font:inherit;color:#0f172a;cursor:pointer;}
+    .nh-warn svg{width:24px;height:24px;flex:none;stroke:#dc2626;fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;margin-top:2px;}
+    .nh-warn small{display:block;color:#dc2626;font-weight:800;font-size:12.5px;} .nh-warn b{display:block;font-size:14px;margin-top:2px;} .nh-warn i{display:block;font-style:normal;font-size:12px;color:var(--nmut);margin-top:2px;}
+    .nh-more{display:block;width:100%;background:none;border:0;color:var(--ni);font:inherit;font-weight:800;font-size:13px;text-align:right;padding:2px 4px 6px;cursor:pointer;}
+    .nh-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 4px;}
+    .nh-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:#fff;border:0;border-radius:18px;padding:14px;font:inherit;color:#0f172a;cursor:pointer;text-align:left;box-shadow:0 4px 14px -8px rgba(15,23,42,.25);}
+    .nh-tile i{width:42px;height:42px;border-radius:12px;background:var(--nsoft);display:flex;align-items:center;justify-content:center;}
+    .nh-tile svg{width:22px;height:22px;stroke:var(--ni);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+    .nh-tile b{font-size:14.5px;font-weight:800;line-height:1.25;}
+    .nh-tile.wide{grid-column:1/-1;flex-direction:row;align-items:center;} .nh-tile.wide small{display:block;font-size:11.5px;color:var(--nmut);margin-top:2px;}
+    .nh-tile.dirty i{background:#fef3c7;} .nh-tile.dirty svg{stroke:#d97706;}
+    .nh-tile .gs-n{top:10px;right:12px;}
+    html[lang=en] .nh-hero>small{display:none;}
   </style>
 
 </head>
@@ -1661,25 +1709,43 @@
       <button type="button" class="gs-menu" id="gsMenu" onclick="setSection('other')" aria-label="আরও">☰</button>
     </div>
 
-    <!-- v6 HOME: 3 tiles + new list + recent lists + passbook + eKYC/ABPS -->
+    <!-- v8 HOME (2026-11-21, Koushik's Lovable mockup): header + stat cards + New Demand card + আজকের কাজ + tiles.
+         Every old Home part is still here: the 3 tiles moved to the tile grid at the bottom. -->
     <div class="sec-page" id="homePage">
-      <div class="gs-hero"><svg class="gs-arc" viewBox="0 0 390 46" preserveAspectRatio="none"><path d="M-10 46 Q195 -8 400 46" fill="none" stroke="#fff" stroke-width="3"/><g stroke="#fff" stroke-width="2"><line x1="60" y1="46" x2="60" y2="27"/><line x1="125" y1="46" x2="125" y2="15"/><line x1="195" y1="46" x2="195" y2="11"/><line x1="265" y1="46" x2="265" y2="15"/><line x1="330" y1="46" x2="330" y2="27"/></g></svg><div class="gs-hello" id="gsHello"></div><div class="gs-date" id="gsDate"></div></div>
-      <div class="gs-grid">
-        <button type="button" class="gs-tile t1" onclick="openSec('list')"><span class="gs-n" id="gsNList"></span><i><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 11h6M9 15h4"/></svg></i>My List</button>
-        <button type="button" class="gs-tile t2" onclick="openSec('acc')"><span class="gs-n" id="gsNAcc"></span><i><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg></i>Bank Account</button>
-        <button type="button" class="gs-tile t3" onclick="openSec('abps')"><span class="gs-n" id="gsNAbps"></span><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i>eKYC / ABPS</button>
+      <div class="nh-top">
+        <span class="nh-logo"><img src="./icon-192.png" alt=""></span>
+        <b class="nh-brand">গ্রাম সেতু</b>
+        <button type="button" class="nh-av" id="nhAv" onclick="setSection('other')" aria-label="আরও"></button>
+      </div>
+      <div class="nh-who">
+        <div class="nh-name"><span>সুপারভাইজার</span> · <b id="gsHello"></b><small class="gs-date" id="gsDate"></small></div>
+        <button type="button" class="nh-sn" onclick="openSansadPick()" title="আমার Sansad বাছুন"><span id="nhSn">সব Sansad</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+      <div class="nh-stats">
+        <button type="button" class="nh-st" onclick="openSec('abps')"><small>মোট কর্মী</small><b id="nhTot">–</b></button>
+        <button type="button" class="nh-st warn" onclick="openSec('abps')"><small>ABPS বাকি</small><b id="nhAbps">–</b></button>
+        <button type="button" class="nh-st bad" onclick="openSec('acc')"><small>পাসবুক বাকি</small><b id="nhAcc">–</b></button>
       </div>
       <div id="gsAlert"></div>
+      <button type="button" class="nh-hero" onclick="homeNewList()">
+        <b>নতুন ডিমান্ড</b><small>New Demand</small>
+        <span class="nh-foot"><span class="nh-dots"><i class="on"></i><i></i><i></i><i></i></span><span class="nh-go">ধাপ ১/৪ শুরু করুন →</span></span>
+      </button>
+      <div class="gs-sh"><span>আজকের কাজ</span></div>
+      <div id="nhTasks"></div>
       <div class="gs-sh" id="gsNewsHead" style="display:none;"><span>🔔 খবর · মৃত-Migrant</span><button type="button" onclick="openSec('abps')">›</button></div>
       <div id="gsNews"></div>
-      <button type="button" class="gs-new" onclick="homeNewList()"><span>＋</span>New Demand</button>
+      <div class="nh-tiles">
+        <button type="button" class="nh-tile" onclick="openSec('list')"><span class="gs-n" id="gsNList"></span><i><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 11h6M9 15h4"/></svg></i><b>My List</b></button>
+        <button type="button" class="nh-tile" onclick="openSec('acc')"><span class="gs-n" id="gsNAcc"></span><i><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg></i><b>Bank Account</b></button>
+        <button type="button" class="nh-tile" onclick="openSec('abps')"><span class="gs-n" id="gsNAbps"></span><i><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M16 11l2 2 4-4"/></svg></i><b>eKYC / ABPS</b></button>
+        <button type="button" class="nh-tile" onclick="openSansadPick()"><i><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></i><b>আমার সংসদ নির্বাচন</b></button>
+        <button type="button" class="nh-tile wide" id="nhSync" onclick="homeSync()"><i><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></svg></i><span><b>অফলাইন ডেটা সিঙ্ক</b><small id="gsData"></small></span></button>
+      </div>
       <div class="gs-sh"><span>সাম্প্রতিক list</span><button type="button" onclick="openSec('list')">সব ›</button></div>
       <div id="gsRecent"></div>
-      <div class="gs-sh"><span>Passbook চাই</span><button type="button" id="gsAccAll" onclick="openSec('acc')">সব ›</button></div>
-      <div id="gsAcc"></div>
       <div class="gs-sh"><span id="gsAbpsHead">eKYC / ABPS</span><button type="button" id="gsAbpsPct" onclick="openSec('abps')">›</button></div>
       <div id="gsAbps"></div>
-      <div class="gs-data" id="gsData"></div>
     </div>
 
     <!-- USER -->
@@ -4538,6 +4604,7 @@ function loadIayBusy(force){
     d.works.forEach(function(w){ const k=String(w[0]||'').trim().toUpperCase(); if(!k) return;
       const a=m.get(k)||[]; a.push({ben:w[1]||'',last:w[2]||'',rem:Number(w[3]||0),mrs:w[4]||[]}); m.set(k,a); });
     iayMap=m;
+    try{ renderHome(); }catch(e){}
     try{ renderSelected(); if(families.length){ const t=workerTab; renderSearchResults(); if(t==='sel'){ workerTab='sel'; applyUiLayout(); } } }catch(e){}
   },function(){ iayLoading=null; });
   return iayLoading;
@@ -4797,37 +4864,86 @@ function gsListOrder(lists){
 function gsMini(cls, html, onClick){
   const b=document.createElement('button'); b.type='button'; b.className='gs-mini '+cls; b.innerHTML=html; b.onclick=onClick; return b;
 }
+function gsNum(n){ try{ return Number(n).toLocaleString(gsEn()?'en-IN':'bn-IN'); }catch(e){ return String(n); } }
+function gsInitials(nm){
+  const p=String(nm||'').trim().split(/\s+/).filter(Boolean);
+  return ((p[0]||'').charAt(0)+(p.length>1?p[p.length-1].charAt(0):'')).toUpperCase()||'👤';
+}
 function renderHome(){
   if(!currentUser) return;
-  const en=gsEn(), first=String(currentUser.name||currentUser.username||'').trim().split(/\s+/)[0];
+  const en=gsEn(), full=String(currentUser.name||currentUser.username||'').trim();
   const h=document.getElementById('gsHello'); if(!h) return;
-  h.textContent='নমস্কার, '+first+' 🙏';
+  h.textContent=full;
+  document.getElementById('nhAv').textContent=gsInitials(full);
   try{ document.getElementById('gsDate').textContent=new Date().toLocaleDateString(en?'en-IN':'bn-IN',{weekday:'long',day:'numeric',month:'long'}); }catch(e){}
+  const mine=mySansad();
+  document.getElementById('nhSn').textContent=mine.length?'★ '+mine.map(function(v){ return vLabel(v); }).join(', '):'সব Sansad';
   const lists=listState.lists||[];
-  const drafts=lists.filter(function(l){ return (l.submit_state||'draft')==='draft'; }).length;
-  document.getElementById('gsNList').textContent=drafts?String(drafts):'';
+  const draftLists=gsListOrder(lists).filter(function(l){ return (l.submit_state||'draft')==='draft'; });
+  document.getElementById('gsNList').textContent=draftLists.length?String(draftLists.length):'';
+  const open=acReqs.filter(function(r){ return r.status==='open'; });
+  document.getElementById('gsNAcc').textContent=open.length?String(open.length):'';
+  document.getElementById('nhAcc').textContent=gsNum(open.length);
+  document.getElementById('nhAcc').parentNode.classList.toggle('bad',open.length>0);
+  // আজকের কাজ: unfinished lists, PBA warning of the open draft list, passbook photos
+  const tk=document.getElementById('nhTasks'); tk.innerHTML='';
+  draftLists.forEach(function(l){
+    tk.appendChild(gsTask('t-draft','খসড়া তালিকা',escapeHtml(l.work_name&&!isPendingName(l.work_name)?l.work_name:'(নাম নেই)')+' • '+gsNum(l.workers||0)+' জন worker',
+      '<span class="nh-btn">চালিয়ে যান</span>', function(){ setSection('list'); openListCard(l.list_id); }));
+  });
+  const pba=gsPbaBusy();
+  if(pba){
+    const w=document.createElement('button'); w.type='button'; w.className='nh-warn';
+    w.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg><span><small>PBA MR সতর্কতা</small><b>'+gsNum(pba.n)+' জনের সক্রিয় MR চলছে — বাদ রাখুন</b><i>'+escapeHtml(pba.name)+'</i></span>';
+    w.onclick=function(){ setSection('list'); openListCard(pba.id); };
+    tk.appendChild(w);
+  }
+  const cam='<span class="nh-btn ghost"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ছবি তুলুন</span>';
+  open.slice(0,2).forEach(function(r){
+    tk.appendChild(gsTask('t-acc','পাসবুক তোলা বাকি',escapeHtml(r.applicant_name||'')+' <small>('+escapeHtml(shortJobCard(r.job_card_no||''))+')</small>',cam,
+      function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); }));
+  });
+  if(open.length>2){
+    const m=document.createElement('button'); m.type='button'; m.className='nh-more'; m.textContent='আরও '+gsNum(open.length-2)+' জনের পাসবুক বাকি ›';
+    m.onclick=function(){ openSec('acc'); }; tk.appendChild(m);
+  }
+  if(!tk.childNodes.length) tk.innerHTML='<div class="gs-none">আজ কোনো বাকি কাজ নেই ✓</div>';
+  // সাম্প্রতিক list: the sent ones (unfinished lists are in আজকের কাজ)
   const rec=document.getElementById('gsRecent'); rec.innerHTML='';
   if(!lists.length) rec.innerHTML='<div class="gs-none">এখনো কোনো list নেই। "＋ New Demand" চাপুন।</div>';
-  gsListOrder(lists).slice(0,2).forEach(function(l){
+  const sent=gsListOrder(lists).filter(function(l){ return (l.submit_state||'draft')!=='draft'; });
+  if(lists.length && !sent.length) rec.innerHTML='<div class="gs-none">এখনো কোনো list জমা দেওয়া হয়নি।</div>';
+  sent.slice(0,2).forEach(function(l){
     const k=listKind(l);
     rec.appendChild(gsMini('k-'+k.k,'<b>'+escapeHtml(l.work_name||'(নাম নেই)')+'</b><span class="gst k-'+k.k+'">'+escapeHtml(k.t)+'</span>',
       function(){ setSection('list'); openListCard(l.list_id); }));
   });
-  const open=acReqs.filter(function(r){ return r.status==='open'; });
-  document.getElementById('gsNAcc').textContent=open.length?String(open.length):'';
-  document.getElementById('gsAccAll').textContent=open.length?open.length+' জন ›':'সব ›';
-  const ac=document.getElementById('gsAcc'); ac.innerHTML='';
-  if(!open.length) ac.innerHTML='<div class="gs-none">কোনো passbook বাকি নেই ✓</div>';
-  const cam='<span class="gs-cam"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>';
-  open.slice(0,2).forEach(function(r){
-    ac.appendChild(gsMini('k-ac','<b>'+escapeHtml(r.applicant_name||'')+' <small>'+escapeHtml(shortJobCard(r.job_card_no||''))+'</small></b>'+cam,
-      function(){ startPhoto({ wid:Number(r.worker_id), jobCard:r.job_card_no, name:r.applicant_name, returnReason:r.return_reason||'' }); }));
-  });
   renderHomeAbps();
   renderAaNews(); loadAaNews(false);
   const ds=document.getElementById('dataStatus'), gd=document.getElementById('gsData');
-  gd.textContent=(ds&&ds.style.display!=='none')?ds.textContent:'';
+  const dirty=(typeof isSelectionDirty==='function' && listState.listId && isSelectionDirty());
+  gd.textContent=(dirty?'⏳ না-পাঠানো পরিবর্তন আছে · ':'')+((ds&&ds.style.display!=='none')?ds.textContent:'চাপলে data আবার আনবে');
+  document.getElementById('nhSync').classList.toggle('dirty',!!dirty);
   ensureListRes();
+}
+function gsTask(cls, label, text, btn, onClick){
+  const b=document.createElement('button'); b.type='button'; b.className='nh-task '+cls;
+  b.innerHTML='<span class="nh-tx"><small>'+label+'</small><b>'+text+'</b></span>'+btn; b.onclick=onClick; return b;
+}
+// PBA MR workers in the draft list open on this phone (same check as the list badge: iayHit)
+function gsPbaBusy(){
+  if(!iayMap || !listState.listId || (listState.state||'draft')!=='draft' || !selected || !selected.size) return null;
+  let n=0; selected.forEach(function(it){ if(iayHit(it)) n++; });
+  return n?{n:n,id:listState.listId,name:listState.workName&&!isPendingName(listState.workName)?listState.workName:'(নাম নেই)'}:null;
+}
+// অফলাইন ডেটা সিঙ্ক: send changes kept on this phone (if any) and fetch Home data again
+function homeSync(){
+  if(navigator.onLine===false){ showStatus('Internet নেই। Internet ফিরলে আবার চাপুন — পরিবর্তন এই phone-এ রাখা আছে।','error'); return; }
+  if(listState.listId && isSelectionDirty() && !listLocked()) scheduleSaveSelection();
+  gsAbpsAt=0; aaNewsAt=0;
+  loadDataStatus(); loadAcRequests(); loadIayBusy(true);
+  renderHome(); setTimeout(renderHome, 2500);
+  showStatus('🔄 Data আবার আনা হচ্ছে...','success');
 }
 /* ---------- My Sansad (village) choice: per supervisor, on this phone ---------- */
 function snKey(){ return 'gs.sansad.'+String((currentUser&&(currentUser.username||currentUser.name))||''); }
@@ -4862,6 +4978,7 @@ function renderHomeAbps(){
     let tw=0,tb=0,worst=null; rows.forEach(function(r){ tw+=r.workers; tb+=r.both; const left=r.workers-r.both; if(left>0 && (!worst||left>worst.left)) worst={v:r.village_no,left:left}; });
     const p=tw?Math.round(tb*100/tw):0, left=tw-tb;
     pc.textContent=p+'% ›';
+    document.getElementById('nhTot').textContent=gsNum(tw); document.getElementById('nhAbps').textContent=gsNum(left); document.getElementById('nhAbps').parentNode.classList.toggle('warn',left>0);
     if(mine.length){
       tn.textContent=left?String(left):'';
       rows.forEach(function(r){
@@ -4884,6 +5001,7 @@ function renderHomeAbps(){
     }
   }else{
     pc.textContent='›';
+    document.getElementById('nhTot').textContent='–'; document.getElementById('nhAbps').textContent='–';
     box.innerHTML='<div class="gs-none">'+escapeHtml(gsAbpsErr||(abpsRows?'কোনো worker নেই।':'আনছি...'))+'</div>';
   }
   if(!gsAbpsBusy && Date.now()-gsAbpsAt>10*60000 && currentUser){
@@ -5311,7 +5429,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261114c"></script>
+<script src="./js/i18n.js?v=20261121a"></script>
 </body>
 
 </html>

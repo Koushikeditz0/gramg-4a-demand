@@ -7,6 +7,6 @@
     "🩺 Health Check: portal-এর field বদলালে Start-এর আগেই বাংলায় জানায়, ভুল data ঢোকে না",
     "Popup-এ \"এই page-এর Health Check\" বোতাম",
     "Portal-এর সব field ID এখন এক ফাইলে (shared/portal-map.js)",
-    "Bulk WL Caste Breakup, portal থেকে মুছে যাওয়া worker সরানো, Aadhaar Update সরানো (1.22–1.23)"
+    "1.23: portal থেকে মুছে যাওয়া worker Gram Setu থেকে সরানো, Aadhaar Update বাদ"
   ]
 }

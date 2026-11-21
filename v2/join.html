@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#1f1a6b">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <title>Gram Setu · Account request</title>
@@ -41,10 +41,23 @@
   .hidden{display:none !important;}
   .who{font-weight:700;font-size:16px;}
   .who small{display:block;color:var(--mut);font-weight:400;font-size:12px;word-break:break-all;}
+  /* 2026-11-21 indigo look (Koushik's Lovable screen): colours + shape only */
+  :root{--ink:#14162b;--mut:#6a6f88;--blue:#3b2fb8;--bg:#f2f3f8;}
+  body{font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;}
+  header{background:var(--bg);color:var(--ink);font-size:18px;padding:18px 16px 6px;}
+  header img{width:40px;height:40px;border-radius:12px;box-shadow:0 1px 2px #14162b14;}
+  .card{border-radius:22px;box-shadow:0 1px 2px #14162b14;border-left:4px solid var(--blue);}
+  .step{background:var(--blue);border-radius:16px;}
+  input{border-radius:16px;background:#fff;}
+  .btn{border-radius:999px;box-shadow:0 10px 24px -10px rgba(59,47,184,.55);}
+  .btn.light{box-shadow:none;border-color:rgba(59,47,184,.3);}
+  .opt{border-radius:16px;}
 </style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap">
 </head>
 <body>
-<header><img src="./favicon-32.png" alt="">Gram Setu · Account request</header>
+<header><img src="./icon-192.png" alt="">গ্রাম সেতু · Account request</header>
 <main>
   <div class="card" id="vLoad"><div class="mut">Link দেখা হচ্ছে…</div></div>
 

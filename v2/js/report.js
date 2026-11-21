@@ -24,8 +24,8 @@
   var S = { ctx: null, home: [], gp: null, page: 'home', viewerMode: read('gramg2.rViewer') === '1',
             view: read('gramg2.rView') === 'list' ? 'list' : 'cards', mrs: null, mrStage: 'all', mrKind: 'all', works: null, reg: null, wkKind: 'all', caste: null, ek: null, limit: 300 };
   var STAGES = [
-    ['all', 'All pending'], ['fill_pending', 'Fill pending'], ['fill_today', 'Ends today'], ['emb', 'e-MB pending'],
-    ['verify', 'Verify pending'], ['wl_pending', 'WL pending'], ['running', 'Running']];
+    ['all', 'All pending'], ['emb', 'e-MB pending'], ['verify', 'Verify pending'], ['fill_pending', 'Fill pending'],
+    ['fill_today', 'Ends today'], ['wl_pending', 'WL pending'], ['running', 'Running']];   // v238: e-MB → verify → fill → WL
   var STAGE_LABEL = { fill_pending: 'Fill pending', fill_today: 'Ends today', emb: 'e-MB pending', verify: 'Verify pending', wl_pending: 'WL pending', running: 'Running', wl_done: 'WL done', zero: 'Zero' };
 
   function loading(t) { var l = $('loading'); l.textContent = t || ''; l.style.display = t ? 'block' : 'none'; }
@@ -149,8 +149,8 @@
   function renderHome() {
     var list = S.gp ? S.home.filter(function (g) { return g.id === S.gp; }) : S.home;
     var t = sums(list), tl = $('tiles'); tl.innerHTML = '';
+    tl.appendChild(tile('t2', '📐', n(t.emb), 'e-MB / Verify pending', 'Before MR fill', pipeTo('emb')));
     tl.appendChild(tile('t1', '⏳', n(t.fill), 'MR fill pending', t.today ? 'Ends today: ' + n(t.today) : '', pipeTo('fill_pending')));
-    tl.appendChild(tile('t2', '📐', n(t.emb), 'e-MB / Verify pending', '', pipeTo('emb')));
     tl.appendChild(tile('t5', '📄', n(t.wl), 'WL to generate', t.wlAmt ? rs(t.wlAmt) : '', pipeTo('wl_pending')));
     tl.appendChild(tile('t6', '🏠', n(t.pbaToday), 'PBA fill today', 'Ends tomorrow: ' + n(t.pbaTom), pipeTo('fill_today', 'pba')));
     tl.appendChild(tile('t3', '✅', pct(t.ready, t.workers) + '%', 'eKYC + ABPS ready', n(t.ready) + ' / ' + n(t.workers) + ' workers', function () { if (S.gp) go('ekyc'); else status('First pick a GP.'); }));
@@ -161,13 +161,13 @@
     cc.classList.toggle('hidden', !!S.gp || S.home.length < 2);
     if (!S.gp && S.home.length > 1) {
       tb.innerHTML = '';
-      var hr = el('tr'); ['GP', 'Fill pending', 'e-MB/Verify', 'WL pending', 'Ready %', 'MR data'].forEach(function (h) { hr.appendChild(el('th', h)); }); tb.appendChild(hr);
+      var hr = el('tr'); ['GP', 'e-MB/Verify', 'Fill pending', 'WL pending', 'Ready %', 'MR data'].forEach(function (h) { hr.appendChild(el('th', h)); }); tb.appendChild(hr);
       var mx = { f: 0, w: 0 }; S.home.forEach(function (g) { mx.f = Math.max(mx.f, st(g, 'fill_pending') + st(g, 'fill_today')); mx.w = Math.max(mx.w, st(g, 'wl_pending')); });
       S.home.forEach(function (g) {
         var tr = el('tr', null, 'click'), f = st(g, 'fill_pending') + st(g, 'fill_today'), e = g.ekyc || {};
         tr.appendChild(el('td', g.name));
-        tr.appendChild(el('td', n(f), f && f === mx.f ? 'bad' : ''));
         tr.appendChild(el('td', n(st(g, 'emb') + st(g, 'verify'))));
+        tr.appendChild(el('td', n(f), f && f === mx.f ? 'bad' : ''));
         tr.appendChild(el('td', n(st(g, 'wl_pending')), st(g, 'wl_pending') && st(g, 'wl_pending') === mx.w ? 'bad' : ''));
         var p = pct(e.ready, e.workers); tr.appendChild(el('td', e.workers ? p + '%' : '—', p >= 85 ? 'ok' : ''));
         tr.appendChild(el('td', g.mr_at ? when(g.mr_at) : '—', 'mut'));

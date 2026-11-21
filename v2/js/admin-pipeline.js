@@ -169,8 +169,7 @@
             sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' },
       rep
         ? { key: 'fill', n: m.cnt('fill_today') + m.cnt('fill_pending'), unit: 'MR', title: 'MR fill pending',
-            sub: 'e-MB verified (PBA: period ended), not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') +
-                 (m.cnt('wl_pending') ? ' · ' + m.cnt('wl_pending') + ' filled MRs wait for a wage list' + (wlAmt ? ' (' + money(wlAmt) + ')' : '') : '') }
+            sub: 'e-MB verified (PBA: period ended), not filled' + (m.cnt('fill_today') ? ' · ' + m.cnt('fill_today') + ' end today' : '') }
         : pp.mode === 'other'
         ? { key: 'fill', n: null, unit: '', title: 'MR fill pending', off: true,
             sub: 'Needs the MR-wise report (R4.2 + R4.4) sent to Gram Setu.' }
@@ -180,7 +179,8 @@
       { key: 'gen', n: m.gen.at ? m.gen.items.length : null, unit: 'work', title: 'Wage List not generated',
         sub: (m.gen.at ? 'MR filled, no wage list yet (Generate Wagelist page)' + (held.length ? ' · ' + held.length + ' held back for accounts' : '')
                        : 'K-Desk has not read the Generate Wagelist page yet') +
-             (iay.wl_wait && pp.mode !== 'other' ? ' · PBA: ' + iay.wl_wait + ' filled MRs waiting' + iayWhen : ''),
+             (rep ? ' · MR report: ' + m.cnt('wl_pending') + ' filled MRs wait for a wage list' + (wlAmt ? ' (' + money(wlAmt) + ')' : '')
+                  : iay.wl_wait && pp.mode !== 'other' ? ' · PBA: ' + iay.wl_wait + ' filled MRs waiting' + iayWhen : ''),
         bad: held.length > 0 },
       { key: 'send', n: m.send.at ? m.send.items.length : null, unit: 'WL', title: 'Send for payment pending',
         sub: m.send.at ? (sendKnown ? money(sendAmt) + (sendKnown < m.send.items.length ? ' (amount read for ' + sendKnown + ' of ' + m.send.items.length + ')' : '') : 'Amount not read yet — run K-Desk 🧪 Test run once')
@@ -247,7 +247,7 @@
       if (rows.length > 800) box.appendChild(el('div', 'First 800 of ' + rows.length + ' MRs.', 'muted'));
       return box;
     }
-    if (key === 'fill' && m.rep) return mrTable(['fill_today', 'fill_pending', 'wl_pending']);
+    if (key === 'fill' && m.rep) return mrTable(['fill_today', 'fill_pending']);   // MR fill only; filled MRs (WL pending) are under Wage List
     if (key === 'emb') return mrTable(['emb', 'verify']);
     if (key === 'fill') {
       box.appendChild(el('div', 'The IAY tab has the MR-wise list (which MR, which beneficiary, fill date).', 'muted'));
@@ -256,10 +256,14 @@
       box.appendChild(b); return box;
     }
     if (key === 'gen') {
-      if (!m.gen.items.length) { box.appendChild(el('div', m.gen.at ? 'No work is waiting for a wage list.' : 'Open Generate Wagelist on the portal with K-Desk once.', 'muted')); return box; }
-      box.appendChild(table(['Work code', 'Work', 'Note'], m.gen.items.map(function (x) {
+      if (!m.gen.items.length) box.appendChild(el('div', m.gen.at ? 'No work is waiting for a wage list.' : 'Open Generate Wagelist on the portal with K-Desk once.', 'muted'));
+      else box.appendChild(table(['Work code', 'Work', 'Note'], m.gen.items.map(function (x) {
         return [el('span', shortCode(x.code), 'pp-code'), x.name || '', x.held > 0 ? tag(x.held + ' held back · A/c', 'bad') : tag('WL pending', 't2')];
       })));
+      if (m.rep) {   // MRs already filled, no wage list yet (MR-wise report)
+        var h = el('div', 'Filled MRs waiting for a wage list (MR-wise report)', 'muted'); h.style.margin = '10px 0 4px'; h.style.fontWeight = '600';
+        box.appendChild(h); return mrTable(['wl_pending']);
+      }
       return box;
     }
     if (key === 'send') {

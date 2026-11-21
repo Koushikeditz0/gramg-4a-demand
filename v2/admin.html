@@ -266,6 +266,8 @@
     .side .gsubs .tab i,.side .gsubs .sact i{font-size:13px;width:18px;}
     .side .gsubs .tab.active{background:#fffaf5;color:var(--accent);font-weight:700;box-shadow:inset 2px 0 0 var(--accent);border-radius:0 10px 10px 0;}
     .side .gsubs .tab .badge{margin-left:4px;}
+    .side .gsubs .tab.minor{font-size:11px;opacity:.7;margin-top:6px;border-top:1px dashed #e5e7eb;border-radius:0;}
+    .side .gsubs .tab.minor.active{opacity:1;}
     .side .sact{display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;text-decoration:none;font-family:inherit;}
     .side .sact:hover{background:#fdf4ea;}
     .side .viewbar{background:#f5f3ff;color:#5b21b6;margin:8px 0 0;flex-direction:column;align-items:stretch;}
@@ -578,11 +580,11 @@
     <div class="grp" data-g="workers">
       <button class="ghead" type="button" data-short="Workers"><i>👷</i><span>Workers &amp; Accounts</span><b class="gbadge hidden"></b></button>
       <div class="gsubs">
-        <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
-        <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
-        <button class="tab" data-tab="pmiss"><i>🔄</i><span>Portal new / removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
         <button class="tab" data-tab="sreq"><i>📨</i><span>Supervisor requests <b class="badge badge-admin hidden" id="srBadge"></b></span></button>
+        <button class="tab" data-tab="marks"><i>🗑</i><span>Expired / Migrant <b class="badge badge-admin hidden" id="mkBadge"></b></span></button>
+        <button class="tab" data-tab="photos"><i>📷</i><span>Account copy <b class="badge badge-admin hidden" id="phBadge"></b></span></button>
         <button class="sact" type="button" data-click="ekycBtn"><i>📊</i><span>eKYC / ABPS summary</span></button>
+        <button class="tab minor" data-tab="pmiss" title="Rarely needed"><i>🔄</i><span>Portal new / removed <b class="badge badge-admin hidden" id="pmBadge"></b></span></button>
       </div>
     </div>
     <div class="grp" data-g="money">
@@ -910,6 +912,18 @@
       <div class="muted" id="phStore"></div>
     </div>
     <div class="phcards" id="phCards"></div>
+    <div class="card" id="bqCard">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <h2 style="margin:0;">🏦 Waiting for K-Desk · Bank A/c Update</h2>
+        <label class="check" style="margin:0;"><input type="checkbox" id="bqShowRemoved"><span>Show removed</span></label>
+      </div>
+      <div class="muted">Verified accounts that K-Desk loads on the portal page <b>EditAppBank</b> until the portal says UPDATED. If you already did it on the portal yourself, or it keeps failing, tick it and press <b>🗑 Remove from K-Desk</b>, so K-Desk does not load it again. The record stays here; <b>↩ Undo</b> puts it back.</div>
+      <div class="muted" id="bqSetup"></div>
+      <div class="row" style="margin-top:8px;"><button class="btn-danger btn-small" id="bqRemove" disabled>🗑 Remove from K-Desk (ticked)</button><span class="muted" id="bqCount"></span></div>
+      <div class="table-wrap stack" style="margin-top:8px;max-height:55vh;"><table>
+        <thead><tr><th><input type="checkbox" id="bqAll" aria-label="Tick all"></th><th>Village</th><th>Job Card</th><th>Name</th><th>Account No · IFSC</th><th>Verified</th><th>Portal</th><th></th></tr></thead>
+        <tbody id="bqBody"></tbody></table></div>
+    </div>
     <div class="card">
       <h2>📋 Ask supervisors for account copies</h2>
       <div class="muted">Paste the workers whose account is not frozen (from the Wage List page or any Excel), or choose the Excel / CSV file. Each line needs the <b>Job Card No</b> and the <b>name</b> (the name picks the right person when a job card has more than one). The supervisors see them in the phone app as <b>📷 Account copy চাই</b>.</div>
@@ -960,6 +974,15 @@
       .sr-mem{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;} .sr-mem td{padding:3px;} .sr-mem input,.sr-mem select{width:100%;}
       .sr-note-aa{font-size:11px;color:#9a3412;background:#fff7ed;border-radius:8px;padding:6px 8px;margin-top:8px;}
       html[data-theme=dark] .sr-det{color:#cbd5e1;} html[data-theme=dark] .sr-det .aa,html[data-theme=dark] .sr-hits button{background:#1f2937;color:#e5e7eb;border-color:#334155;}
+      .sr-san td,.sr-san th{text-align:center;} .sr-san td:first-child,.sr-san th:first-child{text-align:left;}
+      .sr-san tr.on td{background:#eef2ff;} .sr-san tfoot td{font-weight:800;border-top:2px solid #cbd5e1;}
+      .sr-san .san-n{min-width:34px;padding:3px 8px;border-radius:999px;font-weight:800;font-size:12px;border:0;cursor:pointer;}
+      .san-new{background:#dbeafe;color:#1e40af;} .san-working{background:#fef3c7;color:#92400e;} .san-sent{background:#ede9fe;color:#5b21b6;}
+      .san-ekyc{background:#ffedd5;color:#9a3412;} .san-acc,.san-photo{background:#e0f2fe;color:#075985;} .san-marks{background:#f1f5f9;color:#334155;}
+      .sr-tot{font-weight:800;}
+      .sr-also{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px;}
+      .sr-also button{font-size:12px;}
+      html[data-theme=dark] .sr-san tr.on td{background:#1e1b4b;}
       html[data-theme=dark] .sr-lock.on{background:#052e1f;} html[data-theme=dark] .sr-lock.off{background:#3a2a0c;}
     </style>
     <div class="card">
@@ -973,6 +996,14 @@
         <button class="btn-light btn-small" id="srBlockSave">💾 Save</button>
       </div>
       <div class="sr-lock hidden" id="srLock"></div>
+      <div class="sr-also" id="srAlso"></div>
+    </div>
+    <div class="card">
+      <div class="sr-top"><h3 style="margin:0;">🗺 By Sansad · সংসদ ধরে হিসাব</h3><label class="check" style="margin:0;"><input type="checkbox" id="srSanAll"><span>Show every Sansad</span></label></div>
+      <div class="muted">What is still pending in each Sansad. <b>New</b> / <b>Working</b> = on you, <b>Block / District</b> = waiting for them, <b>eKYC pending</b> = the supervisor has to do it. Account and Expired / Migrant work of the same Sansad is counted from their own pages. Tap a number to open those requests (or that page).</div>
+      <div class="table-wrap stack" style="margin-top:8px;max-height:50vh;"><table class="sr-san">
+        <thead><tr><th>Sansad</th><th>New</th><th>Working</th><th>Block / District</th><th>eKYC pending</th><th>🏦 Account wanted</th><th>📷 Account copy</th><th>🗑 Expired / Migrant</th><th>Total</th></tr></thead>
+        <tbody id="srSanBody"></tbody><tfoot id="srSanFoot"></tfoot></table></div>
     </div>
     <div class="card">
       <div class="filters" id="srFilters">
@@ -985,6 +1016,7 @@
         <button data-f="all">All</button>
       </div>
       <div class="row">
+        <select id="srVilF" aria-label="Sansad"><option value="">All Sansads</option></select>
         <select id="srKindF" aria-label="Kind"></select>
         <input type="text" id="srQ" placeholder="🔍 Job Card / name / supervisor" style="min-width:200px;">
         <label class="check" style="margin:0;"><input type="checkbox" id="srOld"><span>Load closed older than 7 days</span></label>
@@ -1464,10 +1496,11 @@
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261120t"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261121a"></script>
+<script src="./js/admin-dbver.js?v=20261121c"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
-<script src="./js/admin-requests.js?v=20261121a"></script>
-<script src="./js/admin-shell.js?v=20261121a"></script>
+<script src="./js/admin-requests.js?v=20261121c"></script>
+<script src="./js/admin-bankqueue.js?v=20261121a"></script>
+<script src="./js/admin-shell.js?v=20261121c"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>
 </html>

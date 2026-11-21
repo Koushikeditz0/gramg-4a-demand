@@ -22,11 +22,12 @@
   var XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';   // SheetJS + cell styles
 
   var KIND = {
-    aadhaar_delink: ['🪪 Aadhaar Delink', 'আধার ডিলিংক'],
+    aadhaar_delink: ['🪪 Aadhaar Delink (from another Job Card)', 'অন্য Job Card থেকে আধার ডিলিংক'],
+    aadhaar_update: ['🪪 Aadhaar update / seed', 'আধার আপডেট'],
     aadhaar_wrong_seed: ['🪪 Aadhaar seeded to wrong applicant', 'ভুল applicant-এ আধার seed'],
     name_mismatch: ['🪪 Name mismatch (Soft vs Aadhaar)', 'নামের অমিল'],
     gender_hoh: ['⚧ Gender / HoH change', 'লিঙ্গ / HoH বদল'],
-    applicant_add: ['➕ New applicant in Job Card', 'নতুন Applicant যোগ'],
+    applicant_add: ['➕ New applicant in Job Card (old)', 'নতুন Applicant যোগ'],   // no longer offered; old rows still show
     payment: ['💸 Payment problem', 'Payment সমস্যা'],
     other: ['📌 Other task', 'অন্য কাজ'],
     note: ['📝 Note', 'নোট / বার্তা']
@@ -38,13 +39,16 @@
   var REASON_TXT = { dead: 'Death', shifted: 'Shifted', duplicate: 'Duplicate', wrong: 'Wrongly seeded', other: 'Other' };
   // format fields of each kind (never an Aadhaar number)
   var FIELDS = {
-    aadhaar_delink: [
-      { k: 'reason', l: 'Reason for removal / deletion', o: REASON },
-      { k: 'reason_text', l: 'Reason in words (optional)' },
-      { k: 'shift_block', l: 'Name of shifted Block', when: function (d) { return d.reason === 'shifted'; } },
-      { k: 'shift_gp', l: 'Name of shifted GP', when: function (d) { return d.reason === 'shifted'; } },
-      { k: 'shift_jc', l: 'New (shifted) Job Card No (as in MIS)', when: function (d) { return d.reason === 'shifted'; } },
+    aadhaar_delink: [   // the worker = where the Aadhaar must be seeded now; old_* = the Job Card it is seeded in today
+      { k: 'old_jc', l: 'Job Card where the Aadhaar is seeded now (to delink)' },
+      { k: 'old_name', l: 'Name of the worker in that Job Card' },
+      { k: 'old_gp', l: 'GP of that Job Card (empty = this GP)' },
+      { k: 'old_block', l: 'Block of that Job Card (empty = this Block)' },
       { k: 'aadhaar_name', l: 'Name as per Aadhaar' }],
+    aadhaar_update: [
+      { k: 'aadhaar_name', l: 'Name as per Aadhaar Card' },
+      { k: 'gender', l: 'Gender as per Aadhaar Card', o: GENDER },
+      { k: 'remarks', l: 'What is wrong (not seeded, wrong number …)' }],
     aadhaar_wrong_seed: [
       { k: 'aadhaar_name', l: 'Name recorded in Aadhaar Card' },
       { k: 'gender', l: 'Gender recorded in Aadhaar Card', o: GENDER },
@@ -60,6 +64,7 @@
   };
   var AA = {   // Aadhaar boxes (Super Admin only)
     aadhaar_delink: [['a1', 'Aadhaar No. (already frozen in MIS)']],
+    aadhaar_update: [['a1', 'Aadhaar No. to seed']],
     aadhaar_wrong_seed: [['a1', 'Aadhaar No. seeded in MIS (wrongly)'], ['a2', 'Actual Aadhaar No. which needs to seed now']],
     name_mismatch: [['a1', 'Aadhaar Card Number']]
   };
@@ -72,7 +77,7 @@
     cancelled: ['ভুল করে লেখা হয়েছিল']
   };
 
-  var sr = { rows: [], meta: null, filter: 'open', sel: new Set(), all: false, key: null };
+  var sr = { rows: [], meta: null, filter: 'open', sel: new Set(), all: false, key: null, vil: '', ex: {} };
 
   // ---------------------------------------------------------------- small helpers
   function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
@@ -288,10 +293,12 @@
       if (mine) { copyGps(); load(); }
     });
   });
-  $('srGp').addEventListener('change', function () { sr.sel.clear(); load(); });
+  $('srGp').addEventListener('change', function () { sr.sel.clear(); sr.vil = ''; load(); });
   $('srRefresh').addEventListener('click', load);
   $('srOld').addEventListener('change', function () { sr.all = this.checked; load(); });
   $('srQ').addEventListener('input', render);
+  $('srVilF').addEventListener('change', function () { sr.vil = this.value; sr.sel.clear(); render(); });
+  $('srSanAll').addEventListener('change', renderSansad);
   $('srKindF').addEventListener('change', render);
   (function () {
     var s = $('srKindF'); s.appendChild(new Option('All kinds', ''));
@@ -314,6 +321,7 @@
       sr.rows = r[1] || [];
       $('srBlock').value = blockName();
       renderLock(); render(); badge();
+      loadExtra(g, my);
     }, function (e) {
       if (e.authLost || my !== seq) return;
       if (missing(e)) { $('srSetup').textContent = SETUP; sr.rows = []; sr.meta = null; render(); return; }
@@ -344,6 +352,131 @@
     }, function (e) { if (!e.authLost) status(errText(e), 'err'); });
   });
 
+  // ---------------------------------------------------------------- by Sansad (village)
+  // One row per Sansad: what is waiting on the Admin, on Block / District and on the
+  // supervisor, plus the Account copy and Expired / Migrant work of the same Sansad
+  // (read from their own pages' functions; nothing new in the database).
+  function vkey(v) { return v == null ? 'none' : String(Number(v)); }
+  function vlabel(key) {
+    if (key === 'none') return 'No Sansad (notes)';
+    var n = sr.ex.names && sr.ex.names[key];
+    return vno(key) + (n ? ' · ' + n : '');
+  }
+  function soft(p) { return p.then(function (r) { return r; }, function () { return null; }); }
+  function loadExtra(g, my) {
+    sr.ex = {};
+    Promise.all([
+      soft(SB.rpc('admin_get_village_names', { p_gp_id: g })),
+      soft(SB.rpc('admin_account_requests', { p_gp_id: g, p_all: false })),
+      soft(SB.rpc('admin_account_photos', { p_gp_id: g, p_status: 'new' })),
+      soft(SB.rpc('admin_marks_list', { p_gp_id: g, p_filter: 'all' }))
+    ]).then(function (r) {
+      if (my !== seq) return;
+      var ex = { names: {} };
+      (r[0] || []).forEach(function (v) { if (v.name) ex.names[String(Number(v.v))] = v.name; });
+      ex.acc = r[1];
+      ex.photo = r[2] ? (r[2].rows || []) : null;
+      ex.marks = r[3] ? (r[3].rows || []).filter(function (m) { return ['new', 'accepted', 'sent_delete'].indexOf(m.status) >= 0; }) : null;
+      sr.ex = ex; renderSansad(); fillVil();
+      renderAlso();
+    });
+  }
+  var SAN_COLS = [
+    ['new', 'New', 'Supervisor sent it, you have not started'],
+    ['working', 'Working', 'You are working on it'],
+    ['sent', 'Block / District', 'Sent, waiting for Block / District'],
+    ['ekyc', 'eKYC pending', 'Done; the supervisor has to do eKYC again'],
+    ['acc', '🏦 Account wanted', 'Account copy asked from the supervisor, not received yet'],
+    ['photo', '📷 Account copy', 'Account copy photo received, you have to check it'],
+    ['marks', '🗑 Expired / Migrant', 'Marks not finished yet']
+  ];
+  function sansadCounts() {
+    var by = {};
+    function row(key) { return by[key] || (by[key] = { key: key, new: 0, working: 0, sent: 0, ekyc: 0, acc: 0, photo: 0, marks: 0, sup: {} }); }
+    sr.rows.forEach(function (r) {
+      if (r.kind === 'note' && r.by_admin) return;   // your own note to a supervisor: nothing for you to do
+      var c = row(vkey(r.village_no)), f = null;
+      if (r.status === 'new') f = 'new';
+      else if (r.status === 'working') f = 'working';
+      else if (r.status === 'block' || r.status === 'district') f = 'sent';
+      else if (r.status === 'done' && r.ekyc_needed && !r.ekyc_done_at) f = 'ekyc';
+      if (!f) return;
+      c[f]++;
+      var who = r.by_admin ? r.for_name : r.from_name; if (who) c.sup[who] = 1;
+    });
+    (sr.ex.acc || []).forEach(function (a) { if (a.status === 'open') row(vkey(a.village_no)).acc++; });
+    (sr.ex.photo || []).forEach(function (a) { row(vkey(a.village_no)).photo++; });
+    (sr.ex.marks || []).forEach(function (a) { row(vkey(a.village_no)).marks++; });
+    return by;
+  }
+  function renderSansad() {
+    var body = $('srSanBody'); if (!body) return;
+    body.innerHTML = '';
+    var by = sansadCounts(), all = $('srSanAll').checked;
+    if (all) Object.keys(sr.ex.names || {}).forEach(function (k) { if (!by[k]) by[k] = { key: k, new: 0, working: 0, sent: 0, ekyc: 0, acc: 0, photo: 0, marks: 0, sup: {} }; });
+    var keys = Object.keys(by).sort(function (a, b) { return a === 'none' ? 1 : b === 'none' ? -1 : Number(a) - Number(b); });
+    var tot = { new: 0, working: 0, sent: 0, ekyc: 0, acc: 0, photo: 0, marks: 0 }, shown = 0;
+    keys.forEach(function (k) {
+      var c = by[k], sum = SAN_COLS.reduce(function (s, col) { return s + c[col[0]]; }, 0);
+      SAN_COLS.forEach(function (col) { tot[col[0]] += c[col[0]]; });
+      if (!sum && !all) return;
+      shown++;
+      var tr = el('tr'); if (sr.vil === k) tr.className = 'on';
+      var name = el('td'); name.setAttribute('data-label', 'Sansad');
+      name.appendChild(el('b', vlabel(k)));
+      var sup = Object.keys(c.sup); if (sup.length) name.appendChild(el('div', sup.join(', '), 'muted'));
+      tr.appendChild(name);
+      SAN_COLS.forEach(function (col) { tr.appendChild(sanCell(c[col[0]], col, k)); });
+      var t = el('td', sum ? String(sum) : '—', 'sr-tot'); t.setAttribute('data-label', 'Total'); tr.appendChild(t);
+      body.appendChild(tr);
+    });
+    if (!shown) { var tr0 = el('tr'), td0 = el('td', sr.meta ? 'Nothing pending in any Sansad. 🎉' : '', 'muted'); td0.colSpan = SAN_COLS.length + 2; tr0.appendChild(td0); body.appendChild(tr0); }
+    var foot = $('srSanFoot'); foot.innerHTML = '';
+    var tf = el('tr'); tf.appendChild(el('td', 'Total'));
+    SAN_COLS.forEach(function (col) {
+      var miss = (col[0] === 'acc' && !sr.ex.acc) || (col[0] === 'photo' && !sr.ex.photo) || (col[0] === 'marks' && !sr.ex.marks);
+      tf.appendChild(el('td', miss ? '—' : String(tot[col[0]])));
+    });
+    tf.appendChild(el('td', String(SAN_COLS.reduce(function (s, col) { return s + tot[col[0]]; }, 0))));
+    foot.appendChild(tf);
+  }
+  function sanCell(n, col, key) {
+    var td = el('td'); td.setAttribute('data-label', col[1]);
+    if (!n) { td.textContent = '·'; td.className = 'muted'; return td; }
+    var b = el('button', String(n), 'san-n san-' + col[0]); b.type = 'button'; b.title = col[2] + ' — ' + vlabel(key);
+    b.onclick = function () {
+      if (col[0] === 'acc' || col[0] === 'photo') { goTab('photos'); return; }
+      if (col[0] === 'marks') { goTab('marks'); return; }
+      sr.vil = key; $('srVilF').value = key; sr.filter = col[0]; sr.sel.clear(); render(); renderSansad();
+      var list = $('srBody'); if (list && list.scrollIntoView) list.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    td.appendChild(b); return td;
+  }
+  // the other supervisor work that has its own page: one tap away from here
+  function renderAlso() {
+    var box = $('srAlso'); if (!box) return; box.innerHTML = '';
+    var mk = sr.ex.marks, mkNew = mk ? mk.filter(function (m) { return m.status === 'new'; }).length : null;
+    var acc = sr.ex.acc ? sr.ex.acc.filter(function (a) { return a.status === 'open'; }).length : null;
+    var ph = sr.ex.photo ? sr.ex.photo.length : null;
+    box.appendChild(el('span', 'Also from supervisors:', 'muted'));
+    [['marks', '🗑 Expired / Migrant', mk == null ? '' : mkNew + ' new · ' + mk.length + ' open'],
+     ['photos', '📷 Account copy', ph == null ? '' : ph + ' to check' + (acc ? ' · ' + acc + ' asked' : '')]].forEach(function (x) {
+      var b = el('button', x[1] + (x[2] ? ' (' + x[2] + ')' : ''), 'btn-light btn-small'); b.type = 'button';
+      b.onclick = function () { goTab(x[0]); }; box.appendChild(b);
+    });
+  }
+  function goTab(tab) { var b = document.querySelector('.tab[data-tab="' + tab + '"]'); if (b) b.click(); }
+  function fillVil() {
+    var s = $('srVilF'), keep = sr.vil, seen = {};
+    s.innerHTML = ''; s.appendChild(new Option('All Sansads', ''));
+    var keys = Object.keys(sr.ex.names || {});
+    sr.rows.forEach(function (r) { keys.push(vkey(r.village_no)); });
+    keys.filter(function (k) { if (seen[k]) return false; seen[k] = 1; return true; })
+      .sort(function (a, b) { return a === 'none' ? 1 : b === 'none' ? -1 : Number(a) - Number(b); })
+      .forEach(function (k) { s.appendChild(new Option(vlabel(k), k)); });
+    s.value = keep; if (s.value !== keep) { sr.vil = ''; s.value = ''; }
+  }
+
   // ---------------------------------------------------------------- list
   function inFilter(r) {
     var f = sr.filter, open = ['new', 'working', 'block', 'district'].indexOf(r.status) >= 0;
@@ -360,6 +493,7 @@
     return sr.rows.filter(function (r) {
       if (!inFilter(r)) return false;
       if (k && r.kind !== k) return false;
+      if (sr.vil !== '' && vkey(r.village_no) !== sr.vil) return false;
       if (q && [r.job_card_no, r.applicant_name, r.for_name, r.from_name, r.note, r.title].join(' ').toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
@@ -369,6 +503,7 @@
     if (r.title) out.push(r.title);
     if (d.reason) out.push('Reason: ' + (REASON_TXT[d.reason] || d.reason) + (d.reason_text ? ' (' + d.reason_text + ')' : ''));
     else if (d.reason_text) out.push('Reason: ' + d.reason_text);
+    if (d.old_jc || d.old_name) out.push('Seeded now in: ' + [d.old_jc, d.old_name, d.old_gp, d.old_block].filter(Boolean).join(' · ') + ' → seed in this Job Card');
     if (d.shift_block || d.shift_gp || d.shift_jc) out.push('Shifted to: ' + [d.shift_block, d.shift_gp, d.shift_jc].filter(Boolean).join(' · '));
     if (d.aadhaar_name) out.push('Name in Aadhaar: ' + d.aadhaar_name);
     if (d.gender) out.push('Gender: ' + d.gender);
@@ -389,6 +524,8 @@
       if (!b.dataset.l) b.dataset.l = b.textContent;
       b.textContent = b.dataset.l + ' (' + (counts[b.dataset.f] || 0) + ')';
     });
+    if (!sr.ex.names) fillVil();
+    renderSansad();
     var rows = visible(), body = $('srBody'); body.innerHTML = '';
     var ids = {}; rows.forEach(function (r) { ids[r.id] = 1; });
     sr.sel.forEach(function (id) { if (!ids[id]) sr.sel.delete(id); });
@@ -400,7 +537,7 @@
       cb.onchange = function () { if (cb.checked) sr.sel.add(r.id); else sr.sel.delete(r.id); btns(); };
       td.appendChild(cb); tr.appendChild(td);
       var k = el('td'), kb = el('div', kindLabel(r.kind), 'sr-k'); kb.appendChild(el('small', (KIND[r.kind] || ['', ''])[1])); k.appendChild(kb); tr.appendChild(k);
-      tr.appendChild(el('td', vno(r.village_no)));
+      tr.appendChild(el('td', r.village_no == null ? '—' : vlabel(vkey(r.village_no))));
       tr.appendChild(el('td', r.job_card_no || '—'));
       tr.appendChild(el('td', r.applicant_name ? r.applicant_name + (r.applicant_no ? ' (' + r.applicant_no + ')' : '') : '—'));
       var det = el('td'), dv = el('div', null, 'sr-det');
@@ -487,7 +624,7 @@
                   r ? r.for_user || '' : '');
     field(body, 'Supervisor (they see this in the phone app)', sup);
     // kind
-    var kinds = Object.keys(KIND).map(function (k) { return [k, KIND[k][0] + ' · ' + KIND[k][1]]; });
+    var kinds = Object.keys(KIND).filter(function (k) { return k !== 'applicant_add' || (r && r.kind === k); }).map(function (k) { return [k, KIND[k][0] + ' · ' + KIND[k][1]]; });
     var kindSel = sel('srMKind', [['', '— Pick the task —']].concat(kinds), f.kind); kindSel.disabled = edit;
     field(body, 'Task', kindSel);
     var titleIn = txt('srMTitleIn', r && r.title, 120, 'What is the task?');
@@ -637,6 +774,11 @@
                  ['Sl. No.', 'Block Name', 'GP Name', 'Name of Worker', 'Job Card  No.', 'Aadhaar No.', 'Name as per Aadhaar', 'Annexure - A', '', '', ''],
                  ['', '', '', '(as per Job card)', '(as shown in MIS)', '(already frozen in MIS)', '', 'Reason for Removal/Deletion', 'Name of Shifted Block', 'Name of Shifted GP', 'New (shifted) Job card number (as shown in MIS)']];
       rows.forEach(function (r, i) { var d = r.details || {}, a = aa[r.id] || {};
+        if (d.old_jc) {   // seeded in another Job Card → delink there, seed in this worker's Job Card
+          aoa.push([i + 1, d.old_block || blockName(), d.old_gp || gpName(), d.old_name || r.applicant_name, d.old_jc, fmtAa(a.a1), d.aadhaar_name || '',
+                    'Aadhaar seeded in another Job Card; to be seeded in the new Job Card', blockName(), gpName(), r.job_card_no || '']);
+          return;
+        }
         var why = (REASON_TXT[d.reason] || '') + (d.reason_text ? (d.reason ? ' – ' : '') + d.reason_text : '');
         aoa.push([i + 1, blockName(), gpName(), r.applicant_name, r.job_card_no, fmtAa(a.a1), d.aadhaar_name || '', why, d.shift_block || '', d.shift_gp || '', d.shift_jc || '']); });
       var end = aoa.length - 1;

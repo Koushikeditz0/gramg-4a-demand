@@ -1577,7 +1577,10 @@
     body.gs-in .dt-res{background:var(--gd)!important;color:#fff!important;border-radius:16px;}
     /* progress, tabs, links */
     .gs-prog .bar{background:#e2e0f4;} .gs-prog .bar div{background:var(--gb);}
-    body.gs-in .wtabs button.on,body.gs-in .wtab.on{background:var(--gb)!important;color:#fff!important;}
+    /* worker tabs = a light two-part switch, not a button (Koushik 2026-11-21: "খুঁজুন" looked like a search button) */
+    body.gs-in .wtabs{background:#e7e5f7!important;border-radius:16px!important;padding:4px!important;box-shadow:none!important;}
+    body.gs-in .wtab{color:var(--gmut)!important;border-radius:12px!important;background:none!important;}
+    body.gs-in .wtab.on{background:#fff!important;color:var(--gb)!important;box-shadow:0 1px 3px rgba(20,22,43,.15)!important;}
     body.gs-in .gs-sh button,.gs-pick button,.sp-chips .sp-hint a{color:var(--gb);}
     /* Bank Account + passbook form */
     body.gs-in .ac-gh{background:#fcf0dd;color:#a25f05;}
@@ -2070,7 +2073,7 @@
 
     <!-- NEW DESIGN: tabs (phone friendly); old design shows the two columns side by side -->
     <div class="wtabs" id="wTabs">
-      <button class="wtab on" id="wTabSearch" onclick="setWorkerTab('search')">🔎 খুঁজুন</button>
+      <button class="wtab on" id="wTabSearch" onclick="setWorkerTab('search')">📋 সব family</button>
       <button class="wtab" id="wTabSel" onclick="setWorkerTab('sel')">✅ বাছাই (<span id="wTabCount">0</span>)</button>
       <button class="wtab-lay" onclick="setUiLayout('cols')" title="Search আর বাছাই পাশাপাশি">▥ ২ column</button>
     </div>
@@ -5488,7 +5491,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 
-<script src="./js/i18n.js?v=20261121a"></script>
+<script src="./js/i18n.js?v=20261121b"></script>
 </body>
 
 </html>

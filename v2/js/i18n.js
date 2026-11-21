@@ -418,6 +418,8 @@
     'একই Job Card-এ অন্যজনের Aadhaar বসে গেছে': "Another member's Aadhaar is seeded in the same Job Card",
     'Job Card থেকে Aadhaar সরানো': 'Remove Aadhaar from the Job Card',
     'নামের অমিল': 'Name mismatch',
+    'মৃত / Migrant / ডুপ্লিকেট': 'Dead / Migrant / Duplicate',
+    'Applicant বা Job Card বাদ দেওয়া: eKYC / ABPS পাতায় worker-এর পাশে "⋯ মৃত / Migrant"': 'Remove an applicant or Job Card: on the eKYC / ABPS page tap "⋯ Dead / Migrant" next to the worker',
     'Job Card আর Aadhaar-এ নাম আলাদা': 'Name differs in Job Card and Aadhaar',
     'লিঙ্গ / HoH বদল': 'Gender / HoH change',
     'লিঙ্গ ভুল বা পরিবারের প্রধান বদল': 'Wrong gender or new head of family',

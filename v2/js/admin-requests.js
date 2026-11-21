@@ -373,6 +373,7 @@
       ex.photo = r[2] ? (r[2].rows || []) : null;
       ex.marks = r[3] ? (r[3].rows || []).filter(function (m) { return ['new', 'accepted', 'sent_delete'].indexOf(m.status) >= 0; }) : null;
       sr.ex = ex; renderSansad(); fillVil();
+      renderAlso();
     });
   }
   var SAN_COLS = [
@@ -445,6 +446,19 @@
       var list = $('srBody'); if (list && list.scrollIntoView) list.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     td.appendChild(b); return td;
+  }
+  // the other supervisor work that has its own page: one tap away from here
+  function renderAlso() {
+    var box = $('srAlso'); if (!box) return; box.innerHTML = '';
+    var mk = sr.ex.marks, mkNew = mk ? mk.filter(function (m) { return m.status === 'new'; }).length : null;
+    var acc = sr.ex.acc ? sr.ex.acc.filter(function (a) { return a.status === 'open'; }).length : null;
+    var ph = sr.ex.photo ? sr.ex.photo.length : null;
+    box.appendChild(el('span', 'Also from supervisors:', 'muted'));
+    [['marks', '🗑 Expired / Migrant', mk == null ? '' : mkNew + ' new · ' + mk.length + ' open'],
+     ['photos', '📷 Account copy', ph == null ? '' : ph + ' to check' + (acc ? ' · ' + acc + ' asked' : '')]].forEach(function (x) {
+      var b = el('button', x[1] + (x[2] ? ' (' + x[2] + ')' : ''), 'btn-light btn-small'); b.type = 'button';
+      b.onclick = function () { goTab(x[0]); }; box.appendChild(b);
+    });
   }
   function goTab(tab) { var b = document.querySelector('.tab[data-tab="' + tab + '"]'); if (b) b.click(); }
   function fillVil() {

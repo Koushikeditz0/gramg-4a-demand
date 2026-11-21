@@ -218,12 +218,15 @@
       x.onclick = function () { f.kind = k; f.details = {}; renderForm(); renderGsBar(); };
       grid.appendChild(x);
     });
+    // Delete (মৃত / Migrant) has its own place: the tile takes the supervisor there
+    var del = document.createElement('button'); del.type = 'button'; del.className = 'rq-kind';
+    del.innerHTML = '<i>🗑</i><b>মৃত / Migrant / ডুপ্লিকেট</b><small>Applicant বা Job Card বাদ দেওয়া: eKYC / ABPS পাতায় worker-এর পাশে "⋯ মৃত / Migrant"</small>';
+    del.onclick = function () { rq.view = 'list'; setSection('abps'); };
+    grid.appendChild(del);
     b.appendChild(grid);
     // the two tasks that already have their own place
     var other = document.createElement('div'); other.className = 'rq-elsewhere';
-    other.innerHTML = '<div><b>🗑 Applicant / Job Card Delete?</b> মৃত, স্থায়ী Migrant বা ডুপ্লিকেট হলে eKYC / ABPS পাতায় worker-এর পাশে "⋯ মৃত / Migrant" চাপুন।</div>' +
-      '<button type="button" class="btn-light btn-small" data-go="abps">eKYC / ABPS খুলুন</button>' +
-      '<div style="margin-top:8px;"><b>🏦 Bank Account বদল?</b> Bank Account পাতা থেকে passbook-এর ছবি পাঠান।</div>' +
+    other.innerHTML = '<div><b>🏦 Bank Account বদল?</b> Bank Account পাতা থেকে passbook-এর ছবি পাঠান।</div>' +
       '<button type="button" class="btn-light btn-small" data-go="acc">Bank Account খুলুন</button>';
     [].forEach.call(other.querySelectorAll('[data-go]'), function (x) { x.onclick = function () { rq.view = 'list'; setSection(x.dataset.go); }; });
     b.appendChild(other);

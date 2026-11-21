@@ -960,6 +960,13 @@
       .sr-mem{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;} .sr-mem td{padding:3px;} .sr-mem input,.sr-mem select{width:100%;}
       .sr-note-aa{font-size:11px;color:#9a3412;background:#fff7ed;border-radius:8px;padding:6px 8px;margin-top:8px;}
       html[data-theme=dark] .sr-det{color:#cbd5e1;} html[data-theme=dark] .sr-det .aa,html[data-theme=dark] .sr-hits button{background:#1f2937;color:#e5e7eb;border-color:#334155;}
+      .sr-san td,.sr-san th{text-align:center;} .sr-san td:first-child,.sr-san th:first-child{text-align:left;}
+      .sr-san tr.on td{background:#eef2ff;} .sr-san tfoot td{font-weight:800;border-top:2px solid #cbd5e1;}
+      .sr-san .san-n{min-width:34px;padding:3px 8px;border-radius:999px;font-weight:800;font-size:12px;border:0;cursor:pointer;}
+      .san-new{background:#dbeafe;color:#1e40af;} .san-working{background:#fef3c7;color:#92400e;} .san-sent{background:#ede9fe;color:#5b21b6;}
+      .san-ekyc{background:#ffedd5;color:#9a3412;} .san-acc,.san-photo{background:#e0f2fe;color:#075985;} .san-marks{background:#f1f5f9;color:#334155;}
+      .sr-tot{font-weight:800;}
+      html[data-theme=dark] .sr-san tr.on td{background:#1e1b4b;}
       html[data-theme=dark] .sr-lock.on{background:#052e1f;} html[data-theme=dark] .sr-lock.off{background:#3a2a0c;}
     </style>
     <div class="card">
@@ -975,6 +982,13 @@
       <div class="sr-lock hidden" id="srLock"></div>
     </div>
     <div class="card">
+      <div class="sr-top"><h3 style="margin:0;">🗺 By Sansad · সংসদ ধরে হিসাব</h3><label class="check" style="margin:0;"><input type="checkbox" id="srSanAll"><span>Show every Sansad</span></label></div>
+      <div class="muted">What is still pending in each Sansad. <b>New</b> / <b>Working</b> = on you, <b>Block / District</b> = waiting for them, <b>eKYC pending</b> = the supervisor has to do it. Account and Expired / Migrant work of the same Sansad is counted from their own pages. Tap a number to open those requests (or that page).</div>
+      <div class="table-wrap stack" style="margin-top:8px;max-height:50vh;"><table class="sr-san">
+        <thead><tr><th>Sansad</th><th>New</th><th>Working</th><th>Block / District</th><th>eKYC pending</th><th>🏦 Account wanted</th><th>📷 Account copy</th><th>🗑 Expired / Migrant</th><th>Total</th></tr></thead>
+        <tbody id="srSanBody"></tbody><tfoot id="srSanFoot"></tfoot></table></div>
+    </div>
+    <div class="card">
       <div class="filters" id="srFilters">
         <button data-f="open" class="active">Open</button>
         <button data-f="new">New</button>
@@ -985,6 +999,7 @@
         <button data-f="all">All</button>
       </div>
       <div class="row">
+        <select id="srVilF" aria-label="Sansad"><option value="">All Sansads</option></select>
         <select id="srKindF" aria-label="Kind"></select>
         <input type="text" id="srQ" placeholder="🔍 Job Card / name / supervisor" style="min-width:200px;">
         <label class="check" style="margin:0;"><input type="checkbox" id="srOld"><span>Load closed older than 7 days</span></label>
@@ -1466,7 +1481,7 @@
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
 <script src="./js/admin-dbver.js?v=20261121a"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
-<script src="./js/admin-requests.js?v=20261121a"></script>
+<script src="./js/admin-requests.js?v=20261121b"></script>
 <script src="./js/admin-shell.js?v=20261121a"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>

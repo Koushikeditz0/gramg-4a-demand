@@ -116,11 +116,11 @@
       return printNotesFor(p, cal).then(function (notes) {
         cb.innerHTML = '';
         cal.forEach(function (c) {
-          var tr = el('tr', null, c.date === todayIso ? 'today' : '');
+          var tr = el('tr', null, (c.date === todayIso ? 'today' : '') + (c.fill ? '' : ' nofill'));
           tr.appendChild(el('td', dmy(c.date) + ' (' + dayName(c.date) + ')' + (c.date === todayIso ? ' · today' : ''), 'nw'));
-          tr.appendChild(cntCell(c.fill, function () { openList('fill_on', c.date, dmy(c.date) + ' — MR fill'); }));
+          var f = cntCell(c.fill, function () { openList('fill_on', c.date, dmy(c.date) + ' — MR fill'); }); f.className = 'c'; tr.appendChild(f);
+          var m = cntCell(c.mr_start, function () { openList('mr_start_on', c.date, dmy(c.date) + ' — new MR must start'); }); m.className = 'c'; tr.appendChild(m);
           tr.appendChild(printCell(p, c, notes));
-          tr.appendChild(cntCell(c.mr_start, function () { openList('mr_start_on', c.date, dmy(c.date) + ' — new MR must start'); }));
           cb.appendChild(tr);
         });
       });

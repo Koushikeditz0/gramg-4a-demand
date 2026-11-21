@@ -49,11 +49,13 @@
     table.sum td.f{background:#dcfce7;} table.sum td.w{background:#fef3c7;} table.sum td.p{background:#fee2e2;} table.sum tr.tot td{background:#e2e8f0;font-weight:700;}
     table.sum td .pct{font-size:11px;color:#991b1b;} table.sum td.g.z-red{background:#fecaca;} table.sum td.g.z-yellow{background:#fef9c3;} table.sum td.g.z-green{background:#dcfce7;}
     table.sum td.u{white-space:nowrap;font-size:11.5px;} table.sum td.u .ago{font-size:10.5px;font-weight:400;} td .dl{font-size:10.5px;font-weight:700;white-space:nowrap;} td .dl.down{color:#166534;} td .dl.up{color:#b91c1c;} td .dl.same{color:#64748b;} table.sum td.u.ok{color:#166534;} table.sum td.u.warn{color:#92400e;background:#fef3c7;} table.sum td.u.old{color:#991b1b;background:#fee2e2;}
-    .pn{display:flex;flex-wrap:nowrap;align-items:center;gap:5px;}
-    .pn select{min-width:0;width:auto;max-width:150px;padding:4px 5px;font-size:12px;border-radius:7px;flex:0 0 auto;}
-    .pn input{border:1px solid #cbd5e1;border-radius:7px;padding:4px 6px;font-size:12px;width:200px;flex:0 1 200px;min-width:110px;}
+    table.cal td{vertical-align:middle;padding:5px 8px;} table.cal th.c,table.cal td.c{text-align:center;}
+    table.cal tr.nofill td{color:#94a3b8;background:#fafafa;} table.cal tr.nofill.today td{background:#fff7ed;}
+    .pn{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;}
+    .pn select{min-width:0;width:150px;padding:4px 6px;font-size:12px;border-radius:7px;flex:0 0 150px;}
+    .pn input{border:1px solid #cbd5e1;border-radius:7px;padding:5px 7px;font-size:12px;flex:1 1 auto;min-width:120px;max-width:320px;}
     .pn select.s-no{background:#fff;} .pn select.s-pdf,.pn select.s-print{background:#fef3c7;border-color:#f59e0b;} .pn select.s-done{background:#dcfce7;border-color:#16a34a;}
-    .pn .saved{font-size:10.5px;color:#166534;white-space:nowrap;} .pn .saved.err{color:#b91c1c;}
+    .pn .saved{font-size:10.5px;color:#166534;white-space:nowrap;min-width:48px;} .pn .saved.err{color:#b91c1c;}
     .pnro{font-size:12px;white-space:nowrap;}
     @media (max-width:600px){ .app{padding:6px;} .k .n{font-size:21px;} .cards{grid-template-columns:repeat(2,minmax(0,1fr));} th,td{padding:5px;} }
   </style>
@@ -108,9 +110,10 @@
 
   <div class="card">
     <h2>Next 35 days</h2>
-    <div class="muted">“MR fill” = the MR ends that day and must be filled the same day. “New MR start” = the next MR must start that day, so finish demand → allocation → MR generation before it.<br>“MR Print” = your own note for that day's MR print (প্রিন্ট হলো কিনা): No / Only PDF / Only Print / PDF &amp; Print done, plus a short note. Saved at once. Pick one GP to edit (একটা GP বেছে নিলে লেখা যাবে).</div>
-    <div class="table-wrap" style="margin-top:6px;max-height:none"><table>
-      <thead><tr><th>Date</th><th class="n">MR fill</th><th>MR Print · প্রিন্ট</th><th class="n">New MR start</th></tr></thead>
+    <div class="muted"><b>MR fill</b> = MR ends that day, fill it the same day · <b>New MR start</b> = next MR must start that day · <b>MR Print</b> = your note: print done or not (প্রিন্ট হলো কিনা). Pick one GP to edit · saves at once.</div>
+    <div class="table-wrap" style="margin-top:6px;max-height:none"><table class="cal">
+      <colgroup><col style="width:150px"><col style="width:80px"><col style="width:100px"><col></colgroup>
+      <thead><tr><th>Date</th><th class="c">MR fill</th><th class="c">New MR start</th><th>MR Print · প্রিন্ট</th></tr></thead>
       <tbody id="calBody"></tbody>
     </table></div>
   </div>
@@ -196,6 +199,6 @@
 <script src="./js/config.js?v=20261106b"></script>
 <script src="./js/sb-client.js?v=20261120a"></script>
 <script src="./js/iay-summary.js?v=20261110c"></script>
-<script src="./js/iay.js?v=20261121a"></script>
+<script src="./js/iay.js?v=20261121b"></script>
 </body>
 </html>

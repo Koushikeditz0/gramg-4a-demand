@@ -59,11 +59,6 @@
     code{background:#f1f5f9;border-radius:4px;padding:1px 4px;font-size:11px;}
     input[type=date],input[type=number]{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:9px 10px;font-size:14px;}
     .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;}
-    .phcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;}
-    .phcard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;}
-    .phcard .nm{font-weight:800;font-size:14px;} .phcard .mono{font-family:ui-monospace,Consolas,monospace;}
-    .phcard .acc{background:#f8fafc;border-radius:7px;padding:5px 7px;} .phcard .acc.sent{background:#ecfdf5;color:#065f46;font-weight:700;}
-    #phvImg{display:block;max-width:100%;max-height:70vh;margin:6px auto;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;}
     .ucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:8px;}
     .ucard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;}
     .ucard.sel{border-color:#2563eb;box-shadow:0 0 0 2px #bfdbfe;}
@@ -554,6 +549,85 @@
     }
     html[data-theme=dark] .wrow.sel{background:#172554;} html[data-theme=dark] .dlang button{background:#1f2937;color:#cbd5e1;}
     html[data-theme=dark] .dlang button.on{background:#c2410c;color:#fff;} html[data-theme=dark] .btn-ghost{color:#cbd5e1;border-color:#374151;}
+    /* ===== Account copy (v239): K-Desk look — navy/indigo + gold ===== */
+    #tab-photos{--kn1:#14124a;--kn2:#2d2a8c;--kn3:#3b36a8;--kg:#f5b72a;--kl:#eef0fb;--kb:#d7daf3;--ki:#312e81;--km:#6b6f99;}
+    .ac-hd,.acv-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(90deg,#14124a,#2d2a8c 70%,#3b36a8);color:#fff;border-bottom:3px solid #f5b72a;padding:12px 16px;}
+    .ac-hd{border-radius:14px;margin-bottom:12px;}
+    .ac-k{width:32px;height:32px;flex:0 0 32px;border-radius:8px;background:linear-gradient(135deg,#fcd34d,#f59e0b);color:#1e1b4b;font:900 18px Georgia,serif;display:flex;align-items:center;justify-content:center;}
+    .ac-tt h2{margin:1px 0 0;font-size:18px;font-weight:800;color:#fff;} .ac-sm{font-size:11px;letter-spacing:1.5px;color:#c7c9f5;} .ac-sm b{color:#f5b72a;}
+    .ac-sp{flex:1;}
+    #tab-photos .ac-hd select{width:auto;min-width:150px;background:#ffffff1f;color:#fff;border:1px solid #ffffff40;font-weight:700;}
+    #tab-photos .ac-hd select option{color:#172033;}
+    .ac-ghost{background:#ffffff1f;color:#fff;border:1px solid #ffffff40;}
+    .ac-gold{background:linear-gradient(135deg,#fcd34d,#f59e0b);color:#1e1b4b;font-weight:800;border:0;}
+    .ac-gold:disabled{opacity:.5;cursor:default;}
+    .ac-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+    .ac-tiles button{position:relative;text-align:left;background:#fff;border:1px solid #d7daf3;border-radius:14px;padding:12px 14px;color:#1e1b4b;display:flex;flex-direction:column;gap:2px;font-weight:600;}
+    .ac-tiles button i{position:absolute;top:10px;right:12px;font-style:normal;color:#8b8fc0;font-size:12px;}
+    .ac-tiles button b{font-size:26px;font-weight:800;color:#312e81;line-height:1.1;} .ac-tiles button span{font-weight:800;font-size:14px;}
+    .ac-tiles button small{font-size:11.5px;color:#6b6f99;font-weight:500;}
+    .ac-tiles button.on{border:2px solid #f5b72a;box-shadow:0 4px 14px #f5b72a33;} .ac-tiles button.on b{color:#b45309;}
+    .ac-panel{background:#fff;border:1px solid #d7daf3;border-radius:14px;overflow:hidden;margin-bottom:12px;}
+    .ac-panel > .card{border:0;box-shadow:none;margin:0;border-radius:0;} .ac-panel > .card + .card{border-top:1px solid #eceefb;}
+    .ac-ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#f7f8fe;border-bottom:1px solid #eceefb;}
+    .ac-ph h3{margin:0;font-size:15px;color:#1e1b4b;}
+    #tab-photos .ac-ph input[type=search]{width:240px;border:1px solid #d7daf3;border-radius:8px;padding:7px 10px;font-size:13px;}
+    .ac-seg{display:flex;border:1px solid #d7daf3;border-radius:8px;overflow:hidden;}
+    .ac-seg button{border-radius:0;background:#fff;color:#4b4f80;font-weight:600;padding:6px 11px;} .ac-seg button.active{background:#312e81;color:#fff;}
+    table.ac-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+    table.ac-tbl th{text-align:left;color:#312e81;font-size:12px;padding:8px 14px;background:#eef0fb;}
+    table.ac-tbl td{padding:9px 14px;border-top:1px solid #eceefb;vertical-align:middle;}
+    table.ac-tbl tr.click{cursor:pointer;} table.ac-tbl tr.click:hover td{background:#f7f8fe;}
+    .ac-tbl .nm{font-weight:700;} .ac-tbl .jc{font-family:Consolas,monospace;color:#6b6f99;font-size:11.5px;} .ac-tbl .mono{font-family:Consolas,monospace;}
+    .ac-tag{display:inline-block;border-radius:12px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:4px;}
+    .ac-tag.g{background:#dcfce7;color:#166534;} .ac-tag.w{background:#fef3c7;color:#92400e;} .ac-tag.r{background:#fee2e2;color:#991b1b;} .ac-tag.b{background:#e0e7ff;color:#3730a3;}
+    .ac-open{background:#fff;border:1.5px solid #312e81;color:#312e81;padding:5px 11px;font-size:12.5px;white-space:nowrap;}
+    .ac-old{color:#b45309;font-weight:700;}
+    .ac-note{padding:9px 14px;color:#6b6f99;font-size:12px;border-top:1px solid #eceefb;background:#fbfbff;}
+    .ac-foot{color:#6b6f99;font-size:12px;padding:2px 4px 10px;} .ac-foot b{color:#1e1b4b;}
+    @media (max-width:760px){ .ac-tiles{grid-template-columns:repeat(2,1fr);} #tab-photos .ac-ph input[type=search]{width:100%;} }
+    /* Account check page */
+    .acv{position:fixed;inset:0;z-index:95;background:#eef0fb;display:none;flex-direction:column;overflow:auto;color:#1e1b4b;}
+    .acv.show{display:flex;}
+    .acv-hd{position:sticky;top:0;z-index:2;}
+    .acv-nb{background:#ffffff1f;color:#fff;border:1px solid #ffffff30;border-radius:8px;padding:7px 12px;font-weight:700;font-size:13px;}
+    .acv-pill{border:1px solid #ffffff40;border-radius:20px;padding:5px 12px;font-size:12.5px;} .acv-pill b{color:#fcd34d;}
+    .acv-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:#e6e8fa;border-bottom:1px solid #d7daf3;}
+    .acv-bar span{background:#fff;border:1px solid #d7daf3;border-radius:20px;padding:4px 11px;font-size:12.5px;} .acv-bar span b{color:#3730a3;}
+    .acv-bar span.ok{background:#dcfce7;border-color:#bbf7d0;color:#166534;font-weight:700;} .acv-bar span.no{background:#fee2e2;border-color:#fecaca;color:#991b1b;font-weight:700;}
+    .acv-main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);gap:14px;padding:14px 16px;flex:1;}
+    .acv-photo{background:#fff;border:1px solid #d7daf3;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:420px;}
+    .acv-tools{display:flex;gap:6px;flex-wrap:wrap;padding:7px 9px;border-bottom:1px solid #eceefb;background:#f7f8fe;}
+    .acv-tools button{background:#fff;border:1px solid #d7daf3;color:#3730a3;padding:5px 10px;font-size:12.5px;}
+    .acv-stage{position:relative;flex:1;height:calc(100vh - 210px);min-height:380px;overflow:hidden;cursor:grab;background:repeating-linear-gradient(45deg,#f3f4fb 0 12px,#eef0f9 12px 24px);}
+    .acv-stage.drag{cursor:grabbing;} .acv-stage:fullscreen{height:100vh;background:#111;}
+    .acv-stage img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center center;user-select:none;}
+    .acv-hint{position:absolute;left:10px;bottom:8px;font-size:11px;color:#6b6f99;background:#ffffffcc;border-radius:6px;padding:2px 7px;pointer-events:none;}
+    .acv-box{background:#fff;border:1px solid #d7daf3;border-radius:14px;padding:14px 16px;}
+    .acv-nm{font-size:19px;font-weight:800;} .acv-jc{font-family:Consolas,monospace;color:#5b5f8a;font-size:12.5px;margin-top:2px;}
+    table.acv-cmp{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;font-size:13px;}
+    .acv-cmp th{background:#e6e8fa;color:#312e81;text-align:left;padding:7px 8px;font-size:11.5px;} .acv-cmp th:first-child{border-radius:8px 0 0 8px;} .acv-cmp th:last-child{border-radius:0 8px 8px 0;}
+    .acv-cmp td{padding:8px;border-bottom:1px solid #eceefb;vertical-align:top;}
+    .acv-cmp .lab{font-weight:700;color:#312e81;width:62px;padding-top:15px;} .acv-cmp .sv{font-family:Consolas,monospace;color:#6b6f99;word-break:break-all;padding-top:15px;width:32%;}
+    .acv-cmp .sv s{color:#be123c;}
+    .acv-cmp input{width:100%;border:1.5px solid #c7cbf0;border-radius:8px;padding:8px 9px;font:700 16px Consolas,monospace;background:#fbfbff;color:#1e1b4b;letter-spacing:.4px;}
+    .acv-cmp input.txt{font:700 14px "Segoe UI",Arial,sans-serif;letter-spacing:0;}
+    .acv-cmp input.ed{border-color:#f5b72a;background:#fffbeb;} .acv-cmp input.bad{border-color:#e11d48;background:#fff1f2;}
+    .acv-cmp input:disabled{background:#f1f5f9;color:#475569;}
+    .acv-ed{font-size:11px;color:#b45309;font-weight:700;margin-top:3px;min-height:0;}
+    .acv-info{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;} .acv-info span{border-radius:8px;padding:5px 9px;font-size:12.5px;font-weight:600;}
+    .acv-info span:empty{display:none;}
+    .acv-info .i-b{background:#f1f5f9;color:#475569;} .acv-info .i-b.ok{background:#ecfdf5;color:#065f46;} .acv-info .i-b.bad{background:#fee2e2;color:#991b1b;}
+    .acv-info .i-m{background:#eef2ff;color:#3730a3;} .acv-info .i-m.low{background:#fee2e2;color:#991b1b;} .acv-info .i-y{background:#f8fafc;color:#475569;font-weight:500;}
+    .acv-old{margin-top:10px;background:#f8fafc;border-radius:8px;padding:7px 10px;font-size:12.5px;color:#475569;}
+    .acv-act{display:flex;gap:8px;margin-top:12px;}
+    .acv-ret{background:#fff;border:1.5px solid #e11d48;color:#be123c;padding:11px 14px;}
+    .acv-ok{flex:1;padding:11px;font-size:15px;}
+    .acv-donebox{margin-top:12px;border:1px dashed #a5b4fc;border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+    .acv-donebox button{background:#fcd34d;color:#1e1b4b;}
+    .acv-toast{position:fixed;right:18px;bottom:18px;z-index:120;background:#1e1b4b;color:#fff;border-left:4px solid #f5b72a;border-radius:10px;padding:9px 12px;display:flex;gap:12px;align-items:center;box-shadow:0 6px 20px #1e1b4b55;font-size:13px;max-width:calc(100vw - 36px);}
+    .acv-toast b{color:#fcd34d;} .acv-toast #acvUndo{background:#fcd34d;color:#1e1b4b;padding:5px 10px;} .acv-toast #acvToastX{background:none;color:#c7c9f5;padding:4px 6px;}
+    @media (max-width:900px){ .acv-main{grid-template-columns:1fr;} .acv-stage{height:60vh;} .acv-toast{left:10px;right:10px;bottom:84px;} }
   </style>
 </head>
 <body>
@@ -895,26 +969,49 @@
    <button class="exp-float hidden" id="expFloat" type="button"><span id="expFloatN">0</span> · <b data-bn="Excel বানান" data-en="Make Excel">Excel বানান</b></button>
   </section>
 
-  <!-- ============ ACCOUNT COPY PHOTOS ============ -->
+  <!-- ============ ACCOUNT COPY PHOTOS (v239: 4 steps + Account check page) ============ -->
   <section id="tab-photos" class="hidden">
-    <div class="card">
-      <div class="row" style="justify-content:space-between;">
-        <h2 style="margin:0;">📷 Account copy photos</h2>
-        <button class="btn-light btn-small" id="phRefresh">🔄 Refresh</button>
-      </div>
-      <div class="muted">Supervisors take a photo of the worker's passbook / account copy in the phone app. The supervisor also writes the Account No and IFSC. Check them against the photo: <b>✔ Verify</b> saves the account in the data (update the portal too), <b>✕ Return</b> sends it back to the supervisor with your reason. Either way the photo is deleted at once. Photos not checked are deleted automatically after 30 days.</div>
-      <label class="f" for="phGp">Gram Panchayat</label>
-      <select id="phGp"></select>
-      <div class="filters" id="phFilters" style="margin-top:8px;">
-        <button data-f="new" class="active">New</button>
-        <button data-f="done">Verified / Returned</button>
-      </div>
-      <div class="muted" id="phStore"></div>
+    <div class="ac-hd">
+      <div class="ac-k">K</div>
+      <div class="ac-tt"><div class="ac-sm"><b>GRAM SETU</b> · ACCOUNT COPY</div><h2>Bank account সংগ্রহ ও যাচাই</h2></div>
+      <span class="ac-sp"></span>
+      <select id="phGp" aria-label="Gram Panchayat"></select>
+      <button class="ac-ghost" id="phRefresh" title="Refresh">🔄</button>
+      <button class="ac-gold" id="acAskBtn" type="button">＋ Account চাই (supervisor-কে)</button>
     </div>
-    <div class="phcards" id="phCards"></div>
+    <div class="ac-tiles" id="acTiles">
+      <button type="button" data-step="req"><i>①</i><b id="acN-req">–</b><span>Supervisor-এর কাছে</span><small id="acS-req">ছবি আসেনি</small></button>
+      <button type="button" data-step="check" class="on"><i>②</i><b id="acN-check">–</b><span>Check বাকি <em class="badge badge-admin hidden" id="phBadge"></em></span><small id="acS-check">supervisor ছবি পাঠিয়েছে</small></button>
+      <button type="button" data-step="kdesk"><i>③</i><b id="acN-kdesk">–</b><span>K-Desk-এ বাকি</span><small id="acS-kdesk">Portal-এ বসানো বাকি</small></button>
+      <button type="button" data-step="done"><i>④</i><b id="acN-done">–</b><span>শেষ</span><small>30 দিনে · ↩ 7 দিন পর্যন্ত</small></button>
+    </div>
+
+    <!-- ② Check -->
+    <div class="ac-panel" id="acP-check">
+      <div class="ac-ph"><h3>② Check বাকি</h3><span class="muted" id="phStore"></span><span class="ac-sp"></span>
+        <input type="search" id="phSearch" placeholder="🔍 নাম, Job Card, Sansad…" aria-label="Search">
+        <button class="ac-gold" id="phStart" type="button">▶ পুরনোটা দিয়ে শুরু</button></div>
+      <div class="table-wrap stack"><table class="ac-tbl">
+        <thead><tr><th>কর্মী</th><th>Sansad</th><th>Supervisor দিয়েছে</th><th>এখন data-তে</th><th>পাঠিয়েছে</th><th></th></tr></thead>
+        <tbody id="phCards"></tbody></table></div>
+      <div class="ac-note">🔒 Passbook ছবি শুধু Admin দেখতে পান। Verify বা ফেরত-এর 7 দিন পর ছবি মুছে যায়; check না হওয়া ছবি 30 দিন পর।</div>
+    </div>
+
+    <!-- ④ Done -->
+    <div class="ac-panel hidden" id="acP-done">
+      <div class="ac-ph"><h3>④ শেষ</h3>
+        <div class="ac-seg" id="phFilters"><button type="button" data-f="done" class="active">✔ Verified</button><button type="button" data-f="returned">✕ ফেরত গেছে</button></div>
+        <span class="ac-sp"></span><span class="muted">ভুল হলে ↩ ফিরিয়ে আনুন: আবার ② Check-এ চলে যাবে (7 দিন পর্যন্ত)।</span></div>
+      <div class="table-wrap stack"><table class="ac-tbl">
+        <thead><tr><th>কর্মী</th><th>Account · IFSC</th><th>কবে</th><th>Portal / কারণ</th><th></th></tr></thead>
+        <tbody id="phDone"></tbody></table></div>
+    </div>
+
+    <!-- ③ K-Desk -->
+    <div class="ac-panel hidden" id="acP-kdesk">
     <div class="card" id="bqCard">
       <div class="row" style="justify-content:space-between;align-items:center;">
-        <h2 style="margin:0;">🏦 Waiting for K-Desk · Bank A/c Update</h2>
+        <h2 style="margin:0;">③ K-Desk-এ বাকি · Bank A/c Update</h2>
         <label class="check" style="margin:0;"><input type="checkbox" id="bqShowRemoved"><span>Show removed</span></label>
       </div>
       <div class="muted">Verified accounts that K-Desk loads on the portal page <b>EditAppBank</b> until the portal says UPDATED. If you already did it on the portal yourself, or it keeps failing, tick it and press <b>🗑 Remove from K-Desk</b>, so K-Desk does not load it again. The record stays here; <b>↩ Undo</b> puts it back.</div>
@@ -924,8 +1021,12 @@
         <thead><tr><th><input type="checkbox" id="bqAll" aria-label="Tick all"></th><th>Village</th><th>Job Card</th><th>Name</th><th>Account No · IFSC</th><th>Verified</th><th>Portal</th><th></th></tr></thead>
         <tbody id="bqBody"></tbody></table></div>
     </div>
-    <div class="card">
-      <h2>📋 Ask supervisors for account copies</h2>
+    </div>
+
+    <!-- ① Requests -->
+    <div class="ac-panel hidden" id="acP-req">
+    <div class="card hidden" id="acAskCard">
+      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">＋ Supervisor-কে account copy চাই</h2><button class="btn-light btn-small" id="acAskClose" type="button">✕</button></div>
       <div class="muted">Paste the workers whose account is not frozen (from the Wage List page or any Excel), or choose the Excel / CSV file. Each line needs the <b>Job Card No</b> and the <b>name</b> (the name picks the right person when a job card has more than one). The supervisors see them in the phone app as <b>📷 Account copy চাই</b>.</div>
       <textarea id="rqText" rows="5" style="width:100%;margin-top:8px;border:1px solid #cbd5e1;border-radius:9px;padding:8px;font:12.5px ui-monospace,Consolas,monospace;" placeholder="WB-08-005-014-002/012   RINA BARMAN&#10;WB-08-005-014-002/013   HARI ROY"></textarea>
       <div class="grid3">
@@ -938,7 +1039,7 @@
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;">
-        <h2 style="margin:0;">Requests</h2>
+        <h2 style="margin:0;">① Supervisor-এর কাছে (Requests)</h2>
         <label class="check" style="margin:0;"><input type="checkbox" id="rqAll"><span>Show closed (last 30 days)</span></label>
       </div>
       <div class="muted" id="rqSum"></div>
@@ -946,6 +1047,8 @@
         <thead><tr><th>Village</th><th>Job Card</th><th>Name</th><th>Account in data</th><th>To</th><th>Status</th><th></th></tr></thead>
         <tbody id="rqBody"></tbody></table></div>
     </div>
+    </div>
+    <div class="ac-foot">✦ Crafted by <b>KOUSHIK</b></div>
   </section>
 
 
@@ -1352,21 +1455,51 @@
   </section>
 
   <!-- account copy viewer -->
-  <div class="modal" id="phvModal" role="dialog" aria-modal="true" aria-labelledby="phvTitle">
-    <div class="modal-box" style="max-width:760px;">
-      <div class="modal-head">
-        <div><h2 id="phvTitle">Account copy</h2><div class="muted" id="phvSub"></div></div>
-        <button class="btn-light btn-small" id="phvClose">✕ Close</button>
+  <!-- Account check page (full screen, v239) -->
+  <div class="acv" id="phvModal" role="dialog" aria-modal="true" aria-labelledby="phvTitle">
+    <div class="acv-hd">
+      <button class="acv-nb" id="phvClose" type="button" title="Back to the list (Esc)">‹ তালিকা</button>
+      <div class="ac-k">K</div>
+      <div class="ac-tt"><div class="ac-sm"><b>GRAM SETU</b> · ACCOUNT CHECK</div><h2 id="phvTitle">Passbook মিলিয়ে দেখুন</h2></div>
+      <span class="ac-sp"></span>
+      <span class="acv-pill">বাকি <b id="acvLeft">0</b></span>
+      <button class="acv-nb" id="acvPrev" type="button" title="আগের (←)">‹</button>
+      <span class="acv-nb" id="acvPos">–</span>
+      <button class="acv-nb" id="acvNext" type="button" title="পরের (→)">›</button>
+    </div>
+    <div class="acv-bar" id="phvSub"></div>
+    <div class="acv-main">
+      <div class="acv-photo">
+        <div class="acv-tools">
+          <button type="button" id="acvZo" title="Zoom out">－</button><button type="button" id="acvZi" title="Zoom in">＋</button>
+          <button type="button" id="acvRot">⟳ ঘোরান</button><button type="button" id="acvFit">↺ ঠিক মাপে</button><button type="button" id="acvFull">⛶ Full screen</button>
+          <span class="ac-sp"></span><button type="button" id="phvDl">⬇ Download</button>
+        </div>
+        <div class="acv-stage" id="acvStage"><img id="phvImg" alt="Account copy photo" draggable="false"><div class="acv-hint">চাকা ঘোরালে zoom · টেনে সরান · ডাবল-ক্লিক = full screen</div></div>
       </div>
-      <div class="muted" id="phvAcc"></div>
-      <img id="phvImg" alt="Account copy photo">
-      <div class="row" style="justify-content:flex-end;margin-top:6px;">
-        <button class="btn-light btn-small" id="phvDl">⬇ Download</button>
-        <button class="btn-danger btn-small" id="phvRet" title="Key R">✕ Return <small>(R)</small></button>
-        <button class="btn-success btn-small" id="phvDone" title="Key A">✔ Verify <small>(A)</small></button>
+      <div class="acv-side">
+        <div class="acv-box">
+          <div class="acv-nm" id="acvName">–</div><div class="acv-jc" id="acvJc"></div>
+          <table class="acv-cmp">
+            <thead><tr><th></th><th>Supervisor দিয়েছে</th><th>চূড়ান্ত (আপনি ঠিক করুন)</th></tr></thead>
+            <tbody>
+              <tr><td class="lab">Account</td><td class="sv" id="acvSupAcc"></td><td><input id="acvAcc" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="24"><div class="acv-ed" id="acvAccEd"></div></td></tr>
+              <tr><td class="lab">IFSC</td><td class="sv" id="acvSupIfsc"></td><td><input id="acvIfsc" autocomplete="off" spellcheck="false" maxlength="11"><div class="acv-ed" id="acvIfscEd"></div></td></tr>
+              <tr><td class="lab">নাম</td><td class="sv" id="acvSupHolder"></td><td><input id="acvHolder" class="txt" autocomplete="off" spellcheck="false" maxlength="100"><div class="acv-ed" id="acvHolderEd"></div></td></tr>
+            </tbody>
+          </table>
+          <div class="acv-info"><span id="acvBank" class="i-b">🏦 IFSC দিন</span><span id="acvMatch" class="i-m"></span><span id="acvDig" class="i-y"></span></div>
+          <div class="acv-old" id="acvOld"></div>
+          <div class="acv-act" id="acvAct">
+            <button class="acv-ret" id="phvRet" type="button" title="Key R">✕ ফেরত <small>(R)</small></button>
+            <button class="ac-gold acv-ok" id="phvDone" type="button" title="Key A">✔ Verify করে পরেরটা <small>(A)</small></button>
+          </div>
+          <div class="acv-donebox hidden" id="acvDoneBox"></div>
+        </div>
       </div>
     </div>
   </div>
+  <div class="acv-toast hidden" id="acvToast" role="status"><span id="acvToastT"></span><button type="button" id="acvUndo">↩ ফিরিয়ে আনুন</button><button type="button" id="acvToastX" aria-label="Close">✕</button></div>
 
   <!-- list preview -->
   <div class="modal" id="pvModal" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
@@ -1488,7 +1621,7 @@
 <script src="./js/sb-client.js?v=20261120a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261120m"></script>
+<script src="./js/admin.js?v=20261127a"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
@@ -1497,10 +1630,10 @@
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261121h"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261121e"></script>
+<script src="./js/admin-dbver.js?v=20261127a"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
 <script src="./js/admin-requests.js?v=20261121c"></script>
-<script src="./js/admin-bankqueue.js?v=20261121a"></script>
+<script src="./js/admin-bankqueue.js?v=20261127a"></script>
 <script src="./js/admin-shell.js?v=20261121e"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>

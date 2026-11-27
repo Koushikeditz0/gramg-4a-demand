@@ -47,6 +47,7 @@
     bq.sel.forEach(function (id) { if (!ids[id]) bq.sel.delete(id); });
     var n = bq.rows.filter(live).length, fail = bq.rows.filter(function (r) { return r.portal_status === 'fail'; }).length;
     $('bqCount').textContent = n + ' waiting for K-Desk' + (fail ? ' · ' + fail + ' failed on the portal' : '');
+    if ($('acN-kdesk')) { $('acN-kdesk').textContent = String(n); $('acS-kdesk').textContent = 'Portal-এ বসানো বাকি' + (fail ? ' · ' + fail + ' fail' : ''); }
     $('bqRemove').disabled = !bq.sel.size;
     $('bqAll').checked = n > 0 && bq.rows.filter(live).every(function (r) { return bq.sel.has(r.id); });
     if (!bq.rows.length) { var tr0 = el('tr'), td0 = el('td', 'Nothing waiting for K-Desk.', 'muted'); td0.colSpan = 8; tr0.appendChild(td0); body.appendChild(tr0); return; }

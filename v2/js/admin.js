@@ -182,11 +182,12 @@
     });
   });
 
-  // ---------- account copy photos ----------
+  // ---------- account copy photos (v239: 4 steps + full-page Account check) ----------
   var BUCKET = 'account-copies';
-  var ph = { filter: 'new', rows: [], cur: null, ready: true };
+  var ph = { filter: 'done', step: 'check', rows: [], cur: null, ready: true, q: '', z: 1, rot: 0, x: 0, y: 0, undo: null };
   function phSetupMissing(e) { return e && (e.status === 404 || /admin_account_photo/.test(e.message || '')); }
-  // Delete files that are Done / replaced / older than 30 days (any admin page open does this).
+  var V239 = 'Run supabase/2026-11-27_account_check_v239.sql in the Supabase SQL Editor first.';
+  // Delete files whose time is over (new: 30 days, Verified / Returned: 7 days) — any admin page open does this.
   function photoCleanup(gp) {
     return SB.rpc('admin_account_photo_cleanup', { p_gp_id: gp }).then(function (rows) {
       rows = rows || [];
@@ -203,25 +204,25 @@
     var gps = state.gps.filter(function (g) { return !lim || g.id === lim; });
     return gps.reduce(function (p, g) { return p.then(function () { return photoCleanup(g.id).catch(function (e) { if (phSetupMissing(e)) ph.ready = false; }); }); }, Promise.resolve());
   }
+  function setBadge(n) {
+    $('phBadge').textContent = n ? String(n) : ''; $('phBadge').classList.toggle('hidden', !n);
+    $('acN-check').textContent = String(n || 0);
+  }
   function photoBadge() {
     var gp = Number($('phGp').value); if (!gp || !ph.ready) return;
-    SB.rpc('admin_account_photos', { p_gp_id: gp, p_status: 'new' }).then(function (r) {
-      var n = (r && r.new_count) || 0; $('phBadge').textContent = n ? String(n) : ''; $('phBadge').classList.toggle('hidden', !n);
-    }, function () {});
+    SB.rpc('admin_account_photos', { p_gp_id: gp, p_status: 'new' }).then(function (r) { setBadge((r && r.new_count) || 0); }, function () {});
   }
   function loadPhotos(clean) {
     var gp = Number($('phGp').value); if (!gp) return Promise.resolve();
     loading('Loading account copies...');
     return (clean ? photoCleanup(gp).catch(function (e) { if (phSetupMissing(e)) throw e; }) : Promise.resolve())
-      .then(function () { return SB.rpc('admin_account_photos', { p_gp_id: gp, p_status: ph.filter }); })
+      .then(function () { return SB.rpc('admin_account_photos', { p_gp_id: gp, p_status: 'all' }); })
       .then(function (r) {
         ph.ready = true;
         ph.rows = (r && r.rows) || [];
-        var n = (r && r.new_count) || 0;
-        $('phBadge').textContent = n ? String(n) : ''; $('phBadge').classList.toggle('hidden', !n);
+        setBadge((r && r.new_count) || 0);
         var mb = ((r && r.stored_bytes) || 0) / 1048576;
-        $('phStore').textContent = n + ' new photo(s). Photos kept now: ' + mb.toFixed(1) + ' MB' +
-          (r && r.all_gps ? ' of the 1 GB free Storage (all GPs).' : ' (this GP).');
+        $('phStore').textContent = 'ছবি রাখা আছে ' + mb.toFixed(1) + ' MB' + (r && r.all_gps ? ' (সব GP)' : '');
         renderPhotos();
         loadRequests();
       })
@@ -232,63 +233,251 @@
       })
       .then(function () { loading(''); });
   }
+  function newRows() {   // ② list: oldest first
+    return ph.rows.filter(function (r) { return r.status === 'new'; })
+      .sort(function (a, b) { return String(a.uploaded_at).localeCompare(String(b.uploaded_at)); });
+  }
+  function ago(s) {
+    if (!s) return '';
+    var d = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
+    if (d <= 0) return 'আজ ' + new Date(s).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return d === 1 ? 'কাল' : d + ' দিন আগে';
+  }
+  function hit(r) {
+    if (!ph.q) return true;
+    return [r.applicant_name, r.job_card_no, vno(r.village_no), r.uploaded_by, r.sent_account_no, r.holder_name]
+      .join(' ').toLowerCase().indexOf(ph.q) >= 0;
+  }
+  function accTag(r) {
+    if (!r.account_no) return el('span', 'account নেই', 'ac-tag w');
+    var same = r.account_no === r.sent_account_no && (!r.sent_ifsc || r.ifsc === r.sent_ifsc);
+    var w = el('span'); w.appendChild(el('span', r.account_no, 'mono jc'));
+    if (r.sent_account_no) w.appendChild(el('span', same ? 'একই' : 'আলাদা', 'ac-tag ' + (same ? 'g' : 'r')));
+    return w;
+  }
+  function setStep(s) {
+    ph.step = s;
+    document.querySelectorAll('#acTiles button').forEach(function (b) { b.classList.toggle('on', b.dataset.step === s); });
+    ['req', 'check', 'kdesk', 'done'].forEach(function (k) { $('acP-' + k).classList.toggle('hidden', k !== s); });
+  }
   function renderPhotos() {
     var box = $('phCards'); box.innerHTML = '';
+    var nw = newRows(), list = nw.filter(hit);
+    $('acS-check').textContent = nw.length ? 'সবচেয়ে পুরনো ' + ago(nw[0].uploaded_at).replace('আগে', '') : 'কিছু বাকি নেই';
+    $('phStart').disabled = !nw.length;
+    if (!list.length) { var tr0 = el('tr'), td0 = el('td', nw.length ? 'কিছু পাওয়া যায়নি।' : 'নতুন account copy নেই।', 'muted'); td0.colSpan = 6; tr0.appendChild(td0); box.appendChild(tr0); }
+    list.forEach(function (r) {
+      var tr = el('tr', null, 'click'); tr.onclick = function () { openPhoto(r); };
+      var c1 = el('td'); c1.setAttribute('data-label', 'কর্মী');
+      c1.appendChild(el('div', r.applicant_name || '', 'nm')); c1.appendChild(el('div', r.job_card_no + ' · App ' + r.applicant_no, 'jc')); tr.appendChild(c1);
+      var c2 = el('td', vno(r.village_no)); c2.setAttribute('data-label', 'Sansad'); tr.appendChild(c2);
+      var c3 = el('td'); c3.setAttribute('data-label', 'Supervisor দিয়েছে');
+      c3.appendChild(el('div', r.sent_account_no || '—', 'mono')); c3.appendChild(el('div', r.sent_ifsc || (r.sent_account_no ? '' : 'শুধু ছবি'), 'jc')); tr.appendChild(c3);
+      var c4 = el('td'); c4.setAttribute('data-label', 'এখন data-তে'); c4.appendChild(accTag(r)); tr.appendChild(c4);
+      var c5 = el('td'); c5.setAttribute('data-label', 'পাঠিয়েছে');
+      var age = Math.floor((Date.now() - new Date(r.uploaded_at).getTime()) / 86400000);
+      c5.appendChild(el('div', r.uploaded_by || '')); c5.appendChild(el('div', ago(r.uploaded_at), age >= 3 ? 'ac-old' : 'jc')); tr.appendChild(c5);
+      var c6 = el('td'); c6.setAttribute('data-label', ''); c6.appendChild(el('button', 'খুলুন ›', 'ac-open')); tr.appendChild(c6);
+      box.appendChild(tr);
+    });
+    renderDone();
+  }
+  function renderDone() {
+    var box = $('phDone'); box.innerHTML = '';
+    var all = ph.rows.filter(function (r) { return r.status === 'done' || r.status === 'returned'; });
+    $('acN-done').textContent = String(all.length);
     document.querySelectorAll('#phFilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.f === ph.filter); });
-    if (!ph.rows.length) { box.appendChild(el('div', ph.filter === 'new' ? 'No new account copy.' : 'Nothing verified or returned in the last 30 days.', 'muted')); return; }
-    ph.rows.forEach(function (r) {
-      var c = el('div', null, 'phcard');
-      c.appendChild(el('div', r.applicant_name || '', 'nm'));
-      c.appendChild(el('div', r.job_card_no + '  ·  App ' + r.applicant_no, 'mono'));
-      if (r.sent_account_no || r.sent_ifsc) {
-        var same = r.sent_account_no === r.account_no && r.sent_ifsc === r.ifsc;
-        c.appendChild(el('div', 'Sent: A/C ' + (r.sent_account_no || '—') + '  ·  IFSC ' + (r.sent_ifsc || '—') + (same ? '  (same as data)' : ''), 'acc mono sent'));
-      }
-      if (r.holder_name) c.appendChild(el('div', 'Name in passbook: ' + r.holder_name, 'muted'));
-      c.appendChild(el('div', 'In data: ' + (r.account_no || '—') + (r.ifsc ? '  ·  ' + r.ifsc : ''), 'acc mono'));
-      c.appendChild(el('div', '📷 ' + (r.uploaded_by || '') + '  ·  ' + fmtDate(r.uploaded_at) + (r.work_name ? '  ·  ' + r.work_name : '') +
-        (r.size ? '  ·  ' + Math.round(r.size / 1024) + ' KB' : ''), 'muted'));
-      var row = el('div', null, 'row');
-      if (r.status === 'new') {
-        var v = el('button', '👁 View', 'btn-primary btn-small'); v.onclick = function () { openPhoto(r); }; row.appendChild(v);
-        var d = el('button', '⬇ Download', 'btn-light btn-small'); d.onclick = function () { downloadPhoto(r); }; row.appendChild(d);
-        var ok = el('button', '✔ Verify', 'btn-success btn-small'); ok.onclick = function () { photoVerify(r); }; row.appendChild(ok);
-        var rt = el('button', '✕ Return', 'btn-danger btn-small'); rt.onclick = function () { photoReturn(r); }; row.appendChild(rt);
-      } else if (r.status === 'returned') {
-        row.appendChild(el('span', '✕ Returned ' + fmtDate(r.done_at) + ' · ' + (r.return_reason || ''), 'pill off'));
-      } else {
-        row.appendChild(el('span', '✔ Verified ' + fmtDate(r.done_at) + ' · photo deleted', 'pill on'));
-        if (r.portal_status === 'ok') row.appendChild(el('span', '🏦 Portal updated ' + fmtDate(r.portal_at), 'pill on'));
-        else if (r.portal_status === 'fail') row.appendChild(el('span', '🏦 Portal: failed · ' + (r.portal_note || ''), 'pill off'));
-        else if (r.sent_account_no) row.appendChild(el('span', '🏦 Portal: pending (K-Desk)', 'pill neutral'));
-      }
-      c.appendChild(row);
-      box.appendChild(c);
+    var list = all.filter(function (r) { return r.status === ph.filter && hit(r); });
+    if (!list.length) { var tr0 = el('tr'), td0 = el('td', 'গত 30 দিনে কিছু নেই।', 'muted'); td0.colSpan = 5; tr0.appendChild(td0); box.appendChild(tr0); return; }
+    list.forEach(function (r) {
+      var tr = el('tr');
+      var c1 = el('td'); c1.setAttribute('data-label', 'কর্মী');
+      c1.appendChild(el('div', r.applicant_name || '', 'nm')); c1.appendChild(el('div', r.job_card_no + ' · App ' + r.applicant_no + ' · ' + (r.uploaded_by || ''), 'jc')); tr.appendChild(c1);
+      var c2 = el('td'); c2.setAttribute('data-label', 'Account · IFSC');
+      c2.appendChild(el('div', (r.sent_account_no || '—') + (r.sent_ifsc ? ' · ' + r.sent_ifsc : ''), 'mono'));
+      if (r.sup_account_no || r.sup_ifsc || r.sup_holder_name) c2.appendChild(el('span', '✎ Admin ঠিক করেছেন', 'ac-tag w'));
+      tr.appendChild(c2);
+      var c3 = el('td', fmtDate(r.done_at)); c3.setAttribute('data-label', 'কবে'); tr.appendChild(c3);
+      var c4 = el('td'); c4.setAttribute('data-label', r.status === 'returned' ? 'কারণ' : 'Portal');
+      if (r.status === 'returned') c4.appendChild(el('span', r.return_reason || '', 'ac-tag r'));
+      else if (r.portal_status === 'ok') c4.appendChild(el('span', '🏦 Portal updated ' + fmtDate(r.portal_at), 'ac-tag g'));
+      else if (r.portal_status === 'fail') c4.appendChild(el('span', '🏦 Failed · ' + (r.portal_note || ''), 'ac-tag r'));
+      else if (r.portal_status === 'removed') c4.appendChild(el('span', '🗑 K-Desk থেকে সরানো', 'ac-tag b'));
+      else if (r.sent_account_no) c4.appendChild(el('span', '🏦 K-Desk-এ বাকি', 'ac-tag b'));
+      tr.appendChild(c4);
+      var c5 = el('td'); c5.setAttribute('data-label', '');
+      if (r.can_reopen) { var b = el('button', '↩ ফিরিয়ে আনুন', 'ac-open'); b.onclick = function () { photoReopen(r); }; c5.appendChild(b); }
+      else c5.appendChild(el('span', 'ছবি মুছে গেছে', 'muted'));
+      tr.appendChild(c5);
+      box.appendChild(tr);
     });
   }
   function photoName(r) {
     return (String(r.job_card_no || '').replace(/[^A-Za-z0-9-]+/g, '_') + '_' + r.applicant_no + '_' +
             String(r.applicant_name || '').replace(/[^A-Za-z0-9]+/g, '_')).replace(/_+/g, '_').slice(0, 90) + '.jpg';
   }
+
+  // ----- Account check page -----
+  var ACC_RE = /^\d{6,20}$/, IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+  function cleanAcc(v) { return String(v || '').replace(/\D+/g, ''); }
+  function cleanIfsc(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]+/g, ''); }
+  function cleanName(v) { return String(v || '').toUpperCase().replace(/\s+/g, ' ').trim(); }
+  function group4(v) { return v.replace(/(\d{4})(?=\d)/g, '$1 '); }
+  // name match %: letter pairs of both names (order and spaces do not matter much)
+  function nameMatch(a, b) {
+    function grams(s) { s = cleanName(s).replace(/[^A-Z]/g, ''); var g = {}, n = 0; for (var i = 0; i < s.length - 1; i++) { var k = s.substr(i, 2); g[k] = (g[k] || 0) + 1; n++; } return { g: g, n: n }; }
+    var x = grams(a), y = grams(b); if (!x.n || !y.n) return null;
+    var c = 0; Object.keys(x.g).forEach(function (k) { if (y.g[k]) c += Math.min(x.g[k], y.g[k]); });
+    return Math.round(200 * c / (x.n + y.n));
+  }
+  // IFSC → bank + branch (free public lookup, only the IFSC code is sent; remembered per code)
+  var ifscCache = {};
+  try { ifscCache = JSON.parse(sessionStorage.getItem('gramg2.ifsc') || '{}') || {}; } catch (e) { ifscCache = {}; }
+  function ifscLookup(code) {
+    if (ifscCache[code] !== undefined) return Promise.resolve(ifscCache[code]);
+    return fetch('https://ifsc.razorpay.com/' + encodeURIComponent(code)).then(function (res) {
+      if (res.status === 404) return false;
+      if (!res.ok) throw new Error('lookup');
+      return res.json().then(function (j) { return { bank: j.BANK || '', branch: j.BRANCH || '', city: j.DISTRICT || j.CITY || '' }; });
+    }).then(function (v) {
+      ifscCache[code] = v; try { sessionStorage.setItem('gramg2.ifsc', JSON.stringify(ifscCache)); } catch (e) {}
+      return v;
+    });
+  }
+  var ifscSeq = 0;
+  function acvBank() {
+    var code = cleanIfsc($('acvIfsc').value), b = $('acvBank'), my = ++ifscSeq;
+    b.className = 'i-b';
+    if (!code) { b.textContent = '🏦 IFSC নেই'; return; }
+    if (!IFSC_RE.test(code)) { b.textContent = '⚠ IFSC ঠিক নয় (4 অক্ষর + 0 + 6)'; b.className = 'i-b bad'; return; }
+    b.textContent = '🏦 খোঁজা হচ্ছে…';
+    ifscLookup(code).then(function (v) {
+      if (my !== ifscSeq) return;
+      if (v === false) { b.textContent = '⚠ এই IFSC কোনো bank-এ পাওয়া যায়নি'; b.className = 'i-b bad'; return; }
+      b.textContent = '🏦 ' + v.bank + ' · ' + v.branch + (v.city ? ', ' + v.city : ''); b.className = 'i-b ok';
+    }, function () { if (my === ifscSeq) b.textContent = '🏦 ' + code; });
+  }
+  function supOf(r, k) {   // what the supervisor sent (kept apart once the Admin corrected it)
+    var edited = r.sup_account_no != null || r.sup_ifsc != null || r.sup_holder_name != null;
+    if (k === 'acc') return edited ? r.sup_account_no : r.sent_account_no;
+    if (k === 'ifsc') return edited ? r.sup_ifsc : r.sent_ifsc;
+    return edited ? r.sup_holder_name : r.holder_name;
+  }
+  function acvRefresh() {
+    var r = ph.cur; if (!r) return;
+    var acc = cleanAcc($('acvAcc').value), ifsc = cleanIfsc($('acvIfsc').value), nm = cleanName($('acvHolder').value);
+    [['acvAcc', 'acvAccEd', acc, cleanAcc(supOf(r, 'acc')), acc && !ACC_RE.test(acc)],
+     ['acvIfsc', 'acvIfscEd', ifsc, cleanIfsc(supOf(r, 'ifsc')), ifsc && !IFSC_RE.test(ifsc)],
+     ['acvHolder', 'acvHolderEd', nm, cleanName(supOf(r, 'name')), false]].forEach(function (f) {
+      var changed = r.status === 'new' && f[2] !== f[3];
+      $(f[0]).classList.toggle('ed', changed && !f[4]); $(f[0]).classList.toggle('bad', !!f[4]);
+      $(f[1]).textContent = f[4] ? '⚠ ঠিক নয়' : changed ? '✎ আপনি বদলেছেন' : '';
+    });
+    $('acvSupAcc').innerHTML = ''; $('acvSupIfsc').innerHTML = ''; $('acvSupHolder').innerHTML = '';
+    [['acvSupAcc', supOf(r, 'acc'), acc, cleanAcc], ['acvSupIfsc', supOf(r, 'ifsc'), ifsc, cleanIfsc], ['acvSupHolder', supOf(r, 'name'), nm, cleanName]].forEach(function (f) {
+      var v = f[1] || '—', box = $(f[0]);
+      if (f[1] && r.status === 'new' && f[3](f[1]) !== f[2]) box.appendChild(el('s', v));   // Admin changed it
+      else box.textContent = v;
+    });
+    $('acvDig').textContent = acc ? acc.length + ' digit' + (acc.length > 3 ? ' · ' + group4(acc) : '') : '';
+    var m = nameMatch(nm, r.applicant_name);
+    $('acvMatch').textContent = m == null ? '' : 'নাম মিল ' + m + '%';
+    $('acvMatch').className = 'i-m' + (m != null && m < 60 ? ' low' : '');
+  }
+  function acvPos() {
+    var nw = newRows(), i = ph.cur ? nw.indexOf(nw.filter(function (x) { return x.id === ph.cur.id; })[0]) : -1;
+    $('acvLeft').textContent = String(nw.length);
+    $('acvPos').textContent = i >= 0 ? (i + 1) + ' / ' + nw.length : '—';
+    $('acvPrev').disabled = i <= 0; $('acvNext').disabled = i < 0 || i >= nw.length - 1;
+  }
+  function chip(text, cls) { var s = el('span', null, cls || ''); s.textContent = text; return s; }
   function openPhoto(r) {
     ph.cur = r;
-    $('phvTitle').textContent = r.applicant_name || 'Account copy';
-    $('phvSub').textContent = r.job_card_no + ' · App ' + r.applicant_no + ' · ' + fmtDate(r.uploaded_at) + ' · ' + (r.uploaded_by || '');
-    $('phvAcc').textContent = (r.sent_account_no || r.sent_ifsc ? 'Sent: A/C ' + (r.sent_account_no || '—') + ' · IFSC ' + (r.sent_ifsc || '—') + '   |   ' : '') +
-      'In data: ' + (r.account_no || '—') + (r.ifsc ? ' · IFSC ' + r.ifsc : '') + (r.holder_name ? '   |   Name in passbook: ' + r.holder_name : '');
+    $('phvTitle').textContent = r.status === 'new' ? 'Passbook মিলিয়ে দেখুন' : r.status === 'done' ? 'Verified (ফিরিয়ে এনে ঠিক করুন)' : 'ফেরত গেছে';
+    var bar = $('phvSub'); bar.innerHTML = '';
+    var a = chip('Sansad '), b = el('b', vno(r.village_no)); a.appendChild(b); bar.appendChild(a);
+    var p = chip('পাঠিয়েছে '); p.appendChild(el('b', r.uploaded_by || '')); p.appendChild(document.createTextNode(' · ' + fmtDate(r.uploaded_at))); bar.appendChild(p);
+    if (r.ekyc != null) bar.appendChild(chip((r.ekyc ? '✓' : '✕') + ' eKYC', r.ekyc ? 'ok' : 'no'));
+    if (r.abps != null) bar.appendChild(chip((r.abps ? '✓' : '✕') + ' ABPS', r.abps ? 'ok' : 'no'));
+    if (r.work_name) bar.appendChild(chip('📋 ' + r.work_name));
+    if (r.reopened_at) bar.appendChild(chip('↩ ফিরিয়ে আনা ' + fmtDate(r.reopened_at)));
+    $('acvName').textContent = r.applicant_name || '';
+    $('acvJc').textContent = r.job_card_no + ' · Applicant ' + r.applicant_no;
+    $('acvAcc').value = cleanAcc(r.sent_account_no); $('acvIfsc').value = cleanIfsc(r.sent_ifsc); $('acvHolder').value = cleanName(r.holder_name);
+    var open = r.status === 'new';
+    ['acvAcc', 'acvIfsc', 'acvHolder'].forEach(function (id) { $(id).disabled = !open; });
+    $('acvAct').classList.toggle('hidden', !open);
+    var db = $('acvDoneBox'); db.innerHTML = ''; db.classList.toggle('hidden', open);
+    if (!open) {
+      db.appendChild(el('span', r.status === 'done' ? '✔ Verified ' + fmtDate(r.done_at) : '✕ ফেরত ' + fmtDate(r.done_at) + ' · ' + (r.return_reason || '')));
+      if (r.can_reopen) { var u = el('button', '↩ ফিরিয়ে আনুন'); u.type = 'button'; u.onclick = function () { photoReopen(r); }; db.appendChild(u); }
+    }
+    $('acvOld').textContent = 'এখন data-তে: ' + (r.account_no ? r.account_no + (r.ifsc ? ' · ' + r.ifsc : '') : 'account নেই');
+    acvRefresh(); acvBank(); acvPos();
+    ph.z = 1; ph.rot = 0; ph.x = 0; ph.y = 0; imgApply();
     $('phvImg').removeAttribute('src');
-    $('phvModal').classList.add('show');
-    SB.photos.blob(r.path).then(function (b) {
+    $('phvModal').classList.add('show'); document.body.style.overflow = 'hidden';
+    SB.photos.blob(r.path).then(function (bl) {
         if (ph.cur !== r) return;
         if (ph.imgUrl) URL.revokeObjectURL(ph.imgUrl);
-        ph.imgUrl = URL.createObjectURL(b); $('phvImg').src = ph.imgUrl;
+        ph.imgUrl = URL.createObjectURL(bl); $('phvImg').src = ph.imgUrl;
       },
       function (e) { if (!e.authLost) status('Could not open the photo: ' + (e.message || e), 'err'); });
+    if (open) setTimeout(function () { $('phvDone').focus(); }, 30);
   }
   function closePhoto() {
-    $('phvModal').classList.remove('show'); $('phvImg').removeAttribute('src'); ph.cur = null;
+    $('phvModal').classList.remove('show'); $('phvImg').removeAttribute('src'); ph.cur = null; document.body.style.overflow = '';
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
     if (ph.imgUrl) { URL.revokeObjectURL(ph.imgUrl); ph.imgUrl = null; }
   }
+  // photo: fit, zoom, drag, rotate
+  function imgFit() {
+    var img = $('phvImg'), st = $('acvStage');
+    if (!img.naturalWidth) return 1;
+    var side = ph.rot % 180 !== 0, w = side ? img.naturalHeight : img.naturalWidth, h = side ? img.naturalWidth : img.naturalHeight;
+    return Math.min(st.clientWidth / w, st.clientHeight / h) * 0.96;
+  }
+  function imgApply() {
+    var img = $('phvImg'), s = imgFit() * ph.z;
+    img.style.transform = 'translate(-50%,-50%) translate(' + ph.x + 'px,' + ph.y + 'px) rotate(' + ph.rot + 'deg) scale(' + s + ')';
+  }
+  function zoomBy(f) { ph.z = Math.min(8, Math.max(0.5, ph.z * f)); imgApply(); }
+  $('phvImg').addEventListener('load', imgApply);
+  window.addEventListener('resize', function () { if (ph.cur) imgApply(); });
+  $('acvZi').addEventListener('click', function () { zoomBy(1.25); });
+  $('acvZo').addEventListener('click', function () { zoomBy(0.8); });
+  $('acvRot').addEventListener('click', function () { ph.rot = (ph.rot + 90) % 360; ph.x = ph.y = 0; imgApply(); });
+  $('acvFit').addEventListener('click', function () { ph.z = 1; ph.x = ph.y = 0; imgApply(); });
+  function fullScreen() {
+    var st = $('acvStage');
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+    else if (st.requestFullscreen) st.requestFullscreen().catch(function () {});
+  }
+  $('acvFull').addEventListener('click', fullScreen);
+  document.addEventListener('fullscreenchange', function () { setTimeout(imgApply, 60); });
+  (function () {
+    var st = $('acvStage'), drag = null;
+    st.addEventListener('wheel', function (e) { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.15 : 0.87); }, { passive: false });
+    st.addEventListener('pointerdown', function (e) { drag = { x: e.clientX - ph.x, y: e.clientY - ph.y }; st.classList.add('drag'); st.setPointerCapture(e.pointerId); });
+    st.addEventListener('pointermove', function (e) { if (!drag) return; ph.x = e.clientX - drag.x; ph.y = e.clientY - drag.y; imgApply(); });
+    function end() { drag = null; st.classList.remove('drag'); }
+    st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
+    st.addEventListener('dblclick', fullScreen);
+  })();
+  ['acvAcc', 'acvIfsc', 'acvHolder'].forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      if (id === 'acvAcc') { var v = cleanAcc(this.value); if (v !== this.value) this.value = v; }
+      if (id === 'acvIfsc') { var w = cleanIfsc(this.value); if (w !== this.value) this.value = w; acvBank(); }
+      acvRefresh();
+    });
+  });
+  function goRel(d) {
+    var nw = newRows(), i = ph.cur ? nw.map(function (x) { return x.id; }).indexOf(ph.cur.id) : -1;
+    var n = nw[i + d]; if (n) openPhoto(n);
+  }
+  $('acvPrev').addEventListener('click', function () { goRel(-1); });
+  $('acvNext').addEventListener('click', function () { goRel(1); });
+
   function downloadPhoto(r) {
     loading('Downloading...');
     SB.photos.blob(r.path)
@@ -300,66 +489,121 @@
       .catch(function (e) { if (!e.authLost) status('Download failed: ' + (e.message || e), 'err'); })
       .then(function () { loading(''); });
   }
-  function photoFinish(r, rpc, args, okMsg) {
-    var wasOpen = ph.cur === r;   // checked in the big view → the next new photo opens by itself
+  function toast(r, text) {
+    clearTimeout(ph.toastT);
+    ph.undo = r; $('acvToastT').innerHTML = '';
+    $('acvToastT').appendChild(document.createTextNode(text.split('|')[0])); $('acvToastT').appendChild(el('b', r.applicant_name || ''));
+    $('acvToastT').appendChild(document.createTextNode(text.split('|')[1] || ''));
+    $('acvToast').classList.remove('hidden');
+    ph.toastT = setTimeout(function () { $('acvToast').classList.add('hidden'); }, 15000);
+  }
+  $('acvToastX').addEventListener('click', function () { $('acvToast').classList.add('hidden'); });
+  $('acvUndo').addEventListener('click', function () {
+    $('acvToast').classList.add('hidden');
+    var r = ph.undo; if (!r) return;
+    var row = ph.rows.filter(function (x) { return x.id === r.id; })[0] || r;
+    photoReopen(row, true);
+  });
+  // after Verify / Return: photo is kept 7 days (v239) so ↩ can bring it back
+  function photoFinish(r, rpc, args, okMsg, toastText) {
+    var wasOpen = ph.cur === r, nw = newRows(), idx = nw.map(function (x) { return x.id; }).indexOf(r.id);
     loading('Saving...');
     return SB.rpc(rpc, args)
-      .then(function (res) { return SB.photos.remove((res && res.paths) || []).then(function () { return res; }); })
-      .then(function (res) { return SB.rpc('admin_account_photo_purged', { p_ids: [r.id] }).then(function () { return res; }); })
-      .then(function (res) { if (ph.cur === r) closePhoto(); status(okMsg(res || {}), 'ok'); },
-            function (e) {
-              if (e.authLost) return;
-              if (e.status === 404) { status('Run v181_account_requests.sql in the Supabase SQL Editor first (Verify / Return).', 'err'); return; }
-              status(errText(e), 'err');
-            })
-      .then(function () { loading(''); return loadPhotos(false); })
-      .then(function () {
-        var next = wasOpen && ph.filter === 'new' && !ph.cur ? ph.rows.filter(function (x) { return x.id !== r.id; })[0] : null;
-        if (next) openPhoto(next);
+      .then(function (res) {
+        res = res || {};
+        if (res.paths && res.paths.length) { status(okMsg(res) + ' ' + V239 + ' (↩ ফিরিয়ে আনা যাবে না)', 'info'); return true; }   // old SQL
+        status(okMsg(res), 'ok'); toast(r, toastText);
+        return true;
+      }, function (e) {
+        if (e.authLost) return false;
+        if (e.status === 404 || /admin_account_photo_verify|function .* does not exist/.test(e.message || '')) { status(V239, 'err'); return false; }
+        var map = { BAD_ACCOUNT_NO: 'Account number ঠিক নয় (6–20 সংখ্যা)।', BAD_IFSC: 'IFSC ঠিক নয়।', ALREADY_DONE: 'এটা আগেই check হয়ে গেছে।' };
+        status(map[e.code] || map[(e.message || '').trim()] || errText(e), 'err'); return false;
+      })
+      .then(function (ok) {
+        loading('');
+        return loadPhotos(false).then(function () {
+          if (!ok || !wasOpen) return;
+          var rest = newRows(), next = rest[Math.min(idx < 0 ? 0 : idx, rest.length - 1)];
+          if (next) openPhoto(next); else { closePhoto(); status('✔ সব account copy check হয়ে গেছে।', 'ok'); }
+        });
       });
   }
   function photoVerify(r) {
-    var hasAcc = /^\d{6,20}$/.test(r.sent_account_no || '') && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(r.sent_ifsc || '');
-    ask('Verify the account of ' + (r.applicant_name || '') + '?' +
-        (hasAcc ? '\nA/C ' + r.sent_account_no + ' · IFSC ' + r.sent_ifsc + ' is written into the worker data.' : '') +
-        '\nThe photo is deleted. Update the account on the portal too.', '✔ Verify', 'ok').then(function (yes) {
-      if (!yes) return;
-      photoFinish(r, 'admin_account_photo_verify', { p_id: r.id, p_update: true }, function (res) {
-        return '✔ Verified: ' + (r.applicant_name || '') + (res.data_updated ? ' (account saved in the data)' : '') + '. Photo deleted.';
-      });
-    });
+    if (r.status !== 'new') return;
+    var acc = cleanAcc($('acvAcc').value), ifsc = cleanIfsc($('acvIfsc').value), nm = cleanName($('acvHolder').value);
+    if (acc && !ACC_RE.test(acc)) { status('Account number ঠিক নয় (6–20 সংখ্যা)।', 'err'); $('acvAcc').focus(); return; }
+    if (ifsc && !IFSC_RE.test(ifsc)) { status('IFSC ঠিক নয় (যেমন SBIN0001234)।', 'err'); $('acvIfsc').focus(); return; }
+    if ((acc && !ifsc) || (!acc && ifsc)) { status('Account number আর IFSC দুটোই দিন (নাহলে data-তে account বসবে না)।', 'err'); return; }
+    photoFinish(r, 'admin_account_photo_verify',
+      { p_id: r.id, p_update: true, p_account_no: acc || null, p_ifsc: ifsc || null, p_holder_name: nm || null },
+      function (res) { return '✔ Verified: ' + (r.applicant_name || '') + (res.data_updated ? ' (account data-তে বসেছে, K-Desk portal-এ বসাবে)' : '') + (res.edited ? ' · আপনার সংশোধন সহ' : ''); },
+      '✔ |' + ' verified' + (acc ? ' · ' + acc : ''));
   }
   function photoReturn(r) {
-    askText('Why return it to the supervisor? (they see this reason)', 'Photo not clear', '✕ Return').then(function (reason) {
+    if (r.status !== 'new') return;
+    askText('Supervisor-কে কেন ফেরত পাঠাচ্ছেন? (উনি এই কারণটা দেখবেন)', 'ছবি পরিষ্কার নয়', '✕ ফেরত').then(function (reason) {
       if (reason === null) return;
-      if (!reason.trim()) { status('Write a reason.', 'err'); return; }
-      photoFinish(r, 'admin_account_photo_return', { p_id: r.id, p_reason: reason.trim() }, function () {
-        return '✕ Returned to the supervisor: ' + (r.applicant_name || '') + '.';
+      if (!reason.trim()) { status('একটা কারণ লিখুন।', 'err'); return; }
+      photoFinish(r, 'admin_account_photo_return', { p_id: r.id, p_reason: reason.trim() },
+        function () { return '✕ Supervisor-কে ফেরত গেছে: ' + (r.applicant_name || '') + '.'; }, '✕ |' + ' ফেরত গেছে');
+    });
+  }
+  function photoReopen(r, quick) {
+    var msg = r.portal_status === 'ok'
+      ? '⚠ K-Desk এই account portal-এ বসিয়ে ফেলেছে (' + (r.sent_account_no || '') + ').\nফিরিয়ে এনে ঠিক করে আবার Verify করলে K-Desk নতুনটা আবার portal-এ বসাবে।\nফিরিয়ে আনবেন?'
+      : 'ফিরিয়ে আনবেন? ' + (r.applicant_name || '') + ' আবার ② Check বাকি-তে যাবে' + (r.status === 'done' ? ', data-তে আগের account ফিরে যাবে, K-Desk-এর তালিকা থেকে সরে যাবে।' : '।');
+    (quick && r.portal_status !== 'ok' ? Promise.resolve(true) : ask(msg, '↩ ফিরিয়ে আনুন', 'ok')).then(function (yes) {
+      if (!yes) return;
+      loading('ফিরিয়ে আনা হচ্ছে...');
+      SB.rpc('admin_account_photo_reopen', { p_id: r.id }).then(function (res) {
+        res = res || {};
+        var note = { old: ' data-তে আগের account ফিরে গেছে।', removed: ' data থেকে এই account সরানো হয়েছে।',
+                     changed_since: ' ⚠ এর মধ্যে data-তে account বদলেছে, তাই data ছোঁয়া হয়নি।' }[res.restored] || '';
+        status('↩ ফিরিয়ে আনা হয়েছে: ' + (r.applicant_name || '') + '.' + note, res.restored === 'changed_since' ? 'info' : 'ok');
+        loading('');
+        return loadPhotos(false).then(function () {
+          var row = ph.rows.filter(function (x) { return x.id === r.id; })[0];
+          setStep('check'); if (row) openPhoto(row);
+        });
+      }, function (e) {
+        loading(''); if (e.authLost) return;
+        var map = { TOO_OLD: '7 দিনের বেশি পুরনো, ছবি মুছে গেছে, তাই ফিরিয়ে আনা যাবে না।', NEWER_COPY: 'এই কর্মীর নতুন account copy আছে, সেটাই check করুন।', NOT_DONE: 'এটা এখনো check বাকি।' };
+        status(map[e.code] || map[(e.message || '').trim()] || (e.status === 404 ? V239 : errText(e)), 'err');
       });
     });
   }
   $('phvClose').addEventListener('click', closePhoto);
-  $('phvModal').addEventListener('click', function (e) { if (e.target === this) closePhoto(); });
   $('phvDl').addEventListener('click', function () { if (ph.cur) downloadPhoto(ph.cur); });
   $('phvDone').addEventListener('click', function () { if (ph.cur) photoVerify(ph.cur); });
   $('phvRet').addEventListener('click', function () { if (ph.cur) photoReturn(ph.cur); });
-  // keyboard in the big photo view: A = Verify, R = Return, Esc = close; Enter = Yes in the question box
+  // keyboard in the Account check page: A = Verify, R = Return, ←/→ = previous/next, Esc = back; Enter = Yes in the question box
   document.addEventListener('keydown', function (e) {
     if ($('askBox').classList.contains('show')) {
       if (e.key === 'Enter' && $('askInput').classList.contains('hidden')) { e.preventDefault(); $('askYes').click(); }
       return;
     }
-    if (!$('phvModal').classList.contains('show') || /INPUT|TEXTAREA|SELECT/.test((e.target || {}).tagName || '')) return;
+    if (!$('phvModal').classList.contains('show')) return;
     var k = (e.key || '').toLowerCase();
+    if (k === 'escape') { if (!document.fullscreenElement) closePhoto(); return; }
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target || {}).tagName || '')) { if (k === 'enter' && ph.cur && ph.cur.status === 'new') { e.preventDefault(); photoVerify(ph.cur); } return; }
     if (k === 'a') { e.preventDefault(); $('phvDone').click(); }
     else if (k === 'r') { e.preventDefault(); $('phvRet').click(); }
-    else if (k === 'escape') closePhoto();
+    else if (k === 'arrowleft') goRel(-1);
+    else if (k === 'arrowright') goRel(1);
   });
   $('phRefresh').addEventListener('click', function () { loadPhotos(true); });
   $('phGp').addEventListener('change', function () { loadPhotos(true); });
   document.querySelectorAll('#phFilters button').forEach(function (b) {
-    b.addEventListener('click', function () { ph.filter = b.dataset.f; loadPhotos(false); });
+    b.addEventListener('click', function () { ph.filter = b.dataset.f; renderDone(); });
   });
+  document.querySelectorAll('#acTiles button').forEach(function (b) {
+    b.addEventListener('click', function () { setStep(b.dataset.step); });
+  });
+  $('phSearch').addEventListener('input', function () { ph.q = this.value.trim().toLowerCase(); renderPhotos(); });
+  $('phStart').addEventListener('click', function () { var n = newRows()[0]; if (n) openPhoto(n); });
+  $('acAskBtn').addEventListener('click', function () { setStep('req'); $('acAskCard').classList.remove('hidden'); $('rqText').focus(); });
+  $('acAskClose').addEventListener('click', function () { $('acAskCard').classList.add('hidden'); });
 
   // ---------- account copy requests (account not frozen) ----------
   var JC_RE = /WB-?\d{2}-?\d{3}-?\d{3}-?\d{3}\s*\/\s*\d+(?:-[A-Z])?/i;
@@ -472,6 +716,8 @@
         tr.appendChild(td); tb.appendChild(tr);
       });
       if (!rows.length) { var tr0 = document.createElement('tr'); var td0 = el('td', 'No request.'); td0.colSpan = 7; tr0.appendChild(td0); tb.appendChild(tr0); }
+      $('acN-req').textContent = String(c.open);
+      $('acS-req').textContent = c.photo ? 'ছবি আসেনি · ' + c.photo + ' টা ছবি এসেছে' : 'ছবি আসেনি';
       $('rqSum').textContent = 'Waiting: ' + c.open + ' · Photo received: ' + c.photo + ($('rqAll').checked ? ' · Closed: ' + c.closed : '');
     }, function (e) { if (e.status !== 404 && !e.authLost) status(errText(e), 'err'); });
   }

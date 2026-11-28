@@ -1,11 +1,12 @@
 {
-  "version": "1.21.1",
-  "date": "16/11/2026",
-  "url": "K-Desk_Suite_v1.21.1.zip",
+  "version": "1.28.0",
+  "date": "28/11/2026",
+  "url": "K-Desk_Suite_v1.28.0.zip",
   "min_version": "",
   "notes": [
-    "💸 Payment pipeline: Generate WL আর Send for Payment page খুললে Gram Setu Admin-এ হিসাব যায়",
-    "\"update হয়েছে\" banner-এ ভুল Download বোতাম আর নেই",
-    "নতুন version এলে K-Desk নিজেই জানায় (icon-এ NEW)"
+    "✨ নতুন পরিষ্কার panel: Demand, Allocation, MR Fill, Batch Print, Readiness, ABPS, NPCI, Bank, Certificate",
+    "⚙ কম দরকারি option এখন আলাদা \"Advanced\" অংশে",
+    "🩺 Portal Map + Health Check: portal বদলালে আগে থেকে জানায়",
+    "Gram Setu-র list-এ ভুল \"eKYC not done\" বাদ পড়া আর হবে না"
   ]
 }

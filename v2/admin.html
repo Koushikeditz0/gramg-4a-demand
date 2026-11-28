@@ -725,6 +725,18 @@
     }
     html[data-theme=dark] .wrow.t.sel{background:var(--gs-primary-soft);}
     .expbar.hidden{display:none!important;}
+    /* List view (2026-11-28): same row actions as the task view, calmer table */
+    .lwrap{background:var(--gs-surface);border:1px solid var(--gs-line);border-radius:12px;overflow:auto;}
+    .ltable th{font-weight:var(--gs-fw-semi);color:var(--gs-muted);text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;}
+    .ltable td,.ltable td.acts{padding:10px 10px;border-top:1px solid var(--gs-line);}
+    .ltable .wk{font-weight:var(--gs-fw-semi);}
+    .ltable .warn{font-weight:var(--gs-fw-semi);}
+    .ltable .pill{font-weight:var(--gs-fw-semi);padding:2px 9px;}
+    .ltable td.acts .wacts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;}
+    .ltable td.acts .wacts button{margin:0;white-space:nowrap;background:var(--gs-surface);color:var(--gs-text);border:1px solid var(--gs-line);border-radius:8px;padding:5px 12px;font-weight:var(--gs-fw-semi);font-size:var(--gs-fs-sm);}
+    .ltable td.acts .wacts button.pri{background:var(--gs-primary);border-color:var(--gs-primary);color:var(--gs-on);}
+    .ltable td.acts .wacts .dots{padding:5px 10px;line-height:1.2;}
+    @media (max-width:899px){ .ltable td.acts .wacts{justify-content:flex-start;flex-wrap:wrap;} .ltable td,.ltable td.acts{padding:0;border:0;} }
     .sm-box{max-width:560px;}
     .sm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:6px;} .sm-grid .sm-wide{grid-column:1/-1;}
     .sm-grid input{width:100%;}
@@ -1725,7 +1737,7 @@
 <script src="./js/sb-client.js?v=20261120a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261128b"></script>
+<script src="./js/admin.js?v=20261128c"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>

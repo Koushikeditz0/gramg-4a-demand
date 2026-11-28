@@ -1452,6 +1452,13 @@
     var stc = el('div', null, 'wst'); stc.appendChild(el('span', stLbl(st), 'pill ' + st)); row.appendChild(stc);
 
     // ⑤ actions: the main 1-2 buttons, the rest in ⋯
+    var acts = rowActions(r, n, kind);
+    row.appendChild(acts);
+    return row;
+  }
+  // the action buttons of one list (task view and List view): View + one main action + ⋯ menu
+  function rowActions(r, n, kind) {
+    var st = r.submit_state;
     var acts = el('div', null, 'wacts');
     function act(label, cls, fn, title) { var b = el('button', label, cls); b.type = 'button'; if (title) b.title = title; b.addEventListener('click', fn); acts.appendChild(b); return b; }
     var more = [];
@@ -1474,8 +1481,7 @@
     var dots = el('button', '⋯', 'dots'); dots.type = 'button'; dots.title = T('আরও', 'More'); dots.setAttribute('aria-label', dots.title);
     dots.addEventListener('click', function (e) { e.stopPropagation(); openRowMenu(r, more, dots); });
     acts.appendChild(dots);
-    row.appendChild(acts);
-    return row;
+    return acts;
   }
   // the ⋯ menu of a list row (same look and closing rules as the supervisor ⋯ menu)
   function openRowMenu(r, items, anchor) {
@@ -1608,13 +1614,7 @@
       else cd.textContent = '—';
       var ca = cell(tr, 'Accounts');
       if (dash.extrasOk && n) { var na = Number(r.no_account || 0); ca.textContent = na ? '⚠ ' + bn(na) + ' no A/C' : '✓ all'; ca.title = na ? bn(na) + ' worker(s) without Account No / IFSC' : 'Every worker has an account'; ca.className = na ? 'warn' : 'okc'; } else ca.textContent = '—';
-      var cact = cell(tr, '', 'acts');
-      function act(label, cls, fn, title) { var b = el('button', label, cls + ' btn-small'); if (title) b.title = title; b.addEventListener('click', fn); cact.appendChild(b); }
-      act('👁', 'btn-primary', function () { openPreview(r); }, 'View the list');
-      if ((r.submit_state === 'submitted' || r.submit_state === 'draft') && n > 0) act('🔒', 'btn-light', function () { listAction(r, 'lock'); }, 'Lock');
-      if (r.submit_state === 'submitted' || r.submit_state === 'locked') act('↩', 'btn-light', function () {
-        ask('Make "' + r.work_name + '" (' + r.username + ') a draft again? The supervisor can then change it.').then(function (ok) { if (ok) listAction(r, 'reopen'); });
-      }, 'Send back (make it a draft again)');
+      var cact = cell(tr, '', 'acts'); cact.appendChild(rowActions(r, n, n ? (r.submit_state === 'draft' ? 'todo' : 'ready') : 'empty'));
       tb.appendChild(tr);
     });
     t.appendChild(tb); wrap.appendChild(t); C.appendChild(wrap);

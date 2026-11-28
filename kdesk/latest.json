@@ -1,12 +1,11 @@
 {
-  "version": "1.28.0",
+  "version": "1.29.0",
   "date": "28/11/2026",
-  "url": "K-Desk_Suite_v1.28.0.zip",
+  "url": "K-Desk_Suite_v1.29.0.zip",
   "min_version": "",
   "notes": [
-    "✨ নতুন পরিষ্কার panel: Demand, Allocation, MR Fill, Batch Print, Readiness, ABPS, NPCI, Bank, Certificate",
-    "⚙ কম দরকারি option এখন আলাদা \"Advanced\" অংশে",
-    "🩺 Portal Map + Health Check: portal বদলালে আগে থেকে জানায়",
-    "Gram Setu-র list-এ ভুল \"eKYC not done\" বাদ পড়া আর হবে না"
+    "📚 নতুন: 7 Registers (Job Card, Gram Sabha, Demand/Wages, Work, Asset, Complaint, Material) — Gram Setu Admin → Registers থেকে খোলে",
+    "Public report site থেকে এই PC-তেই পড়ে; শুধু GP Admin (নিজের GP) আর Super Admin",
+    "portal page-এ কোনো load বাড়েনি, K-Dock-এ নতুন button নেই"
   ]
 }

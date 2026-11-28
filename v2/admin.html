@@ -785,7 +785,13 @@
         <a class="sact" href="./iay.html"><i>📒</i><span>IAY Tracker ↗</span></a>
       </div>
     </div>
-    <div class="grp" data-g="reports"><a class="ghead" href="./report.html" data-short="Reports" style="text-decoration:none;"><i>📊</i><span>Reports</span><b class="gbadge hidden"></b></a></div>
+    <div class="grp" data-g="reports">
+      <button class="ghead" type="button" data-short="Reports"><i>📊</i><span>Reports &amp; Registers</span><b class="gbadge hidden"></b></button>
+      <div class="gsubs">
+        <a class="sact" href="./report.html"><i>📊</i><span>Reports ↗</span></a>
+        <button class="tab" data-tab="regs"><i>📚</i><span>Registers</span></button>
+      </div>
+    </div>
     <div class="grp" data-g="team">
       <button class="ghead" type="button" data-short="Team"><i>👥</i><span>Team &amp; Access</span><b class="gbadge hidden"></b></button>
       <div class="gsubs">
@@ -1396,6 +1402,41 @@
     </div>
   </section>
 
+  <!-- ============ 7 REGISTERS (K-Desk reads the public report pages on this PC) ============ -->
+  <section id="tab-regs" class="hidden">
+    <div class="card">
+      <h2 style="margin:0 0 4px;">📚 Registers</h2>
+      <div class="muted">The 7 registers every Gram Panchayat keeps (Job Card, Gram Sabha, Demand &amp; wages, Work, Fixed asset, Complaint, Material). K-Desk reads the government's public report pages on <b>this PC</b> and makes a printable PDF. Nothing is stored in Gram Setu.</div>
+      <div id="rgKd" class="rg-kd"></div>
+      <div class="rg-who muted" id="rgWho"></div>
+      <div class="rg-grid">
+        <label class="f">Financial year<select id="rgFy"></select></label>
+        <label class="f">Period<select id="rgPd"></select></label>
+      </div>
+      <label class="f" style="margin-top:10px;">Registers</label>
+      <div class="rg-tiles" id="rgTiles"></div>
+      <label class="rg-opt"><input type="checkbox" id="rgDet"> <span><b>Register IV Part B</b> — also read each work's own page (slow: one page per work)</span></label>
+      <div class="row" style="margin-top:12px;gap:8px;">
+        <button class="btn-primary" id="rgGo">Make registers in K-Desk</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">K-Desk opens a new tab where you choose the Gram Panchayat and press <b>Read</b>. A GP Admin can make registers only for their own GP; the Super Admin can make them for any GP. Works on a PC with K-Desk installed (not on a phone).</div>
+      <style>
+        .rg-kd{margin:10px 0;padding:8px 12px;border-radius:var(--gs-r-md);font-size:var(--gs-fs-sm);background:var(--gs-warn-soft);color:var(--gs-warn);}
+        .rg-kd.ok{background:var(--gs-ok-soft);color:var(--gs-ok);}
+        .rg-who{margin-bottom:8px;}
+        .rg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;}
+        .rg-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:4px 0 10px;}
+        .rg-tile{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--gs-line);border-radius:var(--gs-r-md);cursor:pointer;background:var(--gs-surface);}
+        .rg-tile input{position:absolute;opacity:0;}
+        .rg-tile .n{flex:none;min-width:34px;height:26px;border-radius:var(--gs-r-sm);background:var(--gs-bg);color:var(--gs-primary);font-weight:700;font-size:var(--gs-fs-xs);display:grid;place-items:center;}
+        .rg-tile b{display:block;font-size:var(--gs-fs-sm);color:var(--gs-ink);} .rg-tile small{display:block;font-size:var(--gs-fs-xs);color:var(--gs-muted);}
+        .rg-tile:has(input:checked){border-color:var(--gs-primary);background:var(--gs-primary-soft);}
+        .rg-tile:has(input:checked) .n{background:var(--gs-primary);color:var(--gs-on);}
+        .rg-opt{display:flex;gap:8px;align-items:center;font-size:var(--gs-fs-sm);color:var(--gs-text);}
+      </style>
+    </div>
+  </section>
+
   <!-- ============ EXPIRED / MIGRANT MARKS (v214) ============ -->
   <section id="tab-marks" class="hidden">
     <div class="card">
@@ -1743,6 +1784,7 @@
 <script src="./js/admin-signup.js?v=20261114a"></script>
 <script src="./js/admin-aadhaar.js?v=20261116r"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
+<script src="./js/admin-registers.js?v=20261128a"></script>
 <script src="./js/admin-pipeline.js?v=20261121h"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
 <script src="./js/admin-dbver.js?v=20261128a"></script>

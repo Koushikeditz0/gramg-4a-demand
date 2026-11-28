@@ -1,0 +1,43 @@
+/* Gram Setu design tokens (draft v0.1, 2026-11-28)
+   One file, every Gram Setu page (Admin, Supervisor app, Report, IAY) uses only these.
+   Rule: no raw hex / px font-size in page CSS; use var(--gs-*). */
+:root{
+  /* Brand: indigo + dawn orange (kept from supervisor app) */
+  --gs-primary:#3730a3; --gs-primary-strong:#1e1b4b; --gs-primary-soft:#e8e7f8;
+  --gs-accent:#ea580c;  --gs-accent-soft:#fdeee3;
+  /* Neutrals (slight indigo bias) */
+  --gs-bg:#f6f6fa; --gs-surface:#ffffff; --gs-line:#e3e4ee;
+  --gs-ink:#121530; --gs-text:#363a55; --gs-muted:#6a6e88;
+  /* Status (meaning only, never decoration) */
+  --gs-ok:#15803d;   --gs-ok-soft:#e3f5e8;
+  --gs-warn:#b45309; --gs-warn-soft:#fdf1d8;
+  --gs-bad:#b91c1c;  --gs-bad-soft:#fce8e8;
+  --gs-info:#1d4ed8; --gs-info-soft:#e5edfd;
+  /* Type: one family, 5 sizes, 3 weights */
+  --gs-font:'Hind Siliguri','Noto Sans Bengali','Nirmala UI',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --gs-mono:ui-monospace,Consolas,monospace;
+  --gs-fs-xs:12px; --gs-fs-sm:13px; --gs-fs-md:14px; --gs-fs-lg:16px; --gs-fs-xl:22px;
+  --gs-fw-normal:400; --gs-fw-semi:600; --gs-fw-bold:700;
+  /* Space, corners, depth */
+  --gs-sp-1:4px; --gs-sp-2:8px; --gs-sp-3:12px; --gs-sp-4:16px; --gs-sp-5:24px; --gs-sp-6:32px;
+  --gs-r-sm:6px; --gs-r-md:10px; --gs-r-lg:14px; --gs-r-pill:999px;
+  --gs-shadow:0 1px 2px rgba(18,21,48,.06),0 2px 8px rgba(18,21,48,.05);
+  --gs-tap:40px; /* min touch height on phone */
+  --gs-on:#ffffff; /* text on a filled primary/status colour */
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --gs-primary:#a5a1f5; --gs-primary-strong:#e2e0ff; --gs-primary-soft:#262457;
+  --gs-accent:#fb923c;  --gs-accent-soft:#3a2214;
+  --gs-bg:#0e1022; --gs-surface:#171a33; --gs-line:#2b2f4f;
+  --gs-ink:#eef0fb; --gs-text:#c9cce0; --gs-muted:#9195b2;
+  --gs-ok:#4ade80; --gs-ok-soft:#0f2e1c; --gs-warn:#fbbf24; --gs-warn-soft:#3a2a0c;
+  --gs-bad:#f87171; --gs-bad-soft:#3b1414; --gs-info:#93b4fb; --gs-info-soft:#16244a;
+  --gs-shadow:0 1px 2px rgba(0,0,0,.4); --gs-on:#0e1022; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --gs-primary:#a5a1f5; --gs-primary-strong:#e2e0ff; --gs-primary-soft:#262457;
+  --gs-accent:#fb923c;  --gs-accent-soft:#3a2214;
+  --gs-bg:#0e1022; --gs-surface:#171a33; --gs-line:#2b2f4f;
+  --gs-ink:#eef0fb; --gs-text:#c9cce0; --gs-muted:#9195b2;
+  --gs-ok:#4ade80; --gs-ok-soft:#0f2e1c; --gs-warn:#fbbf24; --gs-warn-soft:#3a2a0c;
+  --gs-bad:#f87171; --gs-bad-soft:#3b1414; --gs-info:#93b4fb; --gs-info-soft:#16244a;
+  --gs-shadow:0 1px 2px rgba(0,0,0,.4); --gs-on:#0e1022; color-scheme:dark}

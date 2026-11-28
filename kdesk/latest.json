@@ -1,9 +1,11 @@
 {
-  "version": "1.29.0",
+  "version": "1.29.1",
   "date": "28/11/2026",
-  "url": "K-Desk_Suite_v1.29.0.zip",
+  "url": "K-Desk_Suite_v1.29.1.zip",
   "min_version": "",
   "notes": [
+    "🏦 Bank A/c Update: Excel-এ \"Beneficiary Name as per Account\" আর Applicant No column পড়ে; Bank Name column আর ভুল করে Name ধরা হয় না",
+    "🏦 List পরিষ্কার: row-এ ক্লিক করে ✕ সরাও বা ✓ portal-এ আগেই হয়ে আছে; ⋯ → 🧹 শেষগুলো সরাও, ⬇ Excel format",
     "📚 নতুন: 7 Registers (Job Card, Gram Sabha, Demand/Wages, Work, Asset, Complaint, Material) — Gram Setu Admin → Registers থেকে খোলে",
     "Public report site থেকে এই PC-তেই পড়ে; শুধু GP Admin (নিজের GP) আর Super Admin",
     "portal page-এ কোনো load বাড়েনি, K-Dock-এ নতুন button নেই"

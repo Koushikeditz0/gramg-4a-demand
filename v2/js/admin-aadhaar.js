@@ -144,18 +144,19 @@
   function renderMk(counts) {
     document.querySelectorAll('#mkFilters button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.f === mk.filter);
-      if (counts && b.dataset.f !== 'all') b.textContent = MK_ST[b.dataset.f] + ' (' + (counts[b.dataset.f] || 0) + ')';
+      if (counts && b.dataset.f !== 'all') { b.textContent = MK_ST[b.dataset.f]; var ci = document.createElement('i'); ci.textContent = counts[b.dataset.f] || 0; b.appendChild(ci); }
     });
     var body = $('mkBody'); body.innerHTML = '';
     function btns() { var none = !mk.sel.size; ['mkAccept', 'mkReturn', 'mkXlsx', 'mkSent', 'mkDeleted'].forEach(function (id) { $(id).disabled = none; }); }
     btns();
-    if (!mk.rows.length) { var tr0 = el('tr'); var td0 = el('td', 'Nothing here.', 'muted'); td0.colSpan = 9; tr0.appendChild(td0); body.appendChild(tr0); return; }
+    if (!mk.rows.length) { var tr0 = el('tr'); var td0 = el('td', 'Nothing here.', 'muted'); td0.colSpan = 6; tr0.appendChild(td0); body.appendChild(tr0); return; }
     mk.rows.forEach(function (r) {
       var tr = el('tr'), td = el('td'), cb = el('input'); cb.type = 'checkbox'; cb.checked = mk.sel.has(r.id);
       cb.onchange = function () { if (cb.checked) mk.sel.add(r.id); else mk.sel.delete(r.id); btns(); };
       td.appendChild(cb); tr.appendChild(td);
-      [vno(r.village_no), r.job_card_no, r.applicant_no, r.applicant_name, MK_REASON[r.reason] || r.reason,
-       [r.when, r.note].filter(Boolean).join(' · '), (r.marked_by || '') + ' · ' + fmtDate(r.marked_at)].forEach(function (v) { tr.appendChild(el('td', v == null ? '' : String(v))); });
+      var wk = el('td'); wk.appendChild(el('div', (r.applicant_name || '') + (r.applicant_no != null ? ' (' + r.applicant_no + ')' : ''), 'sr-nm'));
+      wk.appendChild(el('div', vno(r.village_no) + ' · ' + (r.job_card_no || ''), 'sr-wm')); tr.appendChild(wk);
+      [MK_REASON[r.reason] || r.reason, [r.when, r.note].filter(Boolean).join(' · '), (r.marked_by || '') + ' · ' + fmtDate(r.marked_at)].forEach(function (v) { tr.appendChild(el('td', v == null ? '' : String(v))); });
       var st = el('td'); st.appendChild(el('span', MK_ST[r.status] || r.status, 'pill ' + (r.status === 'returned' ? 'off' : r.status === 'new' ? 'neutral' : 'on')));
       if (r.admin_note) st.appendChild(el('div', r.admin_note, 'muted'));
       tr.appendChild(st);

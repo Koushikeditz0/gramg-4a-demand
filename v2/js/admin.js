@@ -222,7 +222,7 @@
         ph.rows = (r && r.rows) || [];
         setBadge((r && r.new_count) || 0);
         var mb = ((r && r.stored_bytes) || 0) / 1048576;
-        $('phStore').textContent = 'ছবি রাখা আছে ' + mb.toFixed(1) + ' MB' + (r && r.all_gps ? ' (সব GP)' : '');
+        $('phStore').textContent = T('ছবি রাখা আছে ', 'Photos kept: ') + mb.toFixed(1) + ' MB' + (r && r.all_gps ? T(' (সব GP)', ' (all GPs)') : '');
         renderPhotos();
         loadRequests();
       })
@@ -249,10 +249,10 @@
       .join(' ').toLowerCase().indexOf(ph.q) >= 0;
   }
   function accTag(r) {
-    if (!r.account_no) return el('span', 'account নেই', 'ac-tag w');
+    if (!r.account_no) return el('span', T('account নেই', 'no account'), 'ac-tag w');
     var same = r.account_no === r.sent_account_no && (!r.sent_ifsc || r.ifsc === r.sent_ifsc);
     var w = el('span'); w.appendChild(el('span', r.account_no, 'mono jc'));
-    if (r.sent_account_no) w.appendChild(el('span', same ? 'একই' : 'আলাদা', 'ac-tag ' + (same ? 'g' : 'r')));
+    if (r.sent_account_no) w.appendChild(el('span', same ? T('একই', 'same') : T('আলাদা', 'different'), 'ac-tag ' + (same ? 'g' : 'r')));
     return w;
   }
   function setStep(s) {
@@ -263,21 +263,20 @@
   function renderPhotos() {
     var box = $('phCards'); box.innerHTML = '';
     var nw = newRows(), list = nw.filter(hit);
-    $('acS-check').textContent = nw.length ? 'সবচেয়ে পুরনো ' + ago(nw[0].uploaded_at).replace('আগে', '') : 'কিছু বাকি নেই';
+    $('acS-check').textContent = nw.length ? T('সবচেয়ে পুরনো ', 'oldest ') + ago(nw[0].uploaded_at) : T('কিছু বাকি নেই', 'nothing left');
     $('phStart').disabled = !nw.length;
-    if (!list.length) { var tr0 = el('tr'), td0 = el('td', nw.length ? 'কিছু পাওয়া যায়নি।' : 'নতুন account copy নেই।', 'muted'); td0.colSpan = 6; tr0.appendChild(td0); box.appendChild(tr0); }
+    if (!list.length) { var tr0 = el('tr'), td0 = el('td', nw.length ? T('কিছু পাওয়া যায়নি।', 'Nothing found.') : T('নতুন account copy নেই।', 'No new account copy.'), 'muted'); td0.colSpan = 5; tr0.appendChild(td0); box.appendChild(tr0); }
     list.forEach(function (r) {
       var tr = el('tr', null, 'click'); tr.onclick = function () { openPhoto(r); };
-      var c1 = el('td'); c1.setAttribute('data-label', 'কর্মী');
-      c1.appendChild(el('div', r.applicant_name || '', 'nm')); c1.appendChild(el('div', r.job_card_no + ' · App ' + r.applicant_no, 'jc')); tr.appendChild(c1);
-      var c2 = el('td', vno(r.village_no)); c2.setAttribute('data-label', 'Sansad'); tr.appendChild(c2);
-      var c3 = el('td'); c3.setAttribute('data-label', 'Supervisor দিয়েছে');
-      c3.appendChild(el('div', r.sent_account_no || '—', 'mono')); c3.appendChild(el('div', r.sent_ifsc || (r.sent_account_no ? '' : 'শুধু ছবি'), 'jc')); tr.appendChild(c3);
-      var c4 = el('td'); c4.setAttribute('data-label', 'এখন data-তে'); c4.appendChild(accTag(r)); tr.appendChild(c4);
-      var c5 = el('td'); c5.setAttribute('data-label', 'পাঠিয়েছে');
+      var c1 = el('td'); c1.setAttribute('data-label', T('কর্মী', 'Worker'));
+      c1.appendChild(el('div', r.applicant_name || '', 'nm')); c1.appendChild(el('div', vno(r.village_no) + ' · ' + r.job_card_no + ' · App ' + r.applicant_no, 'jc')); tr.appendChild(c1);
+      var c3 = el('td'); c3.setAttribute('data-label', T('Supervisor দিয়েছে', 'Supervisor gave'));
+      c3.appendChild(el('div', r.sent_account_no || '—', 'mono')); c3.appendChild(el('div', r.sent_ifsc || (r.sent_account_no ? '' : T('শুধু ছবি', 'photo only')), 'jc')); tr.appendChild(c3);
+      var c4 = el('td'); c4.setAttribute('data-label', T('এখন data-তে', 'Now in data')); c4.appendChild(accTag(r)); tr.appendChild(c4);
+      var c5 = el('td'); c5.setAttribute('data-label', T('পাঠিয়েছে', 'Sent'));
       var age = Math.floor((Date.now() - new Date(r.uploaded_at).getTime()) / 86400000);
       c5.appendChild(el('div', r.uploaded_by || '')); c5.appendChild(el('div', ago(r.uploaded_at), age >= 3 ? 'ac-old' : 'jc')); tr.appendChild(c5);
-      var c6 = el('td'); c6.setAttribute('data-label', ''); c6.appendChild(el('button', 'খুলুন ›', 'ac-open')); tr.appendChild(c6);
+      var c6 = el('td'); c6.setAttribute('data-label', ''); c6.appendChild(el('button', T('খুলুন ›', 'Check ›'), 'ac-open')); tr.appendChild(c6);
       box.appendChild(tr);
     });
     renderDone();
@@ -288,26 +287,26 @@
     $('acN-done').textContent = String(all.length);
     document.querySelectorAll('#phFilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.f === ph.filter); });
     var list = all.filter(function (r) { return r.status === ph.filter && hit(r); });
-    if (!list.length) { var tr0 = el('tr'), td0 = el('td', 'গত 30 দিনে কিছু নেই।', 'muted'); td0.colSpan = 5; tr0.appendChild(td0); box.appendChild(tr0); return; }
+    if (!list.length) { var tr0 = el('tr'), td0 = el('td', T('গত 30 দিনে কিছু নেই।', 'Nothing in the last 30 days.'), 'muted'); td0.colSpan = 5; tr0.appendChild(td0); box.appendChild(tr0); return; }
     list.forEach(function (r) {
       var tr = el('tr');
-      var c1 = el('td'); c1.setAttribute('data-label', 'কর্মী');
+      var c1 = el('td'); c1.setAttribute('data-label', T('কর্মী', 'Worker'));
       c1.appendChild(el('div', r.applicant_name || '', 'nm')); c1.appendChild(el('div', r.job_card_no + ' · App ' + r.applicant_no + ' · ' + (r.uploaded_by || ''), 'jc')); tr.appendChild(c1);
       var c2 = el('td'); c2.setAttribute('data-label', 'Account · IFSC');
       c2.appendChild(el('div', (r.sent_account_no || '—') + (r.sent_ifsc ? ' · ' + r.sent_ifsc : ''), 'mono'));
-      if (r.sup_account_no || r.sup_ifsc || r.sup_holder_name) c2.appendChild(el('span', '✎ Admin ঠিক করেছেন', 'ac-tag w'));
+      if (r.sup_account_no || r.sup_ifsc || r.sup_holder_name) c2.appendChild(el('span', T('✎ Admin ঠিক করেছেন', '✎ corrected by Admin'), 'ac-tag w'));
       tr.appendChild(c2);
-      var c3 = el('td', fmtDate(r.done_at)); c3.setAttribute('data-label', 'কবে'); tr.appendChild(c3);
-      var c4 = el('td'); c4.setAttribute('data-label', r.status === 'returned' ? 'কারণ' : 'Portal');
+      var c3 = el('td', fmtDate(r.done_at)); c3.setAttribute('data-label', T('কবে', 'When')); tr.appendChild(c3);
+      var c4 = el('td'); c4.setAttribute('data-label', r.status === 'returned' ? T('কারণ', 'Reason') : 'Portal');
       if (r.status === 'returned') c4.appendChild(el('span', r.return_reason || '', 'ac-tag r'));
       else if (r.portal_status === 'ok') c4.appendChild(el('span', '🏦 Portal updated ' + fmtDate(r.portal_at), 'ac-tag g'));
       else if (r.portal_status === 'fail') c4.appendChild(el('span', '🏦 Failed · ' + (r.portal_note || ''), 'ac-tag r'));
-      else if (r.portal_status === 'removed') c4.appendChild(el('span', '🗑 K-Desk থেকে সরানো', 'ac-tag b'));
-      else if (r.sent_account_no) c4.appendChild(el('span', '🏦 K-Desk-এ বাকি', 'ac-tag b'));
+      else if (r.portal_status === 'removed') c4.appendChild(el('span', T('🗑 K-Desk থেকে সরানো', '🗑 removed from K-Desk'), 'ac-tag b'));
+      else if (r.sent_account_no) c4.appendChild(el('span', T('🏦 K-Desk-এ বাকি', '🏦 waiting for K-Desk'), 'ac-tag b'));
       tr.appendChild(c4);
       var c5 = el('td'); c5.setAttribute('data-label', '');
-      if (r.can_reopen) { var b = el('button', '↩ ফিরিয়ে আনুন', 'ac-open'); b.onclick = function () { photoReopen(r); }; c5.appendChild(b); }
-      else c5.appendChild(el('span', 'ছবি মুছে গেছে', 'muted'));
+      if (r.can_reopen) { var b = el('button', T('↩ ফিরিয়ে আনুন', '↩ Bring back'), 'ac-open'); b.onclick = function () { photoReopen(r); }; c5.appendChild(b); }
+      else c5.appendChild(el('span', T('ছবি মুছে গেছে', 'photo deleted'), 'muted'));
       tr.appendChild(c5);
       box.appendChild(tr);
     });
@@ -717,7 +716,7 @@
       });
       if (!rows.length) { var tr0 = document.createElement('tr'); var td0 = el('td', 'No request.'); td0.colSpan = 7; tr0.appendChild(td0); tb.appendChild(tr0); }
       $('acN-req').textContent = String(c.open);
-      $('acS-req').textContent = c.photo ? 'ছবি আসেনি · ' + c.photo + ' টা ছবি এসেছে' : 'ছবি আসেনি';
+      $('acS-req').textContent = c.photo ? T('ছবি আসেনি · ' + c.photo + ' টা ছবি এসেছে', 'no photo yet · ' + c.photo + ' photo(s) came') : T('ছবি আসেনি', 'no photo yet');
       $('rqSum').textContent = 'Waiting: ' + c.open + ' · Photo received: ' + c.photo + ($('rqAll').checked ? ' · Closed: ' + c.closed : '');
     }, function (e) { if (e.status !== 404 && !e.authLost) status(errText(e), 'err'); });
   }
@@ -1216,13 +1215,20 @@
   // ---------- page language (EN / বাং): static texts carry data-bn / data-en ----------
   function applyDashLang() {
     var L = dlang();
-    [].forEach.call(document.querySelectorAll('#tab-dash [data-bn]'), function (x) {
+    [].forEach.call(document.querySelectorAll('#tab-dash [data-bn], #tab-photos [data-bn]'), function (x) {
       var v = x.getAttribute('data-' + L); if (v == null) return;
       if (x.hasAttribute('data-html')) x.innerHTML = v; else x.textContent = v;
     });
-    [].forEach.call(document.querySelectorAll('#dashLang button'), function (b) { b.classList.toggle('on', b.dataset.l === L); });
+    [].forEach.call(document.querySelectorAll('#dashLang button, #phLang button'), function (b) { b.classList.toggle('on', b.dataset.l === L); });
     if (!$('tab-dash').classList.contains('hidden')) document.documentElement.lang = L;
   }
+  // Account copy page: the same EN / বাং switch (one saved language for Demand lists and Account copy)
+  $('phLang').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-l]'); if (!b) return;
+    try { localStorage.setItem(LANG_KEY, b.dataset.l); } catch (x) {}
+    applyDashLang(); renderPhotos(); loadRequests();
+  });
+  [].forEach.call(document.querySelectorAll('.tab[data-tab="photos"]'), function (b) { b.addEventListener('click', function () { setTimeout(applyDashLang, 20); }); });
   $('dashLang').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-l]'); if (!b) return;
     try { localStorage.setItem(LANG_KEY, b.dataset.l); } catch (x) {}

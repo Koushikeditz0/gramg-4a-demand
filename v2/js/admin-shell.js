@@ -190,9 +190,15 @@
 
   /* ------------------------------ ticked rows → action bar ------------------------------ */
   var ABAR = { marks: { body: 'mkBody', all: 'mkAll', btns: ['mkAccept', 'mkReturn', 'mkXlsx', 'mkSent', 'mkDeleted'] },
-               pmiss: { body: 'pmBody', all: 'pmAll', btns: ['pmRestore'] } };
+               pmiss: [{ body: 'pnBody', all: 'pnAll', btns: ['pnAccept', 'pnIgnore'] }, { body: 'pmBody', all: 'pmAll', btns: ['pmRestore'] }],
+               sreq: { body: 'srBody', all: 'srAll', btns: ['srSWorking', 'srSBlock', 'srSDistrict', 'srSDone', 'srSReject', 'srFormat'] } };
+  function aConf() {   // a page can have more than one table (Portal new / removed): the one with ticks wins
+    var c = ABAR[current]; if (!c || !Array.isArray(c)) return c;
+    for (var i = 0; i < c.length; i++) if ($(c[i].body) && $(c[i].body).querySelector('input[type=checkbox]:checked')) return c[i];
+    return c[0];
+  }
   function aCount() {
-    var c = ABAR[current], bar = $('aBar');
+    var c = aConf(), bar = $('aBar');
     var n = c && $(c.body) ? $(c.body).querySelectorAll('input[type=checkbox]:checked').length : 0;
     bar.classList.toggle('hidden', !n);
     if (!n) return;
@@ -200,23 +206,32 @@
     var B = $('aBarBtns'); B.innerHTML = '';
     c.btns.forEach(function (id) {
       var o = $(id); if (!o || o.offsetParent === null && o.closest('.hidden')) return;
-      var b = el('button', o.textContent.replace(/\s*\(?ticked\)?/i, ''), 'ab-b'); b.type = 'button'; b.disabled = o.disabled;
+      var b = el('button', o.textContent.replace(/\s*\(?ticked\)?/i, ''), 'ab-b' + (/Accept|Done|Restore/.test(o.textContent) ? ' ok' : '')); b.type = 'button'; b.disabled = o.disabled;
       b.addEventListener('click', function () { o.click(); setTimeout(aCount, 600); setTimeout(aCount, 2500); });
       B.appendChild(b);
     });
   }
-  document.addEventListener('change', function (e) { if (e.target && e.target.type === 'checkbox' && e.target.closest('#tab-marks,#tab-pmiss')) setTimeout(aCount, 0); });
-  if (window.MutationObserver) ['mkBody', 'pmBody'].forEach(function (id) { if ($(id)) new MutationObserver(function () { setTimeout(aCount, 0); }).observe($(id), { childList: true }); });
+  document.addEventListener('change', function (e) { if (e.target && e.target.type === 'checkbox' && e.target.closest('#tab-marks,#tab-pmiss,#tab-sreq')) setTimeout(aCount, 0); });
+  if (window.MutationObserver) ['mkBody', 'pmBody', 'srBody', 'pnBody'].forEach(function (id) { if ($(id)) new MutationObserver(function () { setTimeout(aCount, 0); }).observe($(id), { childList: true }); });
   $('aBarX').addEventListener('click', function () {
-    var c = ABAR[current]; if (!c) return;
+    var c = aConf(); if (!c) return;
     var all = $(c.all); if (all && all.checked) { all.checked = false; all.dispatchEvent(new Event('change', { bubbles: true })); }
     [].forEach.call($(c.body).querySelectorAll('input[type=checkbox]:checked'), function (x) { x.checked = false; x.dispatchEvent(new Event('change', { bubbles: true })); });
     aCount();
   });
 
+  /* ------------------------------ Portal new / removed: three tabs (2026-11-28) ------------------------------ */
+  if ($('pmTabs')) $('pmTabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-p]'); if (!b) return;
+    [].forEach.call(document.querySelectorAll('#pmTabs button[data-p]'), function (x) {
+      x.classList.toggle('active', x === b); $(x.dataset.p).classList.toggle('hidden', x !== b);
+    });
+    aCount();
+  });
+
   /* ------------------------------ folded help text ------------------------------ */
   // long grey explanations at the top of a card fold into "ⓘ How it works"
-  [].forEach.call(document.querySelectorAll('main section .card > .muted:not([id])'), function (m) {
+  [].forEach.call(document.querySelectorAll('main section .card > .muted:not([id]), #pnCard > .muted:not([id]), .wa-pane > .muted:not([id]):not(.wa-note)'), function (m) {
     if (m.textContent.trim().length < 170 || /keep it safe|⚠/i.test(m.textContent)) return;   // safety warnings stay open
     var d = el('details', null, 'help'); var s = el('summary', 'ⓘ How it works');
     m.parentNode.insertBefore(d, m); d.appendChild(s); d.appendChild(m);

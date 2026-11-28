@@ -522,7 +522,7 @@
     document.querySelectorAll('#srFilters button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.f === sr.filter);
       if (!b.dataset.l) b.dataset.l = b.textContent;
-      b.textContent = b.dataset.l + ' (' + (counts[b.dataset.f] || 0) + ')';
+      b.textContent = b.dataset.l; var ci = document.createElement('i'); ci.textContent = counts[b.dataset.f] || 0; b.appendChild(ci);   // "Open 18" tab
     });
     if (!sr.ex.names) fillVil();
     renderSansad();
@@ -531,23 +531,24 @@
     sr.sel.forEach(function (id) { if (!ids[id]) sr.sel.delete(id); });
     btns();
     $('srAll').checked = rows.length > 0 && rows.every(function (r) { return sr.sel.has(r.id); });
-    if (!rows.length) { var tr0 = el('tr'), td0 = el('td', sr.meta ? 'Nothing here.' : '', 'muted'); td0.colSpan = 10; tr0.appendChild(td0); body.appendChild(tr0); return; }
+    if (!rows.length) { var tr0 = el('tr'), td0 = el('td', sr.meta ? 'Nothing here.' : '', 'muted'); td0.colSpan = 7; tr0.appendChild(td0); body.appendChild(tr0); return; }
     rows.forEach(function (r) {
       var tr = el('tr'), td = el('td'), cb = el('input'); cb.type = 'checkbox'; cb.checked = sr.sel.has(r.id);
       cb.onchange = function () { if (cb.checked) sr.sel.add(r.id); else sr.sel.delete(r.id); btns(); };
       td.appendChild(cb); tr.appendChild(td);
-      var k = el('td'), kb = el('div', kindLabel(r.kind), 'sr-k'); kb.appendChild(el('small', (KIND[r.kind] || ['', ''])[1])); k.appendChild(kb); tr.appendChild(k);
-      tr.appendChild(el('td', r.village_no == null ? '—' : vlabel(vkey(r.village_no))));
-      tr.appendChild(el('td', r.job_card_no || '—'));
-      tr.appendChild(el('td', r.applicant_name ? r.applicant_name + (r.applicant_no ? ' (' + r.applicant_no + ')' : '') : '—'));
-      var det = el('td'), dv = el('div', null, 'sr-det');
+      // 2026-11-28: Worker (name, village · Job Card) | Task (kind + details) — was 5 separate columns
+      var wk = el('td'); wk.appendChild(el('div', r.applicant_name ? r.applicant_name + (r.applicant_no ? ' (' + r.applicant_no + ')' : '') : '—', 'sr-nm'));
+      wk.appendChild(el('div', (r.village_no == null ? '—' : vlabel(vkey(r.village_no))) + (r.job_card_no ? ' · ' + r.job_card_no : ''), 'sr-wm'));
+      tr.appendChild(wk);
+      var k = el('td'), kb = el('div', kindLabel(r.kind), 'sr-k'); kb.appendChild(el('small', (KIND[r.kind] || ['', ''])[1])); k.appendChild(kb);
+      var dv = el('div', null, 'sr-det');
       detailText(r).forEach(function (t, i) { if (i) dv.appendChild(el('br')); dv.appendChild(document.createTextNode(t)); });
       if (isSuper() && AA[r.kind]) {
         var ab = el('button', r.has_aadhaar ? '🪪 ' + String(r.aadhaar_last4 || '').split('/').map(function (x) { return '••' + x; }).join(' / ') : '🪪 Add Aadhaar', 'aa btn-light btn-small');
         ab.type = 'button'; ab.title = 'Aadhaar number(s) for the Block format (only you can see them)'; ab.onclick = function () { editAadhaar(r); };
         dv.appendChild(el('br')); dv.appendChild(ab);
       }
-      det.appendChild(dv); tr.appendChild(det);
+      k.appendChild(dv); tr.appendChild(k);
       tr.appendChild(el('td', r.for_name ? r.for_name + (r.by_admin ? ' · by ' + (r.from_name || 'Admin') : '') : (r.by_admin ? '(Admin only)' : r.from_name || '')));
       tr.appendChild(el('td', fmtDate(r.created_at)));
       var st = el('td'); st.appendChild(el('span', ST[r.status] || r.status, 'pill st-' + r.status));
@@ -555,7 +556,7 @@
       if (r.remark) st.appendChild(el('div', r.remark, 'sr-rm'));
       if (r.updated_at && r.updated_at !== r.created_at) st.appendChild(el('div', fmtDate(r.updated_at), 'muted'));
       tr.appendChild(st);
-      var act = el('td'), eb = el('button', '✏', 'btn-light btn-small'); eb.type = 'button'; eb.title = 'Details, history, edit';
+      var act = el('td', null, 'sr-act'), eb = el('button', '⋯', 'btn-light btn-small'); eb.type = 'button'; eb.title = 'Details, history, edit'; eb.setAttribute('aria-label', eb.title);
       eb.onclick = function () { openForm(r); }; act.appendChild(eb); tr.appendChild(act);
       body.appendChild(tr);
     });

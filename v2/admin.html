@@ -415,10 +415,11 @@
     .abar.hidden{display:none;}
     #aBarBtns{display:flex;gap:6px;flex-wrap:wrap;} #aBarN{white-space:nowrap;}
     .ab-b{background:var(--gs-text);color:#fff;font-size:var(--gs-fs-sm);padding:7px 11px;border-radius:9px;}
-    .ab-b:first-child{background:var(--gs-ok);}
+    .ab-b{white-space:nowrap;} .ab-b.ok{background:var(--gs-ok);} .ab-b:disabled{opacity:.45;}
+    @media (min-width:900px){ #aBarBtns{flex-wrap:nowrap;} }
     .abx{background:transparent;color:var(--gs-muted);padding:6px 8px;}
     @media (min-width:900px){ .abar{left:calc(50% + 130px);} }
-    @media (max-width:899px){ .abar{bottom:76px;} }
+    @media (max-width:899px){ .abar{bottom:76px;left:10px;right:10px;transform:none;flex-wrap:wrap;} #aBarBtns{flex:1;} }
     /* search */
     .srch-dim{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:250;display:flex;justify-content:center;align-items:flex-start;padding:70px 12px 12px;}
     .srch-dim.hidden{display:none;}
@@ -743,6 +744,74 @@
     .sm-note{font-size:var(--gs-fs-sm);color:var(--gs-muted);background:var(--gs-bg);border-radius:8px;padding:8px 10px;margin-top:12px;}
     .sm-acts{justify-content:flex-end;margin-top:12px;gap:8px;}
     @media (max-width:600px){ .sm-grid{grid-template-columns:1fr;} }
+  </style>
+
+  <style>
+    /* 2026-11-28 Workers & Accounts pages: one look for every work queue (wa-*). Ids and JS unchanged. */
+    @media (min-width:900px){ .subnav .pills{display:none;} }   /* the sidebar already lists the sub-pages */
+    .wa-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:0 0 10px;}
+    .wa-title{flex:1;min-width:200px;} .wa-title h2{margin:0;font-size:var(--gs-fs-xl);color:var(--gs-ink);line-height:1.25;}
+    .wa-sub{font-size:var(--gs-fs-sm);color:var(--gs-muted);margin-top:2px;}
+    .wa-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .wa-more{position:relative;} .wa-more>summary{list-style:none;cursor:pointer;border:1px solid var(--gs-line);background:var(--gs-surface);color:var(--gs-text);border-radius:8px;padding:6px 12px;font-weight:600;font-size:var(--gs-fs-sm);}
+    .wa-more>summary::-webkit-details-marker{display:none;}
+    .wa-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:60;background:var(--gs-surface);border:1px solid var(--gs-line);border-radius:12px;box-shadow:0 12px 30px rgba(18,21,48,.14);padding:10px;min-width:260px;display:grid;gap:8px;}
+    .wa-mi{display:block;font-size:var(--gs-fs-sm);} .wa-mrow{display:flex;gap:6px;} .wa-mrow input{flex:1;min-width:0;}
+    .wa-menu .smi{display:block;width:100%;text-align:left;background:transparent;color:var(--gs-ink);font-weight:600;font-size:var(--gs-fs-sm);padding:7px 8px;border-radius:8px;border:0;}
+    .wa-menu .smi:hover{background:var(--gs-bg);}
+    .wa-card{padding:0 0 4px;overflow:hidden;}
+    .wa-card>details.help,.wa-card>.muted,.wa-card>.sr-lock{margin:10px 14px 0;}
+    .wa-tabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--gs-line);margin:6px 0 0;padding:0 8px;}
+    .wa-tabs button,.wa-tabs button.active{background:transparent!important;color:var(--gs-muted)!important;border:0;border-radius:0!important;padding:10px 12px;font-size:var(--gs-fs-md);font-weight:600;flex:0 0 auto;box-shadow:none;}
+    .wa-tabs button.active{color:var(--gs-primary)!important;box-shadow:inset 0 -2px 0 var(--gs-primary);}
+    .wa-tabs button i{font-style:normal;margin-left:6px;border:1px solid var(--gs-line);border-radius:999px;padding:0 7px;font-size:var(--gs-fs-xs);color:var(--gs-text);font-weight:600;}
+    .wa-tabs button.active i{background:var(--gs-primary-soft);border-color:transparent;color:var(--gs-primary);}
+    .wa-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;}
+    .wa-bar input[type=text],.wa-bar input[type=search]{flex:1 1 220px;max-width:360px;min-width:0;}
+    .wa-bar select{width:auto;max-width:200px;}
+    .wa-sp{flex:1;}
+    .wa-acts{display:none!important;}                 /* the ticked-row buttons live in the dark bar at the bottom */
+    .wa-tw{margin:0;border:0;border-top:1px solid var(--gs-line);border-radius:0;max-height:65vh;}
+    .wa-fold{background:var(--gs-surface);border:1px solid var(--gs-line);border-radius:12px;margin:12px 0;}
+    .wa-fold>summary{list-style:none;cursor:pointer;padding:11px 16px;font-weight:600;color:var(--gs-ink);}
+    .wa-fold>summary::before{content:'▸ ';color:var(--gs-muted);} .wa-fold[open]>summary::before{content:'▾ ';}
+    .wa-fold>summary::-webkit-details-marker{display:none;} .wa-fold>summary span{font-weight:400;color:var(--gs-muted);font-size:var(--gs-fs-sm);}
+    .wa-fbody{padding:0 14px 12px;} .wa-note{font-size:var(--gs-fs-sm);}
+    /* Account copy ①–④ as step tabs */
+    #tab-photos .wa-steps{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--gs-line);margin:0 0 12px;grid-template-columns:none;}
+    #tab-photos .wa-steps button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:10px 12px;font-weight:600;font-size:var(--gs-fs-md);color:var(--gs-muted);white-space:nowrap;position:relative;}
+    #tab-photos .wa-steps button i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid var(--gs-line);font-size:var(--gs-fs-xs);color:var(--gs-muted);position:static;}
+    #tab-photos .wa-steps button b{font-size:var(--gs-fs-xs);font-weight:600;border:1px solid var(--gs-line);border-radius:999px;padding:0 7px;color:var(--gs-text);line-height:1.5;}
+    #tab-photos .wa-steps button small,#tab-photos .wa-steps button em{display:none;}
+    #tab-photos .wa-steps button.on{color:var(--gs-primary);box-shadow:inset 0 -2px 0 var(--gs-primary);background:none;border:0;}
+    #tab-photos .wa-steps button.on i{background:var(--gs-primary);border-color:var(--gs-primary);color:#fff;}
+    #tab-photos .wa-steps button.on b{background:var(--gs-primary-soft);border-color:transparent;color:var(--gs-primary);}
+    #tab-photos .wa-steps button+button::before{content:'›';color:var(--gs-line);margin-right:8px;font-weight:400;}
+    #tab-photos .wa-head .dlang{display:inline-flex;}
+    .wa-pane>div>details.help,.wa-pane>details.help,.wa-pane>.muted:not(.wa-note),#pnCard>details.help,#pnCard>.muted{margin:10px 14px 0;}
+    #pmHeld{padding:0 14px;}
+    @media (max-width:899px){   /* phone: one compact row per worker (Supervisor requests, Expired / Migrant) */
+      #tab-sreq .wa-tw tr,#tab-marks .wa-tw tr{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:2px 10px;border:0;border-top:1px solid var(--gs-line);border-radius:0;margin:0;padding:10px 12px;}
+      #tab-sreq .wa-tw td,#tab-marks .wa-tw td{display:block;padding:0;text-align:left;width:auto;}
+      #tab-sreq .wa-tw td::before,#tab-marks .wa-tw td::before{display:none;}
+      #tab-sreq .wa-tw td:nth-child(1),#tab-marks .wa-tw td:nth-child(1){grid-row:1/span 4;}
+      #tab-sreq .wa-tw td:nth-child(2),#tab-marks .wa-tw td:nth-child(2){grid-column:2;grid-row:1;}
+      #tab-sreq .wa-tw td:nth-child(6),#tab-marks .wa-tw td:nth-child(6){grid-column:3;grid-row:1;text-align:right;}
+      #tab-sreq .wa-tw td:nth-child(3),#tab-marks .wa-tw td:nth-child(3){grid-column:2/-1;grid-row:2;}
+      #tab-sreq .wa-tw td:nth-child(4),#tab-sreq .wa-tw td:nth-child(5),#tab-marks .wa-tw td:nth-child(4),#tab-marks .wa-tw td:nth-child(5){display:inline;grid-column:2;font-size:var(--gs-fs-xs);color:var(--gs-muted);}
+      #tab-sreq .wa-tw td:nth-child(4),#tab-marks .wa-tw td:nth-child(4){grid-row:3;} #tab-sreq .wa-tw td:nth-child(5),#tab-marks .wa-tw td:nth-child(5){grid-row:4;}
+      #tab-sreq .wa-tw td:nth-child(7){grid-column:3;grid-row:3/span 2;align-self:end;}
+      #tab-sreq .wa-tw td[colspan],#tab-marks .wa-tw td[colspan]{grid-column:1/-1;grid-row:1;}
+      .wa-bar select{flex:1 1 40%;max-width:none;}
+    }
+    #tab-sreq #srAlso{display:none;}
+    .sr-nm{font-weight:600;color:var(--gs-ink);} .sr-wm{font-size:var(--gs-fs-xs);color:var(--gs-muted);font-family:var(--gs-mono);} td.sr-act{text-align:right;}               /* Expired / Account copy have their own sidebar items with counts */
+    @media (max-width:899px){
+      .wa-head{gap:8px;} .wa-tools{width:100%;} .wa-tools .btn-primary{margin-left:auto;}
+      .wa-menu{left:0;right:auto;}
+      .wa-bar input[type=text],.wa-bar input[type=search]{max-width:none;flex-basis:100%;}
+    }
+    html[data-theme=dark] .wa-tabs button i{border-color:#334155;color:#cbd5e1;}
   </style>
 </head>
 <body>
@@ -1086,39 +1155,40 @@
 
   <!-- ============ ACCOUNT COPY PHOTOS (v239: 4 steps + Account check page) ============ -->
   <section id="tab-photos" class="hidden">
-    <div class="ac-hd">
-      <div class="ac-k">K</div>
-      <div class="ac-tt"><div class="ac-sm"><b>GRAM SETU</b> · ACCOUNT COPY</div><h2>Bank account সংগ্রহ ও যাচাই</h2></div>
-      <span class="ac-sp"></span>
-      <select id="phGp" aria-label="Gram Panchayat"></select>
-      <button class="ac-ghost" id="phRefresh" title="Refresh">🔄</button>
-      <button class="ac-gold" id="acAskBtn" type="button">＋ Account চাই (supervisor-কে)</button>
+    <!-- 2026-11-28: same header as the other Workers & Accounts pages; ①–④ are step tabs now (ids kept) -->
+    <div class="wa-head">
+      <div class="wa-title"><h2 data-bn="Account copy" data-en="Account copy">Account copy</h2><div class="wa-sub" data-bn="Bank account সংগ্রহ ও যাচাই" data-en="Collect and check bank accounts">Collect and check bank accounts</div></div>
+      <div class="wa-tools">
+        <span class="dlang" id="phLang" role="group" aria-label="Language"><button type="button" data-l="en">EN</button><button type="button" data-l="bn">বাং</button></span>
+        <select id="phGp" aria-label="Gram Panchayat"></select>
+        <button class="btn-light btn-small hidden" id="phRefresh" title="Refresh">🔄</button>
+        <button class="btn-primary btn-small" id="acAskBtn" type="button" data-bn="＋ Account চাই (supervisor-কে)" data-en="＋ Ask for an account">＋ Ask for an account</button>
+      </div>
     </div>
-    <div class="ac-tiles" id="acTiles">
-      <button type="button" data-step="req"><i>①</i><b id="acN-req">–</b><span>Supervisor-এর কাছে</span><small id="acS-req">ছবি আসেনি</small></button>
-      <button type="button" data-step="check" class="on"><i>②</i><b id="acN-check">–</b><span>Check বাকি <em class="badge badge-admin hidden" id="phBadge"></em></span><small id="acS-check">supervisor ছবি পাঠিয়েছে</small></button>
-      <button type="button" data-step="kdesk"><i>③</i><b id="acN-kdesk">–</b><span>K-Desk-এ বাকি</span><small id="acS-kdesk">Portal-এ বসানো বাকি</small></button>
-      <button type="button" data-step="done"><i>④</i><b id="acN-done">–</b><span>শেষ</span><small>30 দিনে · ↩ 7 দিন পর্যন্ত</small></button>
+    <div class="ac-tiles wa-steps" id="acTiles">
+      <button type="button" data-step="req"><i>1</i><span data-bn="Supervisor-এর কাছে" data-en="With supervisor">With supervisor</span><b id="acN-req">–</b><small id="acS-req"></small></button>
+      <button type="button" data-step="check" class="on"><i>2</i><span data-bn="Check বাকি" data-en="To check">To check</span><b id="acN-check">–</b><em class="badge badge-admin hidden" id="phBadge"></em><small id="acS-check"></small></button>
+      <button type="button" data-step="kdesk"><i>3</i><span data-bn="K-Desk-এ বাকি" data-en="K-Desk to enter">K-Desk to enter</span><b id="acN-kdesk">–</b><small id="acS-kdesk"></small></button>
+      <button type="button" data-step="done"><i>4</i><span data-bn="শেষ" data-en="Done">Done</span><b id="acN-done">–</b><small data-bn="30 দিনে · ↩ 7 দিন পর্যন্ত" data-en="last 30 days · ↩ up to 7 days">last 30 days · ↩ up to 7 days</small></button>
     </div>
 
     <!-- ② Check -->
     <div class="ac-panel" id="acP-check">
-      <div class="ac-ph"><h3>② Check বাকি</h3><span class="muted" id="phStore"></span><span class="ac-sp"></span>
-        <input type="search" id="phSearch" placeholder="🔍 নাম, Job Card, Sansad…" aria-label="Search">
-        <button class="ac-gold" id="phStart" type="button">▶ পুরনোটা দিয়ে শুরু</button></div>
+      <div class="ac-ph wa-bar"><input type="search" id="phSearch" placeholder="🔍 Name, Job Card, Sansad" aria-label="Search"><span class="muted" id="phStore"></span><span class="wa-sp"></span>
+        <button class="btn-primary btn-small" id="phStart" type="button" data-bn="▶ পুরনোটা দিয়ে শুরু" data-en="▶ Start with the oldest">▶ Start with the oldest</button></div>
       <div class="table-wrap stack"><table class="ac-tbl">
-        <thead><tr><th>কর্মী</th><th>Sansad</th><th>Supervisor দিয়েছে</th><th>এখন data-তে</th><th>পাঠিয়েছে</th><th></th></tr></thead>
+        <thead><tr><th data-bn="কর্মী" data-en="Worker">Worker</th><th data-bn="Supervisor দিয়েছে" data-en="Supervisor gave">Supervisor gave</th><th data-bn="এখন data-তে" data-en="Now in data">Now in data</th><th data-bn="পাঠিয়েছে" data-en="Sent">Sent</th><th></th></tr></thead>
         <tbody id="phCards"></tbody></table></div>
-      <div class="ac-note">🔒 Passbook ছবি শুধু Admin দেখতে পান। Verify বা ফেরত-এর 7 দিন পর ছবি মুছে যায়; check না হওয়া ছবি 30 দিন পর।</div>
+      <div class="ac-note" data-bn="🔒 Passbook ছবি শুধু Admin দেখতে পান। Verify বা ফেরত-এর 7 দিন পর ছবি মুছে যায়; check না হওয়া ছবি 30 দিন পর।" data-en="🔒 Only the admin sees passbook photos. A photo is deleted 7 days after Verify or Return; an unchecked one after 30 days.">🔒 Only the admin sees passbook photos. A photo is deleted 7 days after Verify or Return; an unchecked one after 30 days.</div>
     </div>
 
     <!-- ④ Done -->
     <div class="ac-panel hidden" id="acP-done">
-      <div class="ac-ph"><h3>④ শেষ</h3>
-        <div class="ac-seg" id="phFilters"><button type="button" data-f="done" class="active">✔ Verified</button><button type="button" data-f="returned">✕ ফেরত গেছে</button></div>
-        <span class="ac-sp"></span><span class="muted">ভুল হলে ↩ ফিরিয়ে আনুন: আবার ② Check-এ চলে যাবে (7 দিন পর্যন্ত)।</span></div>
+      <div class="ac-ph wa-bar">
+        <div class="ac-seg" id="phFilters"><button type="button" data-f="done" class="active">✔ Verified</button><button type="button" data-f="returned" data-bn="✕ ফেরত গেছে" data-en="✕ Returned">✕ Returned</button></div>
+        <span class="wa-sp"></span><span class="muted" data-bn="ভুল হলে ↩ ফিরিয়ে আনুন: আবার ② Check-এ চলে যাবে (7 দিন পর্যন্ত)।" data-en="Made a mistake? ↩ Bring back puts it in step 2 again (up to 7 days).">Made a mistake? ↩ Bring back puts it in step 2 again (up to 7 days).</span></div>
       <div class="table-wrap stack"><table class="ac-tbl">
-        <thead><tr><th>কর্মী</th><th>Account · IFSC</th><th>কবে</th><th>Portal / কারণ</th><th></th></tr></thead>
+        <thead><tr><th data-bn="কর্মী" data-en="Worker">Worker</th><th>Account · IFSC</th><th data-bn="কবে" data-en="When">When</th><th data-bn="Portal / কারণ" data-en="Portal / reason">Portal / reason</th><th></th></tr></thead>
         <tbody id="phDone"></tbody></table></div>
     </div>
 
@@ -1126,7 +1196,7 @@
     <div class="ac-panel hidden" id="acP-kdesk">
     <div class="card" id="bqCard">
       <div class="row" style="justify-content:space-between;align-items:center;">
-        <h2 style="margin:0;">③ K-Desk-এ বাকি · Bank A/c Update</h2>
+        <h3 style="margin:0;" data-bn="K-Desk-এ বাকি · Bank A/c Update" data-en="Waiting for K-Desk · Bank A/c Update">Waiting for K-Desk · Bank A/c Update</h3>
         <label class="check" style="margin:0;"><input type="checkbox" id="bqShowRemoved"><span>Show removed</span></label>
       </div>
       <div class="muted">Verified accounts that K-Desk loads on the portal page <b>EditAppBank</b> until the portal says UPDATED. If you already did it on the portal yourself, or it keeps failing, tick it and press <b>🗑 Remove from K-Desk</b>, so K-Desk does not load it again. The record stays here; <b>↩ Undo</b> puts it back.</div>
@@ -1141,7 +1211,7 @@
     <!-- ① Requests -->
     <div class="ac-panel hidden" id="acP-req">
     <div class="card hidden" id="acAskCard">
-      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">＋ Supervisor-কে account copy চাই</h2><button class="btn-light btn-small" id="acAskClose" type="button">✕</button></div>
+      <div class="row" style="justify-content:space-between;"><h3 style="margin:0;" data-bn="＋ Supervisor-কে account copy চাই" data-en="＋ Ask the supervisors for an account copy">＋ Ask the supervisors for an account copy</h3><button class="btn-light btn-small" id="acAskClose" type="button">✕</button></div>
       <div class="muted">Paste the workers whose account is not frozen (from the Wage List page or any Excel), or choose the Excel / CSV file. Each line needs the <b>Job Card No</b> and the <b>name</b> (the name picks the right person when a job card has more than one). The supervisors see them in the phone app as <b>📷 Account copy চাই</b>.</div>
       <textarea id="rqText" rows="5" style="width:100%;margin-top:8px;border:1px solid var(--gs-line);border-radius:9px;padding:8px;font:12.5px ui-monospace,Consolas,monospace;" placeholder="WB-08-005-014-002/012   RINA BARMAN&#10;WB-08-005-014-002/013   HARI ROY"></textarea>
       <div class="grid3">
@@ -1154,7 +1224,7 @@
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;">
-        <h2 style="margin:0;">① Supervisor-এর কাছে (Requests)</h2>
+        <h3 style="margin:0;" data-bn="Supervisor-এর কাছে (Requests)" data-en="With supervisor (requests)">With supervisor (requests)</h3>
         <label class="check" style="margin:0;"><input type="checkbox" id="rqAll"><span>Show closed (last 30 days)</span></label>
       </div>
       <div class="muted" id="rqSum"></div>
@@ -1203,56 +1273,64 @@
       html[data-theme=dark] .sr-san tr.on td{background:#1e1b4b;}
       html[data-theme=dark] .sr-lock.on{background:#052e1f;} html[data-theme=dark] .sr-lock.off{background:#3a2a0c;}
     </style>
-    <div class="card">
-      <div class="sr-top"><h2 style="margin:0;">📨 Supervisor requests · সেবা অনুরোধ</h2><button class="btn-light btn-small" id="srRefresh">🔄 Refresh</button></div>
+    <!-- 2026-11-28 layout: header + status tabs + search row + table; ticked rows → the dark bar at the bottom (all ids kept) -->
+    <div class="wa-head">
+      <div class="wa-title"><h2>Supervisor requests</h2><div class="wa-sub">Tasks the supervisors send from the phone app</div></div>
+      <div class="wa-tools">
+        <details class="wa-more"><summary>More ▾</summary><div class="wa-menu">
+          <div class="wa-mi"><label class="f" for="srBlock">Block name (for the formats)</label>
+            <div class="wa-mrow"><input type="text" id="srBlock" maxlength="60" placeholder="e.g. Dinhata - I"><button class="btn-light btn-small" id="srBlockSave">Save</button></div></div>
+          <label class="check wa-mi"><input type="checkbox" id="srOld"><span>Load closed older than 7 days</span></label>
+          <button class="btn-light btn-small hidden" id="srRefresh">🔄 Refresh</button>
+        </div></details>
+        <button class="btn-primary btn-small" id="srNew">＋ New request</button>
+      </div>
+    </div>
+    <div class="card wa-card">
       <div class="muted">Supervisors send tasks from the phone app (Aadhaar Delink, name / gender correction, new applicant, payment problem, notes …). Applicant delete stays in <b>Expired / Migrant</b> and bank accounts in <b>Account copy</b>., or you write one for a supervisor with <b>＋ New request</b>. Tick requests and set the status: <b>Working</b>, <b>Sent to Block</b>, <b>Sent to District</b>, <b>Done</b> or <b>Rejected</b>, with a remark. The supervisor sees every change and its date. When an Aadhaar related task is Done the supervisor is told to do the worker's eKYC again. <b>📥 Block format</b> makes the Block's Excel format for the ticked requests of one kind. Supervisors can never send an Aadhaar number.</div>
       <label class="f" for="srGp">Gram Panchayat</label>
       <select id="srGp"></select>
       <div class="muted" id="srSetup"></div>
-      <div class="row" style="margin-top:8px;align-items:flex-end;">
-        <div><label class="f" for="srBlock">Block name (for the formats)</label><input type="text" id="srBlock" maxlength="60" placeholder="e.g. Dinhata - I" style="min-width:200px;"></div>
-        <button class="btn-light btn-small" id="srBlockSave">💾 Save</button>
-      </div>
       <div class="sr-lock hidden" id="srLock"></div>
       <div class="sr-also" id="srAlso"></div>
-    </div>
-    <div class="card">
-      <div class="sr-top"><h3 style="margin:0;">🗺 By Sansad · সংসদ ধরে হিসাব</h3><label class="check" style="margin:0;"><input type="checkbox" id="srSanAll"><span>Show every Sansad</span></label></div>
-      <div class="muted">What is still pending in each Sansad. <b>New</b> / <b>Working</b> = on you, <b>Block / District</b> = waiting for them, <b>eKYC pending</b> = the supervisor has to do it. Account and Expired / Migrant work of the same Sansad is counted from their own pages. Tap a number to open those requests (or that page).</div>
-      <div class="table-wrap stack" style="margin-top:8px;max-height:50vh;"><table class="sr-san">
-        <thead><tr><th>Sansad</th><th>New</th><th>Working</th><th>Block / District</th><th>eKYC pending</th><th>🏦 Account wanted</th><th>📷 Account copy</th><th>🗑 Expired / Migrant</th><th>Total</th></tr></thead>
-        <tbody id="srSanBody"></tbody><tfoot id="srSanFoot"></tfoot></table></div>
-    </div>
-    <div class="card">
-      <div class="filters" id="srFilters">
+      <div class="filters wa-tabs" id="srFilters">
         <button data-f="open" class="active">Open</button>
         <button data-f="new">New</button>
         <button data-f="working">Working</button>
-        <button data-f="sent">Sent to Block / District</button>
+        <button data-f="sent">Block / District</button>
         <button data-f="ekyc">eKYC pending</button>
         <button data-f="closed">Done / Rejected</button>
         <button data-f="all">All</button>
       </div>
-      <div class="row">
+      <div class="wa-bar">
+        <input type="text" id="srQ" placeholder="🔍 Job Card, name or supervisor" class="wa-q">
         <select id="srVilF" aria-label="Sansad"><option value="">All Sansads</option></select>
         <select id="srKindF" aria-label="Kind"></select>
-        <input type="text" id="srQ" placeholder="🔍 Job Card / name / supervisor" style="min-width:200px;">
-        <label class="check" style="margin:0;"><input type="checkbox" id="srOld"><span>Load closed older than 7 days</span></label>
+        <span class="wa-sp"></span>
+        <button class="btn-light btn-small" id="srXlsx">⭳ Excel</button>
       </div>
-      <div class="sr-bar">
-        <button class="btn-primary btn-small" id="srNew">＋ New request</button>
+      <div class="wa-acts">
         <button class="btn-light btn-small" id="srSWorking" disabled>⏳ Working</button>
         <button class="btn-light btn-small" id="srSBlock" disabled>📤 Sent to Block</button>
         <button class="btn-light btn-small" id="srSDistrict" disabled>📤 Sent to District</button>
-        <button class="btn-success btn-small" id="srSDone" disabled>✅ Done</button>
+        <button class="btn-success btn-small" id="srSDone" disabled>✓ Done</button>
         <button class="btn-danger btn-small" id="srSReject" disabled>✕ Reject</button>
-        <button class="btn-primary btn-small" id="srFormat" disabled>📥 Block format (ticked)</button>
-        <button class="btn-light btn-small" id="srXlsx">⭳ Excel list</button>
+        <button class="btn-primary btn-small" id="srFormat" disabled>📥 Block format</button>
       </div>
-      <div class="table-wrap stack" style="margin-top:8px;max-height:65vh;"><table>
-        <thead><tr><th><input type="checkbox" id="srAll" aria-label="Tick all"></th><th>Task</th><th>Village</th><th>Job Card</th><th>Name</th><th>Details</th><th>Supervisor</th><th>Sent</th><th>Status</th><th></th></tr></thead>
+      <div class="table-wrap stack wa-tw"><table>
+        <thead><tr><th><input type="checkbox" id="srAll" aria-label="Tick all"></th><th>Worker</th><th>Task</th><th>Supervisor</th><th>Sent</th><th>Status</th><th></th></tr></thead>
         <tbody id="srBody"></tbody></table></div>
     </div>
+    <details class="wa-fold">
+      <summary>By Sansad <span>· what is still pending in each Sansad</span></summary>
+      <div class="wa-fbody">
+        SAN<div class="muted">Supervisors send tasks from the phone app (Aadhaar Delink, name / gender correction, new applicant, payment problem, notes …). Applicant delete stays in <b>Expired / Migrant</b> and bank accounts in <b>Account copy</b>., or you write one for a supervisor with <b>＋ New request</b>. Tick requests and set the status: <b>Working</b>, <b>Sent to Block</b>, <b>Sent to District</b>, <b>Done</b> or <b>Rejected</b>, with a remark. The supervisor sees every change and its date. When an Aadhaar related task is Done the supervisor is told to do the worker's eKYC again. <b>📥 Block format</b> makes the Block's Excel format for the ticked requests of one kind. Supervisors can never send an Aadhaar number.</div>
+        <label class="check" style="margin:6px 0;"><input type="checkbox" id="srSanAll"><span>Show every Sansad</span></label>
+        <div class="table-wrap stack" style="max-height:50vh;"><table class="sr-san">
+          <thead><tr><th>Sansad</th><th>New</th><th>Working</th><th>Block / District</th><th>eKYC pending</th><th>🏦 Account wanted</th><th>📷 Account copy</th><th>🗑 Expired / Migrant</th><th>Total</th></tr></thead>
+          <tbody id="srSanBody"></tbody><tfoot id="srSanFoot"></tfoot></table></div>
+      </div>
+    </details>
 
     <!-- new / edit request -->
     <div class="modal" id="srModal" role="dialog" aria-modal="true" aria-labelledby="srMTitle">
@@ -1337,47 +1415,55 @@
 
   <!-- ============ WORKERS DELETED ON THE PORTAL (v222) ============ -->
   <section id="tab-pmiss" class="hidden">
-    <!-- v226: new Job Cards / applicants that ABPS Sync found on the portal (js/admin-portalnew.js) -->
-    <div class="card" id="pnCard">
-      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🆕 New on the portal (<span id="pnCount">0</span>)</h2>
-        <select id="pnView" style="max-width:170px;"><option value="new">Waiting</option><option value="ignored">Ignored</option></select></div>
-      <div class="muted">Every K-Desk <b>ABPS Sync</b> also keeps the portal workers that are <b>not in Gram Setu</b> yet — a new Job Card, or a new member added to an old Job Card after your Excel import. Nobody is added by itself: tick and press <b>Accept</b>, and they become normal workers that supervisors can pick (with ABPS / eKYC from the portal). Bank account and caste come later from 🏦 Account Sync / the caste register, as for everyone else. <b>Ignore</b> hides a row; later syncs do not bring it back.</div>
-      <div class="muted" id="pnSetup"></div>
-      <div class="row" style="margin-top:6px;">
-        <input type="text" id="pnFind" placeholder="Search Job Card / name / village" style="max-width:260px;">
-        <button class="btn-success btn-small" id="pnAccept" disabled>✓ Accept ticked</button>
-        <button class="btn-light btn-small" id="pnIgnore" disabled>Ignore ticked</button>
-        <button class="btn-primary btn-small" id="pnXlsx">⭳ Excel</button>
-      </div>
-      <div class="table-wrap stack" style="margin-top:8px;"><table>
-        <thead><tr><th><input type="checkbox" id="pnAll"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>ABPS</th><th>eKYC</th><th>First seen</th></tr></thead>
-        <tbody id="pnBody"></tbody></table></div>
-      <div class="muted" id="pnMore"></div>
+    <!-- 2026-11-28: one header + three tabs (New / Removed / Last syncs); all ids kept. New: js/admin-portalnew.js, removed: js/admin-portalmissing.js -->
+    <div class="wa-head">
+      <div class="wa-title"><h2>Portal new / removed</h2><div class="wa-sub">What the last K-Desk ABPS Sync found on the portal</div></div>
+      <div class="wa-tools"><button class="btn-light btn-small hidden" id="pmRefresh">🔄 Refresh</button></div>
     </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🚫 Deleted on the portal</h2><button class="btn-light btn-small" id="pmRefresh">🔄 Refresh</button></div>
-      <div class="muted">After a <b>complete</b> K-Desk <b>ABPS Sync</b> (every village read, not stopped), workers that the portal no longer lists — a whole Job Card deleted, or one applicant deleted — become <b>inactive</b> here. They are not erased: supervisors simply cannot see or pick them. If a later sync finds someone again, they come back by themselves. <b>Safety:</b> when fewer than 95% of the workers match, or more than 2% (at least 20) are missing, nothing changes and the sync is <b>Held</b> below for you to check. Needs K-Desk v1.23.0 or newer.</div>
+    <div class="card wa-card">
+      <div class="filters wa-tabs" id="pmTabs">
+        <button type="button" data-p="pnPane" class="active">New on the portal<i id="pnCount">0</i></button>
+        <button type="button" data-p="pmPane">Removed from the portal<i id="pmCount">0</i></button>
+        <button type="button" data-p="pmRunsPane">Last syncs</button>
+      </div>
       <label class="f" for="pmGp">Gram Panchayat</label>
       <select id="pmGp"></select>
       <div class="muted" id="pmSetup"></div>
-      <div id="pmHeld"></div>
-      <h3 style="margin:14px 0 4px;">Inactive · not on the portal (<span id="pmCount">0</span>)</h3>
-      <div class="row">
-        <input type="text" id="pmFind" placeholder="Search Job Card / name" style="max-width:260px;">
-        <button class="btn-success btn-small" id="pmRestore" disabled>↩ Restore ticked</button>
-        <button class="btn-primary btn-small" id="pmXlsx">⭳ Excel</button>
+      <div class="wa-pane" id="pnPane"><div id="pnCard">
+        <div class="muted">Every K-Desk <b>ABPS Sync</b> also keeps the portal workers that are <b>not in Gram Setu</b> yet — a new Job Card, or a new member added to an old Job Card after your Excel import. Nobody is added by itself: tick and press <b>Accept</b>, and they become normal workers that supervisors can pick (with ABPS / eKYC from the portal). Bank account and caste come later from 🏦 Account Sync / the caste register, as for everyone else. <b>Ignore</b> hides a row; later syncs do not bring it back.</div>
+        <div class="muted" id="pnSetup"></div>
+        <div class="wa-bar">
+          <input type="text" id="pnFind" placeholder="🔍 Job Card, name or village">
+          <select id="pnView" aria-label="Show"><option value="new">Waiting</option><option value="ignored">Ignored</option></select>
+          <span class="wa-sp"></span>
+          <button class="btn-light btn-small" id="pnXlsx">⭳ Excel</button>
+        </div>
+        <div class="wa-acts"><button class="btn-success btn-small" id="pnAccept" disabled>✓ Accept</button><button class="btn-light btn-small" id="pnIgnore" disabled>Ignore</button></div>
+        <div class="table-wrap stack wa-tw"><table>
+          <thead><tr><th><input type="checkbox" id="pnAll" aria-label="Tick all"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>ABPS</th><th>eKYC</th><th>First seen</th></tr></thead>
+          <tbody id="pnBody"></tbody></table></div>
+        <div class="muted" id="pnMore"></div>
+      </div></div>
+      <div class="wa-pane hidden" id="pmPane">
+        <div class="muted">After a <b>complete</b> K-Desk <b>ABPS Sync</b> (every village read, not stopped), workers that the portal no longer lists — a whole Job Card deleted, or one applicant deleted — become <b>inactive</b> here. They are not erased: supervisors simply cannot see or pick them. If a later sync finds someone again, they come back by themselves. <b>Safety:</b> when fewer than 95% of the workers match, or more than 2% (at least 20) are missing, nothing changes and the sync is <b>Held</b> below for you to check. Needs K-Desk v1.23.0 or newer.</div>
+        <div id="pmHeld"></div>
+        <div class="wa-bar">
+          <input type="text" id="pmFind" placeholder="🔍 Job Card or name">
+          <span class="wa-sp"></span>
+          <button class="btn-light btn-small" id="pmXlsx">⭳ Excel</button>
+        </div>
+        <div class="wa-acts"><button class="btn-success btn-small" id="pmRestore" disabled>↩ Restore</button></div>
+        <div class="muted wa-note" style="padding:0 14px 8px;">Restore = active again and <b>kept</b>: later syncs will not make them inactive again (use it only when the portal really still has them, e.g. a Job Card number that changed).</div>
+        <div class="table-wrap stack wa-tw"><table>
+          <thead><tr><th><input type="checkbox" id="pmAll" aria-label="Tick all"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>Inactive since</th></tr></thead>
+          <tbody id="pmBody"></tbody></table></div>
+        <div id="pmKept"></div>
       </div>
-      <div class="muted" style="margin-top:4px;">Restore = active again and <b>kept</b>: later syncs will not make them inactive again (use it only when the portal really still has them, e.g. a Job Card number that changed).</div>
-      <div class="table-wrap stack" style="margin-top:8px;"><table>
-        <thead><tr><th><input type="checkbox" id="pmAll"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>Inactive since</th></tr></thead>
-        <tbody id="pmBody"></tbody></table></div>
-      <div id="pmKept"></div>
-    </div>
-    <div class="card">
-      <h2 style="margin:0;">Last syncs</h2>
-      <div class="table-wrap stack" style="margin-top:8px;"><table>
-        <thead><tr><th>When</th><th>Rows from portal</th><th>Matched</th><th>Villages</th><th>Missing</th><th>Made inactive</th><th>Came back</th><th>Result</th></tr></thead>
-        <tbody id="pmRuns"></tbody></table></div>
+      <div class="wa-pane hidden" id="pmRunsPane">
+        <div class="table-wrap stack wa-tw"><table>
+          <thead><tr><th>When</th><th>Rows from portal</th><th>Matched</th><th>Villages</th><th>Missing</th><th>Made inactive</th><th>Came back</th><th>Result</th></tr></thead>
+          <tbody id="pmRuns"></tbody></table></div>
+      </div>
     </div>
   </section>
 
@@ -1398,13 +1484,16 @@
 
   <!-- ============ EXPIRED / MIGRANT MARKS (v214) ============ -->
   <section id="tab-marks" class="hidden">
-    <div class="card">
-      <div class="row" style="justify-content:space-between;"><h2 style="margin:0;">🗑 Expired / Permanently Migrant</h2><button class="btn-light btn-small" id="mkRefresh">🔄 Refresh</button></div>
+    <div class="wa-head">
+      <div class="wa-title"><h2>Expired / Migrant</h2><div class="wa-sub">Workers the supervisors marked as died, moved away for good, or duplicate</div></div>
+      <div class="wa-tools"><button class="btn-light btn-small hidden" id="mkRefresh">🔄 Refresh</button></div>
+    </div>
+    <div class="card wa-card">
       <div class="muted">Supervisors mark workers who have died, moved away for good, or are duplicates. Those workers cannot be picked in a new Demand list. <b>✔ Accept</b> the right ones, <b>↩ Return</b> wrong ones with a comment (the mark is lifted and the supervisor sees your comment). Then download the <b>Delete Excel</b> in one go for the deletion proposal on the portal and press <b>Sent for delete</b>.</div>
       <label class="f" for="mkGp">Gram Panchayat</label>
       <select id="mkGp"></select>
       <div class="muted" id="mkSetup"></div>
-      <div class="filters" id="mkFilters" style="margin-top:8px;">
+      <div class="filters wa-tabs" id="mkFilters">
         <button data-f="new" class="active">New</button>
         <button data-f="accepted">Accepted</button>
         <button data-f="sent_delete">Sent for delete</button>
@@ -1412,15 +1501,15 @@
         <button data-f="returned">Returned</button>
         <button data-f="all">All</button>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <button class="btn-success btn-small" id="mkAccept" disabled>✔ Accept ticked</button>
-        <button class="btn-danger btn-small" id="mkReturn" disabled>↩ Return ticked</button>
-        <button class="btn-primary btn-small" id="mkXlsx" disabled>⭳ Delete Excel (ticked)</button>
+      <div class="wa-acts">
+        <button class="btn-success btn-small" id="mkAccept" disabled>✓ Accept</button>
+        <button class="btn-danger btn-small" id="mkReturn" disabled>↩ Return</button>
+        <button class="btn-primary btn-small" id="mkXlsx" disabled>⭳ Delete Excel</button>
         <button class="btn-light btn-small" id="mkSent" disabled>📤 Sent for delete</button>
         <button class="btn-light btn-small" id="mkDeleted" disabled>🗑 Deleted on portal</button>
       </div>
-      <div class="table-wrap stack" style="margin-top:8px;"><table>
-        <thead><tr><th><input type="checkbox" id="mkAll"></th><th>Village</th><th>Job Card</th><th>App</th><th>Name</th><th>Reason</th><th>When / note</th><th>Supervisor</th><th>Status</th></tr></thead>
+      <div class="table-wrap stack wa-tw"><table>
+        <thead><tr><th><input type="checkbox" id="mkAll" aria-label="Tick all"></th><th>Worker</th><th>Reason</th><th>When / note</th><th>Supervisor</th><th>Status</th></tr></thead>
         <tbody id="mkBody"></tbody></table></div>
     </div>
   </section>
@@ -1736,20 +1825,20 @@
 <script src="./js/sb-client.js?v=20261120a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261128f"></script>
+<script src="./js/admin.js?v=20261128g"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
 <script src="./js/admin-signup.js?v=20261114a"></script>
-<script src="./js/admin-aadhaar.js?v=20261116r"></script>
+<script src="./js/admin-aadhaar.js?v=20261128a"></script>
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261121h"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
 <script src="./js/admin-dbver.js?v=20261128a"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
-<script src="./js/admin-requests.js?v=20261121c"></script>
+<script src="./js/admin-requests.js?v=20261128a"></script>
 <script src="./js/admin-bankqueue.js?v=20261127a"></script>
-<script src="./js/admin-shell.js?v=20261128c"></script>
+<script src="./js/admin-shell.js?v=20261128d"></script>
 <script src="./js/admin-search.js?v=20261118a"></script>
 </body>
 </html>

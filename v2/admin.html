@@ -635,6 +635,103 @@
     .acv-toast b{color:#fcd34d;} .acv-toast #acvUndo{background:#fcd34d;color:var(--gs-primary-strong);padding:5px 10px;} .acv-toast #acvToastX{background:none;color:var(--gs-line);padding:4px 6px;}
     @media (max-width:900px){ .acv-main{grid-template-columns:1fr;} .acv-stage{height:60vh;} .acv-toast{left:10px;right:10px;bottom:84px;} }
   </style>
+  <!-- 2026-11-28 Demand lists layout (design tokens only) -->
+  <style>
+    #tab-dash{padding-bottom:110px;}
+    .dl-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:0 0 6px;}
+    .dl-title{flex:1 1 260px;min-width:0;} .dl-title h2{margin:0;font-size:var(--gs-fs-xl);color:var(--gs-ink);}
+    .dl-sub{font-size:var(--gs-fs-sm);color:var(--gs-muted);margin-top:2px;}
+    .dl-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    #tab-dash .vsw{margin:0;display:inline-flex;border:1px solid var(--gs-line);border-radius:8px;overflow:hidden;background:var(--gs-surface);}
+    #tab-dash .vsw button{background:transparent;color:var(--gs-muted);border:0;border-radius:0;padding:6px 10px;font-size:var(--gs-fs-sm);font-weight:var(--gs-fw-semi);}
+    #tab-dash .vsw button.on{background:var(--gs-primary-soft);color:var(--gs-primary);}
+    #tab-dash .dlang{border-radius:8px;border-color:var(--gs-line);}
+    #tab-dash .dlang button{padding:6px 10px;font-size:var(--gs-fs-sm);font-weight:var(--gs-fw-semi);background:var(--gs-surface);color:var(--gs-muted);}
+    #tab-dash .dlang button.on{background:var(--gs-primary-soft);color:var(--gs-primary);}
+    .dl-more{position:relative;} .dl-more>summary{list-style:none;cursor:pointer;border:1px solid var(--gs-line);background:var(--gs-surface);color:var(--gs-text);border-radius:8px;padding:6px 12px;font-weight:var(--gs-fw-semi);font-size:var(--gs-fs-sm);}
+    .dl-more>summary::-webkit-details-marker{display:none;}
+    .dl-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;background:var(--gs-surface);border:1px solid var(--gs-line);border-radius:12px;box-shadow:var(--gs-shadow);padding:6px;min-width:240px;display:grid;gap:2px;}
+    .dl-menu .smi{display:block;width:100%;text-align:left;background:transparent;color:var(--gs-ink);font-weight:var(--gs-fw-semi);font-size:var(--gs-fs-sm);padding:8px;border-radius:8px;border:0;}
+    .dl-menu .smi:hover{background:var(--gs-bg);}
+    .dl-menu .dinfo>summary{display:block;background:transparent;color:var(--gs-ink);font-size:var(--gs-fs-sm);padding:8px;border-radius:8px;}
+    .dl-menu .dinfo-box{position:static;width:auto;box-shadow:none;margin-top:4px;}
+    .dl-tabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--gs-line);margin:8px 0 12px;}
+    .dl-tabs button[data-f],#tab-dash .dl-tabs button[data-f].active{background:transparent;color:var(--gs-muted);border:0;border-radius:0;padding:8px 12px;font-size:var(--gs-fs-md);font-weight:var(--gs-fw-semi);flex:0 0 auto;box-shadow:none;}
+    #tab-dash .dl-tabs button[data-f].active{color:var(--gs-primary);box-shadow:inset 0 -2px 0 var(--gs-primary);}
+    .dl-tabs .fx{margin-left:auto;align-self:center;border-radius:999px;padding:3px 10px;font-size:var(--gs-fs-xs);}
+    .dl-attn{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px;}
+    .dl-attn:empty{display:none;}
+    .dl-attn .al{font-size:var(--gs-fs-xs);font-weight:var(--gs-fw-semi);text-transform:uppercase;letter-spacing:.04em;color:var(--gs-muted);margin-right:2px;}
+    .dl-attn .ap{border:1px solid var(--gs-line);background:var(--gs-surface);color:var(--gs-text);border-radius:999px;padding:4px 12px;font-size:var(--gs-fs-sm);font-weight:var(--gs-fw-semi);cursor:pointer;}
+    .dl-attn .ap.w{background:var(--gs-warn-soft);color:var(--gs-warn);border-color:transparent;}
+    .dl-attn .ap.on{box-shadow:0 0 0 2px var(--gs-primary);}
+    /* task sections as tables */
+    #dashCards.wview{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;}
+    #dashCards.wview .wsec{background:var(--gs-surface);border:1px solid var(--gs-line);border-top:1px solid var(--gs-line);border-radius:12px;padding:0;margin:0;overflow:hidden;}
+    #dashCards.wview .wsh{padding:12px 16px;border-bottom:1px solid var(--gs-line);justify-content:flex-start;}
+    #dashCards.wview .wsh h3{font-size:var(--gs-fs-lg);color:var(--gs-ink);}
+    #dashCards.wview .wsh .cnt{background:var(--gs-bg);color:var(--gs-text);}
+    #dashCards.wview .wss{margin:0;font-size:var(--gs-fs-sm);}
+    #dashCards.wview .wsh .wtools{margin-left:auto;}
+    #dashCards.wview .wfold>summary{padding:12px 16px;font-weight:var(--gs-fw-semi);color:var(--gs-ink);cursor:pointer;}
+    #dashCards.wview .wfold .wtools{padding:0 16px 8px;}
+    .wrow.t{grid-template-columns:24px minmax(0,2.4fr) minmax(120px,1.2fr) 70px 96px minmax(200px,auto);gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--gs-line);border-radius:0;}
+    .wrow.t.hd{padding-block:8px;background:var(--gs-bg);font-size:var(--gs-fs-xs);font-weight:var(--gs-fw-semi);color:var(--gs-muted);text-transform:uppercase;letter-spacing:.03em;border-top:0;}
+    .wrow.t.hd .r{text-align:right;}
+    .wrow.t.sel{background:var(--gs-primary-soft);border-radius:0;}
+    .wrow.t .wck{padding:0;} .wrow.t .wck input{width:17px;height:17px;}
+    .wrow.t .wname{font-size:var(--gs-fs-md);font-weight:var(--gs-fw-semi);}
+    .wrow.t .wsup{font-size:var(--gs-fs-sm);color:var(--gs-muted);margin-top:2px;} .wrow.t .wsup b{color:var(--gs-text);font-weight:var(--gs-fw-semi);}
+    .wrow.t .wmeta{font-size:var(--gs-fs-xs);color:var(--gs-muted);margin-top:2px;overflow-wrap:anywhere;}
+    .wrow.t .wmeta .mono{font-family:var(--gs-mono);}
+    .wrow.t .wwarn{font-size:var(--gs-fs-xs);color:var(--gs-warn);font-weight:var(--gs-fw-semi);margin-top:3px;}
+    .wrow.t .wwarn.bad{color:var(--gs-bad);}
+    .wrow.t .wok{font-size:var(--gs-fs-xs);color:var(--gs-ok);font-weight:var(--gs-fw-semi);margin-top:3px;}
+    .wrow.t .wdt{font-size:var(--gs-fs-sm);color:var(--gs-text);} .wrow.t .wdt small{display:block;font-size:var(--gs-fs-xs);color:var(--gs-muted);}
+    .wrow.t .wnum{text-align:right;} .wrow.t .wnum b{font-size:var(--gs-fs-lg);color:var(--gs-ink);font-variant-numeric:tabular-nums;} .wrow.t .wnum span{display:none;}
+    .wrow.t .wst .pill{font-weight:var(--gs-fw-semi);padding:2px 9px;}
+    .wrow.t .wacts{grid-column:auto;margin:0;justify-content:flex-end;flex-wrap:nowrap;gap:6px;}
+    .wrow.t .wacts button{white-space:nowrap;background:var(--gs-surface);color:var(--gs-text);border:1px solid var(--gs-line);border-radius:8px;padding:5px 12px;font-weight:var(--gs-fw-semi);font-size:var(--gs-fs-sm);}
+    .wrow.t .wacts button.pri{background:var(--gs-primary);border-color:var(--gs-primary);color:var(--gs-on);}
+    .wrow.t .wacts .dots{margin:0;padding:5px 10px;line-height:1.2;}
+    .wrow.t.empty{grid-template-columns:24px minmax(0,1fr) auto;}
+    .wrow.t.empty .wdt,.wrow.t.empty .wnum,.wrow.t.empty .wst{display:none;}
+    .wempty{padding:12px 16px;color:var(--gs-muted);font-size:var(--gs-fs-sm);}
+    #dashCards.wview .wrow.nl{padding:8px 16px;}
+    /* export bar */
+    .expbar{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--gs-surface);border-top:1px solid var(--gs-line);box-shadow:0 -4px 16px rgba(18,21,48,.07);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:60vh;overflow:auto;}
+    .eb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+    .eb-sum{min-width:0;font-size:var(--gs-fs-sm);color:var(--gs-muted);} .eb-sum b{color:var(--gs-ink);}
+    .eb-help{display:inline-block;margin-left:6px;} .eb-help>summary{list-style:none;cursor:pointer;color:var(--gs-primary);font-size:var(--gs-fs-xs);font-weight:var(--gs-fw-semi);display:inline;}
+    .eb-help>summary::-webkit-details-marker{display:none;} .eb-help>div{margin-top:6px;max-width:640px;}
+    .expbar .eb-lock{margin:0;font-size:var(--gs-fs-sm);align-items:center;}
+    .eb-sp{flex:1;}
+    .expbar #expBtn{width:auto;margin:0;background:var(--gs-primary);color:var(--gs-on);border:0;border-radius:8px;padding:9px 16px;font-weight:var(--gs-fw-semi);}
+    .expbar #expBtn:disabled{opacity:.45;cursor:not-allowed;}
+    #exportCard #expBtn{width:auto;margin:0;}
+    .expbar #expSummary>.muted{display:none;}
+    .expbar .expneed{margin-top:8px;max-width:720px;}
+    .expbar #expSummary{margin-top:6px;} .expbar #expSummary:empty{display:none;}
+    #tab-dash .exp-float{display:none!important;}
+    @media (min-width:900px){ .expbar{left:260px;padding-left:26px;padding-right:26px;} }
+    @media (max-width:899px){
+      .expbar{bottom:64px;padding-bottom:10px;}
+      #tab-dash{padding-bottom:190px;}
+      .wrow.t,.wrow.t.empty{grid-template-columns:22px minmax(0,1fr) auto;grid-template-areas:"c m n" "c d s" "c a a";gap:6px 10px;}
+      .wrow.t>.wck{grid-area:c;align-self:start;padding-top:2px;} .wrow.t>.wmain{grid-area:m;} .wrow.t>.wdt{grid-area:d;} .wrow.t>.wnum{grid-area:n;align-self:start;}
+      .wrow.t>.wst{grid-area:s;justify-self:end;} .wrow.t>.wacts{grid-area:a;justify-content:flex-start;flex-wrap:wrap;}
+      .wrow.t.hd{display:none;}
+      .eb-row .eb-sp{display:none;} .eb-sum{flex:1 1 100%;}
+    }
+    html[data-theme=dark] .wrow.t.sel{background:var(--gs-primary-soft);}
+    .expbar.hidden{display:none!important;}
+    .sm-box{max-width:560px;}
+    .sm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:6px;} .sm-grid .sm-wide{grid-column:1/-1;}
+    .sm-grid input{width:100%;}
+    .sm-note{font-size:var(--gs-fs-sm);color:var(--gs-muted);background:var(--gs-bg);border-radius:8px;padding:8px 10px;margin-top:12px;}
+    .sm-acts{justify-content:flex-end;margin-top:12px;gap:8px;}
+    @media (max-width:600px){ .sm-grid{grid-template-columns:1fr;} }
+  </style>
 </head>
 <body>
 <div class="loading" id="loading"><div id="loadingText">Loading...</div></div>
@@ -917,60 +1014,61 @@
 
   <!-- ============ DASHBOARD ============ -->
   <section id="tab-dash" class="hidden">
-   <div class="dash-grid">
-   <div class="dash-main">
-    <div class="card">
-      <div class="row dhead" style="justify-content:space-between;">
-        <h2 style="margin:0;" data-bn="Demand lists" data-en="Demand lists">Demand lists</h2>
-        <div class="row">
-        <span class="dlang" id="dashLang" role="group" aria-label="Language"><button type="button" data-l="en">EN</button><button type="button" data-l="bn">বাং</button></span>
-        <button class="btn-light btn-small" id="kdActBtn">🖥 K-Desk activity</button>
-        <button class="btn-light btn-small" id="ekycBtn">📊 eKYC/ABPS summary</button>
-        <details class="dinfo"><summary id="dashInfoSum">ⓘ</summary><div class="dinfo-box"><div class="dataline" id="dataLine"></div><div class="muted" id="dashVillages"></div></div></details>
-        <!-- the page header's 🔄 Refresh (admin-shell.js) clicks this hidden one -->
-        <button class="btn-light btn-small hidden" id="dashRefresh">🔄 Refresh</button></div>
-      </div>
-      <label class="f" for="dashGp">Gram Panchayat</label>
-      <select id="dashGp"></select>
-      <div class="stats" id="dashStats"></div>
-      <div id="dupBox" class="hidden"></div>
-      <div class="filters" id="dashFilters">
-        <button data-f="all" class="active">All</button>
-        <button data-f="submitted">Submitted</button>
-        <button data-f="draft">Draft</button>
-        <button data-f="empty">No list</button>
-        <button data-f="locked">Locked</button>
-        <button type="button" class="fx hidden" id="dashFilterX"></button>
-        <span class="vsw" id="dashView" role="group" aria-label="View"><button data-v="work" type="button" data-bn="✅ কাজ ধরে" data-en="✅ By task">✅ কাজ ধরে</button><button data-v="details" type="button" data-bn="👤 Supervisor ধরে" data-en="👤 By supervisor">👤 Supervisor ধরে</button><button data-v="list" type="button">☰ List</button></span>
-      </div>
-      <div class="muted hidden" id="dashUpdated"></div>
-    </div>
-    <div class="ucards" id="dashCards"></div>
+   <!-- 2026-11-28 layout: header + tabs + "Needs attention" line + task sections + export bar at the bottom (all ids kept) -->
+   <div class="dl-head">
+     <div class="dl-title"><h2 data-bn="Demand lists" data-en="Demand lists">Demand lists</h2><div class="dl-sub" id="dashSub"></div></div>
+     <div class="dl-tools">
+       <span class="vsw" id="dashView" role="group" aria-label="View"><button data-v="work" type="button" data-bn="✅ কাজ ধরে" data-en="✅ By task">✅ কাজ ধরে</button><button data-v="details" type="button" data-bn="👤 Supervisor ধরে" data-en="👤 By supervisor">👤 Supervisor ধরে</button><button data-v="list" type="button">☰ List</button></span>
+       <span class="dlang" id="dashLang" role="group" aria-label="Language"><button type="button" data-l="en">EN</button><button type="button" data-l="bn">বাং</button></span>
+       <details class="dl-more"><summary data-bn="আরও ▾" data-en="More ▾">More ▾</summary>
+         <div class="dl-menu">
+           <button class="smi" id="kdActBtn" type="button">🖥 K-Desk activity</button>
+           <button class="smi" id="ekycBtn" type="button">📊 eKYC/ABPS summary</button>
+           <details class="dinfo"><summary id="dashInfoSum">ⓘ</summary><div class="dinfo-box"><div class="dataline" id="dataLine"></div><div class="muted" id="dashVillages"></div></div></details>
+         </div>
+       </details>
+       <!-- the page header's 🔄 Refresh (admin-shell.js) clicks this hidden one -->
+       <button class="btn-light btn-small hidden" id="dashRefresh">🔄 Refresh</button>
+     </div>
    </div>
-   <div class="dash-side">
-    <div class="card" id="exportCard">
-      <h2 data-bn="📥 K-Desk Demand file" data-en="📥 K-Desk Demand file">📥 K-Desk Demand file</h2>
-      <div class="muted" data-html data-bn="উপরে যেসব Submitted/Locked list-এ টিক দেবেন, সব মিলে একটা Excel হবে। কলাম: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>। একই worker দুই list-এ থাকলে একবারই আসবে। List-এর নিজের Work Code/date থাকলে সেটাই বসবে; না থাকলে নিচের ঘর থেকে বসবে।" data-en="The lists you tick above go into one Excel file. Columns: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>. A worker who is in two lists appears only once. A list that has its own Work Code or date uses it; the boxes below are for lists without one.">The lists you tick above go into one Excel file.</div>
-      <div class="expneed hidden" id="expDateBox">
+   <label class="f gp-dl" for="dashGp">Gram Panchayat</label>
+   <select id="dashGp" class="gp-dl"></select>
+   <div class="filters dl-tabs" id="dashFilters">
+     <button data-f="all" class="active">All</button>
+     <button data-f="submitted">Submitted</button>
+     <button data-f="draft">Draft</button>
+     <button data-f="locked">Locked</button>
+     <button data-f="empty">No list</button>
+     <button type="button" class="fx hidden" id="dashFilterX"></button>
+   </div>
+   <div class="dl-attn" id="dashStats"></div>
+   <div id="dupBox" class="hidden"></div>
+   <div class="muted hidden" id="dashUpdated"></div>
+   <div class="ucards" id="dashCards"></div>
+
+   <!-- K-Desk export: a bar fixed at the bottom of the page -->
+   <div class="expbar hidden" id="exportCard">
+     <div class="eb-row">
+       <div class="eb-sum"><b id="ebCount"></b> <span id="ebWorkers"></span>
+         <details class="eb-help"><summary data-bn="ⓘ কীভাবে কাজ করে" data-en="ⓘ How it works">ⓘ How it works</summary><div class="muted" data-html data-bn="উপরে যেসব Submitted/Locked list-এ টিক দেবেন, সব মিলে একটা Excel হবে। কলাম: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>। একই worker দুই list-এ থাকলে একবারই আসবে। List-এর নিজের Work Code/date থাকলে সেটাই বসবে; না থাকলে নিচের ঘর থেকে বসবে।" data-en="The lists you tick above go into one Excel file. Columns: <code>#</code> <code>Reg</code> <code>Applicant</code> <code>From</code> <code>Days</code> <code>Work code</code>. A worker who is in two lists appears only once. A list that has its own Work Code or date uses it; the boxes below are for lists without one.">The lists you tick above go into one Excel file.</div></details></div>
+       <label class="check eb-lock" title="Supervisors can no longer change a locked list"><input type="checkbox" id="expLock" checked><span data-html data-bn="Export-এর পর <b>Lock</b>" data-en="<b>Lock</b> lists after export"><b>Lock</b> lists after export</span></label>
+       <span class="eb-sp"></span>
+       <button class="btn-light btn-small" id="pickSubmitted" type="button" data-bn="সব submitted বাছুন" data-en="Select all submitted">Select all submitted</button>
+       <button class="btn-light btn-small" id="pickNone" type="button" data-bn="বাছাই মুছুন" data-en="Clear">Clear</button>
+       <button class="btn-primary" id="expBtn" disabled>Create K-Desk Excel</button>
+     </div>
+     <div class="expneed hidden" id="expDateBox">
         <div class="tg tg-warn" id="expDateFor"></div>
         <div class="grid3" style="margin-top:6px;">
           <div><label class="f" for="expFrom" data-bn="From (date নেই এমন list-এর জন্য)" data-en="From (lists without a date)">From (lists without a date)</label><input type="date" id="expFrom"></div>
           <div><label class="f" for="expDays" data-bn="Days (date নেই এমন list-এর জন্য)" data-en="Days (lists without a date)">Days (lists without a date)</label><input type="number" id="expDays" min="1" max="366" inputmode="numeric" placeholder="e.g. 14"></div>
         </div>
       </div>
-      <div class="expneed hidden" id="expCodeBox">
+     <div class="expneed hidden" id="expCodeBox">
         <div class="tg tg-warn" id="expCodeFor"></div>
         <div style="margin-top:6px;"><label class="f" for="expWork" data-bn="Work code (Work code নেই এমন list-এর জন্য)" data-en="Work code (for lists without one)">Work code (for lists without one)</label><input type="text" id="expWork" maxlength="100" placeholder="e.g. 3206003006/IF/93393042892327"></div>
       </div>
-      <label class="check"><input type="checkbox" id="expLock" checked><span data-html data-bn="Export-এর পর এই list-গুলো <b>Lock</b> হবে (supervisor আর বদলাতে পারবেন না)।" data-en="<b>Lock</b> these lists after the export (supervisors can no longer change them)."><b>Lock</b> these lists after the export (supervisors can no longer change them).</span></label>
-      <div id="expSummary"></div>
-      <div class="row" style="margin-top:8px;">
-        <button class="btn-success" id="expBtn" disabled>📥 Create K-Desk Excel</button>
-        <button class="btn-light btn-small" id="pickSubmitted" data-bn="সব submitted বাছুন" data-en="Select all submitted lists">Select all submitted lists</button>
-        <button class="btn-light btn-small" id="pickNone" data-bn="বাছাই মুছুন" data-en="Clear selection">Clear selection</button>
-      </div>
-    </div>
-   </div>
+     <div id="expSummary"></div>
    </div>
    <button class="exp-float hidden" id="expFloat" type="button"><span id="expFloatN">0</span> · <b data-bn="Excel বানান" data-en="Make Excel">Excel বানান</b></button>
   </section>
@@ -1627,7 +1725,7 @@
 <script src="./js/sb-client.js?v=20261120a"></script>
 <script src="./js/import-map.js?v=20261020a"></script>
 <script src="./js/iay-dash.js?v=20261112a"></script>
-<script src="./js/admin.js?v=20261128a"></script>
+<script src="./js/admin.js?v=20261128b"></script>
 <script src="./js/admin-masters.js?v=20261107e"></script>
 <script src="./js/admin-villages.js?v=20261114a"></script>
 <script src="./js/vendor/qrcode-1.4.4.js"></script>
@@ -1636,7 +1734,7 @@
 <script src="./js/admin-wlcaste.js?v=20261115a"></script>
 <script src="./js/admin-pipeline.js?v=20261121h"></script>
 <script src="./js/admin-portalmissing.js?v=20261116a"></script>
-<script src="./js/admin-dbver.js?v=20261127a"></script>
+<script src="./js/admin-dbver.js?v=20261128a"></script>
 <script src="./js/admin-portalnew.js?v=20261118a"></script>
 <script src="./js/admin-requests.js?v=20261121c"></script>
 <script src="./js/admin-bankqueue.js?v=20261127a"></script>

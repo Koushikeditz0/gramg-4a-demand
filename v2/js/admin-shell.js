@@ -236,7 +236,7 @@
 
   // EN / বাং for the Today page (the rest of the Admin panel is English)
   var LANG_KEY = 'gramg2.adminLang';
-  var lang = read(LANG_KEY) === 'en' ? 'en' : 'bn';
+  var lang = read(LANG_KEY) === 'bn' ? 'bn' : 'en';   // default English (2026-11-28), বাং still one tap away
   function L(bn, en) { return lang === 'bn' ? bn : en; }
   function cnt(n, bnUnit, enOne, enMany) { return lang === 'bn' ? num(n) + 'টা ' + bnUnit : num(n) + ' ' + (n === 1 ? enOne : (enMany || enOne + 's')); }
   function setLang(l) {

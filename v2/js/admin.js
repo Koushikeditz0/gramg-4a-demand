@@ -1121,7 +1121,7 @@
   //  ④ supervisors without a list (folded). "Supervisor ধরে" (old cards) and "☰ List" views stay.
   // Colour rule: red ⛔ = the export would stop · orange ⚠ = work left · grey = information · green ✓ = fine.
   var LANG_KEY = 'gramg2.adminLang';                 // same EN/বাং setting as the Today page
-  function dlang() { try { return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'bn'; } catch (e) { return 'bn'; } }
+  function dlang() { try { return localStorage.getItem(LANG_KEY) === 'bn' ? 'bn' : 'en'; } catch (e) { return 'en'; } }
   function T(b, e) { return dlang() === 'bn' ? b : e; }
   function ago(s) {
     if (!s) return T('কখনও না', 'never');

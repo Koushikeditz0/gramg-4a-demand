@@ -1,11 +1,12 @@
 {
-  "version": "1.21.1",
-  "date": "16/11/2026",
-  "url": "K-Desk_Suite_v1.21.1.zip",
+  "version": "1.24.0",
+  "date": "21/11/2026",
+  "url": "K-Desk_Suite_v1.24.0.zip",
   "min_version": "",
   "notes": [
-    "💸 Payment pipeline: Generate WL আর Send for Payment page খুললে Gram Setu Admin-এ হিসাব যায়",
-    "\"update হয়েছে\" banner-এ ভুল Download বোতাম আর নেই",
-    "নতুন version এলে K-Desk নিজেই জানায় (icon-এ NEW)"
+    "🩺 Health Check: portal-এর field বদলালে Start-এর আগেই বাংলায় জানায়, ভুল data ঢোকে না",
+    "Popup-এ \"এই page-এর Health Check\" বোতাম",
+    "Portal-এর সব field ID এখন এক ফাইলে (shared/portal-map.js)",
+    "1.23: portal থেকে মুছে যাওয়া worker Gram Setu থেকে সরানো, Aadhaar Update বাদ"
   ]
 }

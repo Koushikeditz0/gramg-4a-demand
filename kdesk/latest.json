@@ -1,12 +1,12 @@
 {
-  "version": "1.24.0",
-  "date": "21/11/2026",
-  "url": "K-Desk_Suite_v1.24.0.zip",
+  "version": "1.25.0",
+  "date": "28/11/2026",
+  "url": "K-Desk_Suite_v1.25.0.zip",
   "min_version": "",
   "notes": [
     "🩺 Health Check: portal-এর field বদলালে Start-এর আগেই বাংলায় জানায়, ভুল data ঢোকে না",
+    "Health Check এখন ABPS, NPCI, Certificate, MR Print, WL Status সহ ১৪টা page-এ",
     "Popup-এ \"এই page-এর Health Check\" বোতাম",
-    "Portal-এর সব field ID এখন এক ফাইলে (shared/portal-map.js)",
-    "1.23: portal থেকে মুছে যাওয়া worker Gram Setu থেকে সরানো, Aadhaar Update বাদ"
+    "Portal-এর সব field ID এখন এক ফাইলে (shared/portal-map.js)"
   ]
 }

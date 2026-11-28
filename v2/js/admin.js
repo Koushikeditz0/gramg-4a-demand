@@ -1078,7 +1078,10 @@
       var extra = {}; dash.extrasOk = Array.isArray(res[2]); (res[2] || []).forEach(function (x) { extra[x.list_id] = x; });
       dash.rows = [];
       dash.users.forEach(function (u) {
-        (u.lists || []).forEach(function (l) {
+        // 2026-11-28 (Koushik): a draft with 0 workers is the supervisor's own scratch list, nothing for the admin.
+        // It is left out of the page, the counts and the tabs; a supervisor with only such drafts shows under "No list yet".
+        u.lists = (u.lists || []).filter(function (l) { return !(l.submit_state === 'draft' && !Number(l.workers || 0)); });
+        u.lists.forEach(function (l) {
           var r = Object.assign({}, l, extra[l.list_id] || {}); r.user_id = u.user_id; r.username = u.username; r.full_name = u.full_name; r.user_active = u.active;
           dash.rows.push(r);
         });
@@ -1326,16 +1329,14 @@
     return { box: d, body: body };
   }
   function renderWorkView(C) {
-    var ready = [], todo = [], empty = [];
+    var ready = [], todo = [];
     dash.rows.forEach(function (r) {
       if (!passRow(r)) return;
-      var n = Number(r.workers || 0);
-      if (!n) empty.push(r); else if (r.submit_state === 'draft') todo.push(r); else ready.push(r);
+      if (r.submit_state === 'draft') todo.push(r); else ready.push(r);
     });
     function t(r, k) { var v = r[k] ? Date.parse(r[k]) : 0; return v || 0; }
     ready.sort(function (a, b) { return (a.submit_state === 'submitted' ? 0 : 1) - (b.submit_state === 'submitted' ? 0 : 1) || t(b, 'submitted_at') - t(a, 'submitted_at'); });
     todo.sort(function (a, b) { return t(a, 'list_updated_at') - t(b, 'list_updated_at'); });
-    empty.sort(function (a, b) { return t(a, 'list_updated_at') - t(b, 'list_updated_at'); });
     var noList = dash.users.filter(function (u) { return !(u.lists || []).length; });
     var all = dash.filter === 'all';
 
@@ -1357,14 +1358,6 @@
       var s2 = section('todo', T('কাজ বাকি', 'Work left'), T('Worker আছে, submit হয়নি। "Send to K-Desk" দিয়ে বাকি ঘর ভরে নিজেই পাঠাতে পারেন।', 'Has workers, not submitted. Use "Send to K-Desk" to fill what is missing and send it yourself.'), todo.length);
       todo.forEach(function (r) { s2.body.appendChild(workRow(r, 'todo')); });
       C.appendChild(s2.box);
-    }
-    if (empty.length) {
-      var s3 = fold('empty', T('খালি draft (' + bn(empty.length) + 'টা) · কোনো worker নেই', 'Empty drafts (' + bn(empty.length) + ') · no workers'), false);
-      var del = el('button', '🗑 ' + T('সব খালি draft মুছুন', 'Delete all empty drafts'), 'btn-ghost btn-small'); del.type = 'button';
-      del.addEventListener('click', function () { deleteEmptyDrafts(empty); });
-      var bar = el('div', null, 'wtools'); bar.appendChild(del); s3.body.appendChild(bar);
-      empty.forEach(function (r) { s3.body.appendChild(workRow(r, 'empty')); });
-      C.appendChild(s3.box);
     }
     if ((all || dash.filter === 'empty') && noList.length) {
       var s4 = fold('nolist', T('List বানাননি (' + bn(noList.length) + ' জন supervisor)', 'No list yet (' + bn(noList.length) + ' supervisors)'), dash.filter === 'empty');
@@ -1605,24 +1598,6 @@
       }).catch(function (e) { if (!e.authLost) status(errText(e), 'err'); })
       .then(function () { loading(''); });
   }
-  // "সব খালি draft মুছুন": the same admin_delete_list, once per empty draft (only lists with 0 workers)
-  async function deleteEmptyDrafts(list) {
-    list = list.filter(function (r) { return !Number(r.workers || 0) && r.submit_state === 'draft'; });
-    if (!list.length) return;
-    var names = list.slice(0, 12).map(function (r) { return '• ' + (r.work_name || '(no Work Name)') + ' — ' + (r.full_name || r.username); }).join('\n') + (list.length > 12 ? '\n…' : '');
-    if (!await ask(T(bn(list.length) + 'টা খালি draft মুছবেন? এগুলোতে কোনো worker নেই।', 'Delete ' + list.length + ' empty drafts? They have no workers.') + '\n\n' + names +
-      '\n\n' + T('Database-এ (Backup) থেকে যাবে।', 'They stay in the database (Backup).'), '🗑 ' + T('সব মুছুন', 'Delete all'))) return;
-    var done = 0, failed = 0;
-    for (var i = 0; i < list.length; i++) {
-      loading(T('মুছছি… ', 'Deleting… ') + (i + 1) + '/' + list.length);
-      try { await SB.rpc('admin_delete_list', { p_list_id: list[i].list_id }); done++; dash.picked.delete(list[i].list_id); }
-      catch (e) { if (e.authLost) { loading(''); return; } failed++; }
-    }
-    loading('');
-    status('🗑 ' + T(bn(done) + 'টা খালি draft মোছা হয়েছে।', done + ' empty draft(s) deleted.') + (failed ? ' ⚠ ' + T(failed + 'টা মোছা যায়নি।', failed + ' could not be deleted.') : ''), failed ? 'err' : 'ok');
-    return loadDashboard();
-  }
-
   // ---------- K-Desk export panel ----------
   function pickedRows() { return dash.rows.filter(function (r) { return dash.picked.has(r.list_id); }); }
   function shortNames(rs) { return rs.map(function (r) { return '"' + (r.work_name || '—') + '" (' + (r.full_name || r.username) + ')'; }).join(', '); }

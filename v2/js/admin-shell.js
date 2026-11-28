@@ -419,7 +419,11 @@
     var D = { pp: pp, ds: ds, db: db, login: Number(r[2]) || 0, photos: (r[3] && r[3].new_count) || 0,
               marks: ((r[4] && r[4].counts) || {}).new || 0, held: ((r[5] && r[5].held) || []).length, pnew: Number(r[8]) || 0, sreq: Number(r[9]) || 0 };
     var lists = [], noList = 0;
-    users.forEach(function (u) { if (!(u.lists || []).length) noList++; (u.lists || []).forEach(function (l) { lists.push(l); }); });
+    // empty drafts (0 workers) are not counted, the same as on the Demand lists page
+    users.forEach(function (u) {
+      var ls = (u.lists || []).filter(function (l) { return !(l.submit_state === 'draft' && !Number(l.workers || 0)); });
+      if (!ls.length) noList++; ls.forEach(function (l) { lists.push(l); });
+    });
     D.lists = lists.length; D.noList = noList;
     D.sub = lists.filter(function (l) { return l.submit_state === 'submitted'; }).length;
     D.draft = lists.filter(function (l) { return l.submit_state === 'draft'; }).length;

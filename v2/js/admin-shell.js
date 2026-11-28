@@ -337,7 +337,7 @@
   function buildFlow(D) {
     var p = D.pp || {}, has = !!D.pp;
     var f = [];
-    var lsState = D.draft || D.noList ? 'warn' : D.lists ? 'done' : 'idle';
+    var lsState = D.draft ? 'warn' : D.lists ? 'done' : 'idle';
     f.push({ key: 'lists', n: 1, val: D.sub, of: D.lists, unit: '', label: L('List submit হয়েছে', 'Lists submitted'),
              note: D.draft ? cnt(D.draft, 'draft list', 'draft list') : D.lists ? L('সব submit হয়েছে', 'all submitted') : L('এখনও কোনো list নেই', 'no list yet'), state: lsState, tab: 'dash' });
     // v238: e-MB / AE verify comes before MR fill (normal works), so it is ② and MR fill is ③
@@ -376,9 +376,7 @@
     if (F.gen.val > 0) add(11, 'warn', '📄', cnt(F.gen.val, 'work-এর WL generate হয়নি', 'work without a wage list', 'works without a wage list'), L('MR fill হয়েছে · Generate Wagelist', 'MR filled · Generate Wagelist'), 'pipeline');
     if (F.emb.val > 0) add(12, 'warn', '📏', cnt(F.emb.val, 'MR-এ e-MB / AE verify বাকি', 'MR waiting for e-MB / AE verify', 'MRs waiting for e-MB / AE verify'), L('MR-wise report অনুযায়ী', 'from the MR-wise report'), 'pipeline');
     // ① card already says "x/y submitted"; the row adds what the card does not
-    if (D.noList) add(13, 'warn', '📝', lang === 'bn' ? D.noList + ' জন supervisor এখনও list বানাননি' : D.noList + ' supervisor' + (D.noList === 1 ? ' has' : 's have') + ' not made a list yet',
-                      D.draft ? cnt(D.draft, 'list draft-এ আছে', 'list still draft', 'lists still draft') : L('Demand lists', 'Demand lists'), 'dash');
-    else if (D.draft) add(13, 'warn', '📝', cnt(D.draft, 'list এখনও submit হয়নি', 'list not submitted yet', 'lists not submitted yet'), L('Supervisor-কে submit করতে বলুন', 'Ask the supervisor to submit'), 'dash');
+    if (D.draft) add(13, 'warn', '📝', cnt(D.draft, 'list এখনও submit হয়নি', 'list not submitted yet', 'lists not submitted yet'), L('Supervisor-কে submit করতে বলুন', 'Ask the supervisor to submit'), 'dash');
     if (D.marks) add(14, 'warn', '🗑', cnt(D.marks, 'Expired / Migrant mark', 'Expired / Migrant mark'), L('Accept বা Return করুন', 'Accept or Return'), 'marks');
     if (D.sreq) add(14.5, 'warn', '📨', cnt(D.sreq, 'নতুন supervisor request / নোট', 'new supervisor request / note', 'new supervisor requests / notes'), L('Workers & Accounts → Supervisor requests', 'Workers & Accounts → Supervisor requests'), 'sreq');
     if (D.login) add(15, 'warn', '🙋', cnt(D.login, 'supervisor login request', 'supervisor login request'), L('Team & Access → Login requests', 'Team & Access → Login requests'), 'signup');

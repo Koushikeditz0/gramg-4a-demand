@@ -1079,7 +1079,7 @@
       dash.rows = [];
       dash.users.forEach(function (u) {
         // 2026-11-28 (Koushik): a draft with 0 workers is the supervisor's own scratch list, nothing for the admin.
-        // It is left out of the page, the counts and the tabs; a supervisor with only such drafts shows under "No list yet".
+        // It is left out of the page, the counts and the tabs. Supervisors without a list are not listed either.
         u.lists = (u.lists || []).filter(function (l) { return !(l.submit_state === 'draft' && !Number(l.workers || 0)); });
         u.lists.forEach(function (l) {
           var r = Object.assign({}, l, extra[l.list_id] || {}); r.user_id = u.user_id; r.username = u.username; r.full_name = u.full_name; r.user_active = u.active;
@@ -1263,9 +1263,9 @@
     }
 
     // filter chips with numbers: All 10 · Submitted 0 · Draft 9 · No list 4 · Locked 1
-    var c = { all: dash.rows.length, submitted: 0, draft: 0, locked: 0, empty: dash.users.filter(function (u) { return !(u.lists || []).length; }).length };
+    var c = { all: dash.rows.length, submitted: 0, draft: 0, locked: 0 };
     dash.rows.forEach(function (r) { c[r.submit_state]++; });
-    var names = { all: T('সব', 'All'), submitted: 'Submitted', draft: 'Draft', empty: T('List নেই', 'No list'), locked: 'Locked' };
+    var names = { all: T('সব', 'All'), submitted: 'Submitted', draft: 'Draft', locked: 'Locked' };
     document.querySelectorAll('#dashFilters button[data-f]').forEach(function (b) {
       b.textContent = names[b.dataset.f] + ' ' + bn(c[b.dataset.f]); b.classList.toggle('active', b.dataset.f === dash.filter);
     });
@@ -1337,7 +1337,6 @@
     function t(r, k) { var v = r[k] ? Date.parse(r[k]) : 0; return v || 0; }
     ready.sort(function (a, b) { return (a.submit_state === 'submitted' ? 0 : 1) - (b.submit_state === 'submitted' ? 0 : 1) || t(b, 'submitted_at') - t(a, 'submitted_at'); });
     todo.sort(function (a, b) { return t(a, 'list_updated_at') - t(b, 'list_updated_at'); });
-    var noList = dash.users.filter(function (u) { return !(u.lists || []).length; });
     var all = dash.filter === 'all';
 
     if (!dash.users.length) { C.appendChild(el('div', T('এই GP-তে এখনও কোনো supervisor নেই। Team & Access থেকে যোগ করুন।', 'This GP has no supervisors yet. Add them from Team & Access.'), 'card muted')); return; }
@@ -1358,11 +1357,6 @@
       var s2 = section('todo', T('কাজ বাকি', 'Work left'), T('Worker আছে, submit হয়নি। "Send to K-Desk" দিয়ে বাকি ঘর ভরে নিজেই পাঠাতে পারেন।', 'Has workers, not submitted. Use "Send to K-Desk" to fill what is missing and send it yourself.'), todo.length);
       todo.forEach(function (r) { s2.body.appendChild(workRow(r, 'todo')); });
       C.appendChild(s2.box);
-    }
-    if ((all || dash.filter === 'empty') && noList.length) {
-      var s4 = fold('nolist', T('List বানাননি (' + bn(noList.length) + ' জন supervisor)', 'No list yet (' + bn(noList.length) + ' supervisors)'), dash.filter === 'empty');
-      noList.forEach(function (u) { var r = el('div', null, 'wrow nl'); r.appendChild(supLine(u)); s4.body.appendChild(r); });
-      C.appendChild(s4.box);
     }
     if (!C.children.length) C.appendChild(el('div', T('এই ভাগে কিছু নেই।', 'Nothing in this group.'), 'card muted'));
   }
